@@ -17,3 +17,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+service:
+  wallet-service:
+    url: "http://localhost:8082"
