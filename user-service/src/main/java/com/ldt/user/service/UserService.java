@@ -1,7 +1,9 @@
 package com.ldt.user.service;
 
 import com.ldt.user.dto.request.UserCreateRequest;
+import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.dto.wallet.CreateWalletRequest;
+import com.ldt.user.mapper.UserMapper;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.model.UserStatus;
@@ -11,12 +13,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.UUID;
+
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
+    private final UserMapper userMapper;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -38,6 +43,10 @@ public class UserService {
                 createWalletRequest,
                 Void.class
         );
+    }
+    public UserResponse getUserById(UUID userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        return  userMapper.toUserResponse(user);
     }
 
 }
