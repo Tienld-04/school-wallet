@@ -8,7 +8,7 @@ import java.util.UUID;
 @Getter
 @Setter
 public class WalletTransferRequest {
-    private UUID fromWalletId;
-    private UUID toWalletId;
+    private UUID fromUserId;
+    private UUID toUserId;
     private BigDecimal amount;
 }

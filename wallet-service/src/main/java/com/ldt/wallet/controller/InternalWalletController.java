@@ -16,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/internal/wallets")
 @RequiredArgsConstructor
-public class WalletController {
+public class InternalWalletController {
     private final WalletService walletService;
 
     @PostMapping
