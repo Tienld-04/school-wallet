@@ -35,7 +35,7 @@ public class TransactionService {
         walletReq.setToWalletId(transferRequest.getToWalletId());
         walletReq.setAmount(transferRequest.getAmount());
         restTemplate.postForEntity(
-                walletServiceUrl + "/wallets/transfer",
+                walletServiceUrl + "/internal/wallets/transfer",
                 walletReq,
                 Void.class
         );
