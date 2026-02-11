@@ -21,3 +21,5 @@ spring:
 service:
   wallet-service:
     url: "http://localhost:8082"
+internal:
+  secret: "${INTERNAL_SECRET:internal-secret}"

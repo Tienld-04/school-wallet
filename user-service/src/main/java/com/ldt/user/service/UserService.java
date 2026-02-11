@@ -39,7 +39,7 @@ public class UserService {
         CreateWalletRequest createWalletRequest = new CreateWalletRequest();
         createWalletRequest.setUserId(user.getUserId());
         restTemplate.postForObject(
-                walletServiceUrl + "/wallets",
+                walletServiceUrl + "/internal/wallets",
                 createWalletRequest,
                 Void.class
         );
