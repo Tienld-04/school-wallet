@@ -15,3 +15,5 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+internal:
+  secret: "${INTERNAL_SECRET:internal-secret}"

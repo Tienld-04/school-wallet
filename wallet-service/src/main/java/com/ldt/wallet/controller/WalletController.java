@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/wallets")
+@RequestMapping("/internal/wallets")
 @RequiredArgsConstructor
 public class WalletController {
     private final WalletService walletService;
