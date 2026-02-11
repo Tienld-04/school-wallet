@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/font-end/font-end.iml" filepath="$PROJECT_DIR$/font-end/font-end.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/school-wallet.iml" filepath="$PROJECT_DIR$/.idea/school-wallet.iml" />
     </modules>
   </component>
