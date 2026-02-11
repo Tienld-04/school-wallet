@@ -60,12 +60,13 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="api-gateway" target="21" />
+      <module name="gateway" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
+      <module name="gateway" options="-parameters" />
       <module name="notification-service" options="-parameters" />
       <module name="payment-service" options="-parameters" />
       <module name="transaction-service" options="-parameters -Amapstruct.defaultComponentModel=spring" />
