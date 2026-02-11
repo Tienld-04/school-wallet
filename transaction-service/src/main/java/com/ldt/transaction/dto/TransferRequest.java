@@ -10,8 +10,8 @@ import java.util.UUID;
 @Setter
 public class TransferRequest {
     private String requestId;
-    private UUID fromWalletId;
-    private UUID toWalletId;
+    private String fromPhoneNumber;
+    private String toPhoneNumber;
     private BigDecimal amount;
     private String description;
 }

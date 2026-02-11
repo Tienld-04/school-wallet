@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 @Data
 public class WalletTransferRequest {
-    private UUID fromWalletId;
-    private UUID toWalletId;
+    private UUID fromUserId;
+    private UUID toUserId;
     private BigDecimal amount;
 }
