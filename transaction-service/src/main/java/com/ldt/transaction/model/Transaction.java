@@ -26,11 +26,11 @@ public class Transaction {
     @Column(name = "request_id", unique = true, nullable = false)
     private String requestId;
 
-    @Column(name = "from_wallet_id", nullable = false)
-    private UUID fromWalletId;
+    @Column(name = "from_user_id", nullable = false)
+    private UUID fromUserId;
 
-    @Column(name = "to_wallet_id", nullable = false)
-    private UUID toWalletId;
+    @Column(name = "to_user_id", nullable = false)
+    private UUID toUserId;
 
     @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
@@ -47,6 +47,10 @@ public class Transaction {
     // payment
     @Column(name = "merchant_id")
     private UUID merchantId;
+    
+// @ManyToOne(fetch = FetchType.LAZY)
+// @JoinColumn(name = "merchant_id", nullable = true)
+// private Merchant merchant;
 
     @Column(name = "description")
     private String description;
