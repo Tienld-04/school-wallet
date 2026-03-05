@@ -8,8 +8,8 @@ import java.util.UUID;
 public class TransactionResponse {
     private UUID transactionId;
     //private String requestId;
-    private String fromWalletId;
-    private String toWalletId;
+    private String fromUserId;
+    private String toUserId;
     private BigDecimal amount;
     //private UUID merchantId;
     private String description;
