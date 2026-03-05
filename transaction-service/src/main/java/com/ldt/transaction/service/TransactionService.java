@@ -54,28 +54,61 @@ public class TransactionService {
         if (toUser.getStatus().equals("LOCKED")) {
             throw new RuntimeException("Ví bị khóa. Vui lòng nhập lại số điện thoại");
         }
-        // call wallet-service
-        WalletTransferRequest walletReq = new WalletTransferRequest();
-        walletReq.setFromUserId(fromUser.getUserId());
-        walletReq.setToUserId(toUser.getUserId());
-        walletReq.setAmount(transferRequest.getAmount());
-        restTemplate.postForEntity(
-                walletServiceUrl + "/internal/wallets/transfer",
-                walletReq,
-                Void.class
-        );
         Transaction transaction = new Transaction();
         transaction.setRequestId(transferRequest.getRequestId());
-        transaction.setFromWalletId(fromUser.getUserId());
-        transaction.setToWalletId(toUser.getUserId());
+        transaction.setFromUserId(fromUser.getUserId());
+        transaction.setToUserId(toUser.getUserId());
         transaction.setAmount(transferRequest.getAmount());
-        transaction.setDescription("Ví ID: " + fromUser.getUserId()
+        transaction.setDescription("From User ID: " + fromUser.getUserId()
                 + " -" + transferRequest.getAmount() + " -> "
-                + "Ví ID: " + toUser.getUserId() + " +" + transferRequest.getAmount()
+                + "To User ID: " + toUser.getUserId() + " +" + transferRequest.getAmount()
                 + ", Nội dung: " + transferRequest.getDescription());
         transaction.setTransactionType(TransactionType.TRANSFER);
-        transaction.setStatus(TransactionStatus.SUCCESS);
+        transaction.setStatus(TransactionStatus.PENDING);
+        transaction = transactionRepository.save(transaction);
+        //
+        try {
+            WalletTransferRequest walletReq = new WalletTransferRequest();
+            walletReq.setFromUserId(fromUser.getUserId());
+            walletReq.setToUserId(toUser.getUserId());
+            walletReq.setAmount(transferRequest.getAmount());
+            restTemplate.postForEntity(
+                    walletServiceUrl + "/internal/wallets/transfer",
+                    walletReq,
+                    Void.class
+            );
+            transaction.setStatus(TransactionStatus.SUCCESS);
+        } catch (Exception ex) {
+            transaction.setStatus(TransactionStatus.FAILED);
+            transaction = transactionRepository.save(transaction);
+//            throw new RuntimeException("Chuyển tiền thất bại: " + ex.getMessage());
+            return transactionMapper.toTransactionResponse(transaction);
+        }
         transaction = transactionRepository.save(transaction);
         return transactionMapper.toTransactionResponse(transaction);
+
+        // call wallet-service
+//        WalletTransferRequest walletReq = new WalletTransferRequest();
+//        walletReq.setFromUserId(fromUser.getUserId());
+//        walletReq.setToUserId(toUser.getUserId());
+//        walletReq.setAmount(transferRequest.getAmount());
+//        restTemplate.postForEntity(
+//                walletServiceUrl + "/internal/wallets/transfer",
+//                walletReq,
+//                Void.class
+//        );
+//        Transaction transaction = new Transaction();
+//        transaction.setRequestId(transferRequest.getRequestId());
+//        transaction.setFromUserId(fromUser.getUserId());
+//        transaction.setToUserId(toUser.getUserId());
+//        transaction.setAmount(transferRequest.getAmount());
+//        transaction.setDescription("Ví ID: " + fromUser.getUserId()
+//                + " -" + transferRequest.getAmount() + " -> "
+//                + "Ví ID: " + toUser.getUserId() + " +" + transferRequest.getAmount()
+//                + ", Nội dung: " + transferRequest.getDescription());
+//        transaction.setTransactionType(TransactionType.TRANSFER);
+//        transaction.setStatus(TransactionStatus.SUCCESS);
+//        transaction = transactionRepository.save(transaction);
+//        return transactionMapper.toTransactionResponse(transaction);
     }
 }
