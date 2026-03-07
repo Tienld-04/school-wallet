@@ -27,7 +27,7 @@ public class User {
     @Column(name = "email", unique = true, length = 100, nullable = false)
     private String email;
 
-    @Column(name = "password", nullable = false, length = 100)
+    @Column(name = "password", nullable = false, length = 255)
     private String password;
 
     @Column(name = "role", nullable = false, length = 20)
@@ -45,7 +45,7 @@ public class User {
     private Integer failedLoginCount = 0;
 
     //
-    @Column(name = "transaction_pin_hash", length = 6,  nullable = false)
+    @Column(name = "transaction_pin_hash", length = 255,  nullable = false)
     private String transactionPinHash;
 
     @Column(name = "pin_failed_attempts")
@@ -55,10 +55,10 @@ public class User {
     private LocalDateTime pinLockedUntil;
     //
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
     @Column(name = "create_by")
     private String createdBy;
     @Column(name = "update_by")
