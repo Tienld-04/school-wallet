@@ -13,5 +13,7 @@ public class TransactionResponse {
     private BigDecimal amount;
     //private UUID merchantId;
     private String description;
+    private String status;
+    private String transactionType;
 
 }
