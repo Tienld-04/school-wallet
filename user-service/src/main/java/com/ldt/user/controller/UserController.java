@@ -1,9 +1,13 @@
 package com.ldt.user.controller;
 
+import com.ldt.user.dto.auth.LoginRequest;
+import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.request.UserCreateRequest;
 import com.ldt.user.dto.response.UserResponse;
+import com.ldt.user.service.AuthService;
 import com.ldt.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +18,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    @PostMapping
+    private final AuthService authService;
+    @PostMapping("/register")
     public ResponseEntity<String> createUser(@RequestBody UserCreateRequest userCreateRequest){
         userService.createUser(userCreateRequest);
         return ResponseEntity.ok().build();
@@ -23,4 +28,10 @@ public class UserController {
     public ResponseEntity<UserResponse> getUsersById(@PathVariable UUID userId){
         return ResponseEntity.ok(userService.getUserById(userId));
     }
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
+        return ResponseEntity.ok(authService.login(loginRequest));
+    }
+
+
 }

@@ -23,3 +23,5 @@ service:
     url: "http://localhost:8082"
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
+jwt:
+  secret-key: "${JWT_SECRET_KEY}"
