@@ -28,6 +28,7 @@ public class GatewayConfig {
 //                                .tokenRelay()
                         )
                         .uri(userServiceUrl))
+                //
                 .build();
     }
 }
