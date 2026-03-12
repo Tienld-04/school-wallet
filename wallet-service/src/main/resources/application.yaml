@@ -4,9 +4,9 @@ spring:
   application:
     name: wallet-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/wallet_service
-    username: Tienld
-    password: 123456
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/wallet_service}
+    username: ${DB_USERNAME:Tienld}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
