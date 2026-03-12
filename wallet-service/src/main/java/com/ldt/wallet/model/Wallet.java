@@ -2,6 +2,9 @@ package com.ldt.wallet.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Table(name = "wallets")
+@EntityListeners(AuditingEntityListener.class)
 public class Wallet {
     @Id
     @GeneratedValue
@@ -42,18 +46,20 @@ public class Wallet {
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "VND";
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+//    @PrePersist
+//    protected void onCreate() {
+//        this.createdAt = LocalDateTime.now();
+//    }
+//    @PreUpdate
+//    protected void onUpdate() {
+//        this.updatedAt = LocalDateTime.now();
+//    }
 }
