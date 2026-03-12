@@ -2,6 +2,12 @@ package com.ldt.user.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -12,6 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Table(name = "users")
+@EntityListeners(AuditingEntityListener.class)
 public class User {
     @Id
     @GeneratedValue
@@ -54,27 +61,30 @@ public class User {
     @Column(name = "pin_locked_until")
     private LocalDateTime pinLockedUntil;
     //
-    @Column(name = "created_at", nullable = false)
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-    @Column(name = "create_by")
+    @CreatedBy
+    @Column(name = "create_by", updatable = false)
     private String createdBy;
+    @LastModifiedBy
     @Column(name = "update_by")
     private String updatedBy;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-//        this.createdBy = getCurrentUser();
-    }
+//    @PrePersist
+//    protected void onCreate() {
+//        LocalDateTime now = LocalDateTime.now();
+//        this.createdAt = now;
+//        this.updatedAt = now;
+//        this.createdBy = UserContext.getUserId();
+//    }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-//        this.updatedBy = getCurrentUser();
-    }
-
-
+//    @PreUpdate
+//    protected void onUpdate() {
+//        this.updatedAt = LocalDateTime.now();
+//        this.updatedBy = UserContext.getUserId();
+//    }
 }

@@ -6,8 +6,8 @@ import com.ldt.user.dto.request.UserCreateRequest;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.service.AuthService;
 import com.ldt.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +20,7 @@ public class UserController {
     private final UserService userService;
     private final AuthService authService;
     @PostMapping("/register")
-    public ResponseEntity<String> createUser(@RequestBody UserCreateRequest userCreateRequest){
+    public ResponseEntity<String> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest){
         userService.createUser(userCreateRequest);
         return ResponseEntity.ok().build();
     }
@@ -29,9 +29,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(userId));
     }
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest){
         return ResponseEntity.ok(authService.login(loginRequest));
     }
 
-
+    @GetMapping("/info")
+    public ResponseEntity<UserResponse> getUserCurrent(){
+        return ResponseEntity.ok(userService.getUserCurent());
+    }
 }
