@@ -3,6 +3,8 @@ package com.ldt.user.controller;
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.request.UserCreateRequest;
+import com.ldt.user.dto.request.VerifyPinRequest;
+import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.service.AuthService;
 import com.ldt.user.service.UserService;
@@ -36,5 +38,25 @@ public class UserController {
     @GetMapping("/info")
     public ResponseEntity<UserResponse> getUserCurrent(){
         return ResponseEntity.ok(userService.getUserCurent());
+    }
+
+    /**
+     * Tra cứu thông tin người nhận theo số điện thoại.
+     * kiểm tra người nhận tồn tại trước khi hiển thị màn hình xác nhận.
+     */
+    @GetMapping("/by-phone/{phone}")
+    public ResponseEntity<RecipientResponse> getRecipientByPhone(@PathVariable String phone) {
+        return ResponseEntity.ok(userService.getRecipientByPhone(phone));
+    }
+
+    /**
+     * Xác thực mã PIN giao dịch của người dùng đang đăng nhập.
+     * kiểm tra PIN sau khi người dùng nhập.
+     * Yêu cầu JWT hợp lệ
+     */
+    @PostMapping("/verify-pin")
+    public ResponseEntity<Void> verifyTransactionPin(@Valid @RequestBody VerifyPinRequest request) {
+        userService.verifyTransactionPin(request.getPin());
+        return ResponseEntity.ok().build();
     }
 }
