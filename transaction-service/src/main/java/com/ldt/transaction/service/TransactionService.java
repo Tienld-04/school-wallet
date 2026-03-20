@@ -33,11 +33,13 @@ public class TransactionService {
     private String userServiceUrl;
 
     @Transactional
-    public TransactionResponse transfer(TransferRequest transferRequest) {
+    public TransactionResponse transfer(TransferRequest transferRequest, String fromPhone) {
+        // Xác thực PIN giao dịch
+        // fromPhone lấy từ header
         try {
             restTemplate.postForEntity(
                     userServiceUrl + "/internal/users/verify-pin",
-                    new InternalVerifyPinRequest(transferRequest.getFromPhoneNumber(), transferRequest.getPin()),
+                    new InternalVerifyPinRequest(fromPhone, transferRequest.getPin()),
                     Void.class
             );
         } catch (HttpClientErrorException e) {
@@ -46,13 +48,14 @@ public class TransactionService {
             throw new RuntimeException("Không thể xác thực PIN: " + e.getMessage());
         }
 
+        //
         if (transactionRepository.existsByRequestId(transferRequest.getRequestId())) {
             throw new RuntimeException("Giao dịch đang được xử lí");
         }
         //
         ResponseEntity<UserInternalResponse> responseFromUser =
                 restTemplate.getForEntity(
-                        userServiceUrl + "/internal/users/" + transferRequest.getFromPhoneNumber(),
+                        userServiceUrl + "/internal/users/" + fromPhone,
                         UserInternalResponse.class
                 );
         UserInternalResponse fromUser = responseFromUser.getBody();
@@ -78,9 +81,9 @@ public class TransactionService {
         transaction.setAmount(transferRequest.getAmount());
         transaction.setDescription(
                 "Từ: " + fromUser.getFullName() + " (" + fromUser.getPhone() + ")"
-                + " → Đến: " + toUser.getFullName() + " (" + toUser.getPhone() + ")"
-                + " | Số tiền: " + transferRequest.getAmount()
-                + " | Nội dung: " + transferRequest.getDescription()
+                        + " → Đến: " + toUser.getFullName() + " (" + toUser.getPhone() + ")"
+                        + " | Số tiền: " + transferRequest.getAmount()
+                        + " | Nội dung: " + transferRequest.getDescription()
         );
         transaction.setTransactionType(TransactionType.TRANSFER);
         transaction.setStatus(TransactionStatus.PENDING);
