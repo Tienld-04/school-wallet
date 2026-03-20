@@ -37,6 +37,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     String jti = jwt.getId();
                     String userId = jwt.getSubject();
                     String role = jwt.getClaimAsString("role");
+                    String phone = jwt.getClaimAsString("phone");
                     // Gọi user-service check blacklist
                     return webClient.get()
                             .uri(userServiceUrl + "/internal/users/validate?jti=" + jti)
@@ -49,6 +50,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                                         .header("X-Internal-Secret", internalSecret)
                                         .header("X-User-Id", userId)
                                         .header("X-User-Role", role)
+                                        .header("X-User-Phone", phone)
                                         .build();
                                 return chain.filter(exchange.mutate().request(modified).build());
                             })
