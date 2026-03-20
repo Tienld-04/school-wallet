@@ -1,7 +1,6 @@
 package com.ldt.user.service;
 import com.ldt.user.model.User;
 import io.jsonwebtoken.Jwts;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +11,6 @@ import java.util.Date;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class JwtService {
     @Value("${jwt.secret-key}")
     private String secretKey;
