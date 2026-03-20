@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 @Setter
 public class TransferRequest {
     private String requestId;
-    private String fromPhoneNumber;
     private String toPhoneNumber;
     private BigDecimal amount;
     private String description;
     private String pin;
 }
+
