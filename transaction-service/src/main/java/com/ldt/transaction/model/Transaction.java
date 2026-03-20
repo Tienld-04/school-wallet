@@ -21,7 +21,6 @@ public class Transaction {
     private UUID transactionId;
     /**
      * FE gửi về requestId mỗi hành động chuyển tiền = 1 requestId duy nhất
-     * chống gửi trùng request (idempotency)
      */
     @Column(name = "request_id", unique = true, nullable = false)
     private String requestId;
@@ -29,8 +28,20 @@ public class Transaction {
     @Column(name = "from_user_id", nullable = false)
     private UUID fromUserId;
 
+    @Column(name = "from_phone", length = 15)
+    private String fromPhone;
+
+    @Column(name = "from_full_name", length = 100)
+    private String fromFullName;
+
     @Column(name = "to_user_id", nullable = false)
     private UUID toUserId;
+
+    @Column(name = "to_phone", length = 15)
+    private String toPhone;
+
+    @Column(name = "to_full_name", length = 100)
+    private String toFullName;
 
     @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
@@ -56,9 +67,9 @@ public class Transaction {
     private String description;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
 
     @Column(name = "create_by")
     private String createdBy;

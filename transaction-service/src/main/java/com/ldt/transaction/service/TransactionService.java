@@ -3,6 +3,7 @@ package com.ldt.transaction.service;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.transfer.WalletTransferRequest;
+import com.ldt.transaction.dto.user.InternalVerifyPinRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
@@ -32,7 +34,18 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse transfer(TransferRequest transferRequest) {
-        // idempotency
+        try {
+            restTemplate.postForEntity(
+                    userServiceUrl + "/internal/users/verify-pin",
+                    new InternalVerifyPinRequest(transferRequest.getFromPhoneNumber(), transferRequest.getPin()),
+                    Void.class
+            );
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể xác thực PIN: " + e.getMessage());
+        }
+
         if (transactionRepository.existsByRequestId(transferRequest.getRequestId())) {
             throw new RuntimeException("Giao dịch đang được xử lí");
         }
@@ -57,12 +70,18 @@ public class TransactionService {
         Transaction transaction = new Transaction();
         transaction.setRequestId(transferRequest.getRequestId());
         transaction.setFromUserId(fromUser.getUserId());
+        transaction.setFromPhone(fromUser.getPhone());
+        transaction.setFromFullName(fromUser.getFullName());
         transaction.setToUserId(toUser.getUserId());
+        transaction.setToPhone(toUser.getPhone());
+        transaction.setToFullName(toUser.getFullName());
         transaction.setAmount(transferRequest.getAmount());
-        transaction.setDescription("From User ID: " + fromUser.getUserId()
-                + " -" + transferRequest.getAmount() + " -> "
-                + "To User ID: " + toUser.getUserId() + " +" + transferRequest.getAmount()
-                + ", Nội dung: " + transferRequest.getDescription());
+        transaction.setDescription(
+                "Từ: " + fromUser.getFullName() + " (" + fromUser.getPhone() + ")"
+                + " → Đến: " + toUser.getFullName() + " (" + toUser.getPhone() + ")"
+                + " | Số tiền: " + transferRequest.getAmount()
+                + " | Nội dung: " + transferRequest.getDescription()
+        );
         transaction.setTransactionType(TransactionType.TRANSFER);
         transaction.setStatus(TransactionStatus.PENDING);
         transaction = transactionRepository.save(transaction);
