@@ -2,6 +2,11 @@ package com.ldt.transaction.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,6 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "transactions")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -66,26 +72,20 @@ public class Transaction {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "created_at", nullable = false)
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "create_by")
+    @CreatedBy
+    @Column(name = "create_by", updatable = false)
     private String createdBy;
+
+    @LastModifiedBy
     @Column(name = "update_by")
     private String updatedBy;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-//        this.createdBy = getCurrentUser();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-//        this.updatedBy = getCurrentUser();
-    }
 
 }
