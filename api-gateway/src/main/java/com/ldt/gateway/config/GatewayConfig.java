@@ -24,7 +24,12 @@ public class GatewayConfig {
                                 .rewritePath("/api/v1/users/(?<segment>.*)", "/api/users/${segment}")
                         )
                         .uri(userServiceUrl))
-                // Route cho Transaction Service
+                .route("transaction-service-root", r -> r
+                        .path("/api/v1/transactions")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/transactions", "/api/transactions")
+                        )
+                        .uri(transactionServiceUrl))
                 .route("transaction-service", r -> r
                         .path("/api/v1/transactions/**")
                         .filters(f -> f
