@@ -1,11 +1,16 @@
 package com.ldt.user.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ldt.user.context.UserContext;
+import com.ldt.user.dto.request.QrVerifyRequest;
 import com.ldt.user.dto.request.UserCreateRequest;
 import com.ldt.user.dto.response.QrTransferResponse;
+import com.ldt.user.dto.response.QrVerifyResponse;
 import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.dto.wallet.CreateWalletRequest;
+import com.ldt.user.enums.QrCodeType;
 import com.ldt.user.mapper.UserMapper;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
@@ -124,7 +129,6 @@ public class UserService {
         String userId = UserContext.getUserId();
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
         // Kiểm tra tài khoản có đang bị khóa không
         if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
             long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
@@ -156,12 +160,12 @@ public class UserService {
         String userId = UserContext.getUserId();
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
         String phone = user.getPhone();
         String name  = user.getFullName();
         String sig = hmacSha512(phone + "|" + name, qrSecretKey);
+        //String qrType = String.format(String.valueOf(QrCodeType.SCHOOL_WALLET_STATIC));
         String qrContent = String.format(
-                "{\"type\":\"SCHOOL_WALLET\",\"phone\":\"%s\",\"name\":\"%s\",\"sig\":\"%s\"}",
+                "{\"type\":\"SCHOOL_WALLET_STATIC\",\"phone\":\"%s\",\"name\":\"%s\",\"sig\":\"%s\"}",
                 phone, name, sig
         );
         return new QrTransferResponse(qrContent);
@@ -185,19 +189,71 @@ public class UserService {
         String userId = UserContext.getUserId();
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
         String phone = user.getPhone();
         String name  = user.getFullName();
         String desc  = (description != null) ? description : "";
         long expiredAt = System.currentTimeMillis() + 60 * 1000;
         String data = phone + "|" + name + "|" + amount.toPlainString() + "|" + desc + "|" + expiredAt;
         String sig  = hmacSha512(data, qrSecretKey);
-
         String qrContent = String.format(
                 "{\"type\":\"SCHOOL_WALLET_DYNAMIC\",\"phone\":\"%s\",\"name\":\"%s\",\"amount\":%s,\"description\":\"%s\",\"expiredAt\":%d,\"sig\":\"%s\"}",
                 phone, name, amount.toPlainString(), desc, expiredAt, sig
         );
         return new QrTransferResponse(qrContent);
+    }
+
+    /**
+     * Xác minh tính hợp lệ của QR code quét được.
+     */
+    public QrVerifyResponse verifyQr(QrVerifyRequest request) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(request.getQrContent());
+            String type = node.path("type").asText();
+            if (!"SCHOOL_WALLET_STATIC".equals(type) && !"SCHOOL_WALLET_DYNAMIC".equals(type)) {
+                throw new RuntimeException("Mã QR không thuộc hệ thống School Wallet");
+            }
+            String phone = node.path("phone").asText();
+            String name  = node.path("name").asText();
+            String sig   = node.path("sig").asText();
+            String expectedSig;
+            // for dynamic qr
+            if ("SCHOOL_WALLET_DYNAMIC".equals(type)) {
+                String amountStr  = node.path("amount").asText();
+                String desc       = node.path("description").asText();
+                long expiredAt    = node.path("expiredAt").asLong();
+
+                if (System.currentTimeMillis() > expiredAt) {
+                    throw new RuntimeException("Mã QR này đã hết hạn");
+                }
+                String data = phone + "|" + name + "|" + amountStr + "|" + desc + "|" + expiredAt;
+                expectedSig = hmacSha512(data, qrSecretKey);
+                if (!expectedSig.equals(sig)) {
+                    throw new RuntimeException("Mã QR không hợp lệ hoặc đã bị sửa đổi số dư!");
+                }
+                return QrVerifyResponse.builder()
+                        .phone(phone)
+                        .name(name)
+                        .amount(new BigDecimal(amountStr))
+                        .description(desc)
+                        .build();
+            } else {
+                // for static qr
+                String data = phone + "|" + name;
+                expectedSig = hmacSha512(data, qrSecretKey);
+                if (!expectedSig.equals(sig)) {
+                    throw new RuntimeException("Mã QR không hợp lệ hoặc đã bị giả mạo!");
+                }
+                return QrVerifyResponse.builder()
+                        .phone(phone)
+                        .name(name)
+                        .build();
+            }
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException("Định dạng QR không đúng", e);
+        }
     }
 
 }

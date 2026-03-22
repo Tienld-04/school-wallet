@@ -1,4 +1,5 @@
 package com.ldt.user.service;
+
 import com.ldt.user.model.User;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,19 +15,21 @@ import java.util.UUID;
 public class JwtService {
     @Value("${jwt.secret-key}")
     private String secretKey;
+
     private SecretKey getSigningKey() {
         return new SecretKeySpec(
                 secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA512"
         );
     }
+
     public String generateToken(User user) {
-     return Jwts.builder()
+        return Jwts.builder()
                 .subject(user.getUserId().toString())
                 .claim("role", user.getRole().name())
                 .claim("phone", user.getPhone())
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 30 * 60 * 1000))
+                .expiration(new Date(System.currentTimeMillis() + 3 * 60 * 60 * 1000))
                 .signWith(getSigningKey())
                 .compact();
     }

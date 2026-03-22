@@ -9,6 +9,8 @@ import com.ldt.user.dto.response.QrTransferResponse;
 import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.service.AuthService;
+import com.ldt.user.dto.request.QrVerifyRequest;
+import com.ldt.user.dto.response.QrVerifyResponse;
 import com.ldt.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +82,17 @@ public class UserController {
         return ResponseEntity.ok(
                 userService.generateDynamicQr(request.getAmount(), request.getDescription())
         );
+    }
+
+    /**
+     * Verify QR: Nhận QR string từ thư viện quét mã, kiểm tra HMAC_SHA512 sig.
+     * Trả về thông tin người nhận (và số tiền nếu là Dynamic QR).
+     * Đảm bảo an toàn không bị sửa đổi thông tin khi quét QR.
+     */
+    @PostMapping("/qr/verify")
+    public ResponseEntity<QrVerifyResponse> verifyQr(
+            @Valid @RequestBody QrVerifyRequest request) {
+        return ResponseEntity.ok(userService.verifyQr(request));
     }
 }
 
