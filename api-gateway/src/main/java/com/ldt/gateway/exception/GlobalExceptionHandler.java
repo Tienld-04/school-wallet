@@ -51,7 +51,8 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
                 byte[] bytes = objectMapper.writeValueAsBytes(errorResponse);
                 return exchange.getResponse().bufferFactory().wrap(bytes);
             } catch (Exception e) {
-                return exchange.getResponse().bufferFactory().wrap(new byte[0]);
+                byte[] fallback = "{\"code\":9999,\"message\":\"Lỗi Serialize JSON\",\"status\":500}".getBytes();
+                return exchange.getResponse().bufferFactory().wrap(fallback);
             }
         }));
     }
