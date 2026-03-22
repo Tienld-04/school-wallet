@@ -14,6 +14,9 @@ public class GatewayConfig {
     @Value("${service.url.transaction-service}")
     private String transactionServiceUrl;
 
+    @Value("${service.url.wallet-service}")
+    private String walletServiceUrl;
+
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
@@ -36,6 +39,12 @@ public class GatewayConfig {
                                 .rewritePath("/api/v1/transactions/(?<segment>.*)", "/api/transactions/${segment}")
                         )
                         .uri(transactionServiceUrl))
+                .route("wallet-service", r -> r
+                        .path("/api/v1/wallets/**")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/wallets/(?<segment>.*)", "/api/wallets/${segment}")
+                        )
+                        .uri(walletServiceUrl))
                 .build();
     }
 }
