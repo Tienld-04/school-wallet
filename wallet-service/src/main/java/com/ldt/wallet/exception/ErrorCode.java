@@ -1,0 +1,20 @@
+package com.ldt.wallet.exception;
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+
+@Getter
+public enum ErrorCode {
+    UNCATEGORIZEO_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNAUTHENTICATED(1001, "Người dùng chưa được xác thực.", HttpStatus.UNAUTHORIZED),
+    ;
+    ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
+        this.message = message;
+        this.code = code;
+        this.httpStatusCode = httpStatusCode;
+    }
+    private int code;
+    private String message;
+    private HttpStatusCode httpStatusCode;
+
+}
