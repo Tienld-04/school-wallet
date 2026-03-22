@@ -28,7 +28,7 @@ FE gọi: GET /api/v1/users/my-qr
   - Truy vấn DB: lấy phone + fullName của A
   - Tạo chữ ký: sig = HMAC_HS512(phone + "|" + name, QR_SECRET_KEY)
   - Build qrContent (chuỗi JSON):
-      {"type":"SCHOOL_WALLET","phone":"0912345670","name":"Nguyễn Văn A","sig":"abc123..."}
+      {"type":"SCHOOL_WALLET_STATIC","phone":"0912345670","name":"Nguyễn Văn A","sig":"abc123..."}
   - Trả về: { "qrContent": "..." }
         │
         ▼
@@ -48,8 +48,8 @@ Người gửi (B) mở màn hình "Quét QR"
         ▼
 Camera đọc QR → FE nhận chuỗi qrContent (JSON)
         │
-        ├─ Kiểm tra type === "SCHOOL_WALLET"?
-        │     Không khớp → Báo lỗi "QR không thuộc hệ thống School Wallet" ❌
+        ├─ Kiểm tra type === "SCHOOL_WALLET_STATIC"?
+        │     Không khớp → Báo lỗi "Mã QR không thuộc hệ thống School Wallet" ❌
         │     Khớp → tiếp tục
         │
         ▼
@@ -59,11 +59,13 @@ FE gọi: POST /api/v1/users/qr/verify
         │
         ▼
 [user-service – POST /api/users/qr/verify]
-  - Parse qrContent → lấy phone, name, sig
-  - Tính lại: expectedSig = HMAC_HS512(phone + "|" + name, QR_SECRET_KEY)
+  - Parse qrContent → lấy type, phone, name, sig
+  - Validation: type phải là "SCHOOL_WALLET_STATIC" hoặc "SCHOOL_WALLET_DYNAMIC".
+  - Vì là Static QR, data = phone + "|" + name
+  - Tính lại: expectedSig = HMAC_HS512(data, QR_SECRET_KEY)
   - So sánh expectedSig với sig trong QR:
-      Không khớp → 400 "QR không hợp lệ hoặc đã bị giả mạo" ❌
-      Khớp → Trả về { phone, name } ✅
+      Không khớp → 400 "Mã QR không hợp lệ hoặc đã bị giả mạo!" ❌
+      Khớp → Trả về thông tin: { "phone": "0912345670", "name": "Nguyễn Văn A" } ✅
         │
         ▼
 FE hiển thị thông tin người nhận:
@@ -117,7 +119,7 @@ FE hiển thị màn hình kết quả giao dịch
 | Cơ chế | Mô tả |
 |--------|-------|
 | **Chữ ký HMAC_HS512** | Chống làm giả `phone`/`name` trong QR |
-| **`type` field** | FE lọc QR của hệ thống khác |
+| **`type` field** | FE lọc QR của hệ thống khác (`SCHOOL_WALLET_STATIC` hoặc `SCHOOL_WALLET_DYNAMIC`) |
 | **Verify tại backend** | Không tin vào FE, sig được kiểm tra server-side |
 | **Không có thời hạn** | QR cá nhân tồn tại vĩnh viễn (giống MoMo Static QR) |
 | **QR thay đổi khi** | Người dùng đổi tên / admin xoay `QR_SECRET_KEY` |
@@ -128,8 +130,8 @@ FE hiển thị màn hình kết quả giao dịch
 
 | Trường hợp | Xử lý |
 |-----------|-------|
-| QR của app khác | FE từ chối (type không phải SCHOOL_WALLET) |
-| QR bị làm giả (sửa phone/name) | Backend từ chối (sig không khớp) |
+| QR của app khác | FE từ chối (type không nằm trong hệ thống School Wallet) |
+| QR bị làm giả (sửa phone/name) | Backend từ chối ở API verify (sig không khớp) |
 | Người nhận bị khóa tài khoản | Bị chặn tại bước transfer (check status) |
 | Sai PIN | Báo số lần còn lại, khóa 15 phút nếu sai ≥ 5 lần |
 | Số dư không đủ | wallet-service từ chối, giao dịch FAILED |
