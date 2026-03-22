@@ -2,6 +2,8 @@ package com.ldt.gateway.filter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ldt.gateway.exception.AppException;
+import com.ldt.gateway.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -59,29 +61,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                                 return chain.filter(exchange.mutate().request(modified).build());
                             })
                             .onErrorResume(e -> {
-                                if (e instanceof WebClientResponseException) {
-                                    // User-service return 401
-                                    WebClientResponseException ex = (WebClientResponseException) e;
-                                    exchange.getResponse().setStatusCode(ex.getStatusCode());
-                                    return exchange.getResponse().setComplete();
+                                if (e instanceof WebClientResponseException ex) {
+                                    if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                                        return Mono.error(new AppException(ErrorCode.UNAUTHENTICATED));
+                                    }
+                                    return Mono.error(new AppException(ErrorCode.SERVICE_UNAVAILABLE));
                                 }
-                                // user-service down
-                                Map<String, Object> body = Map.of(
-                                        "status", 503,
-                                        "error", "Service Unavailable",
-                                        "message", "Service tạm thời không khả dụng"
-                                );
-                                exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
-                                exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                                try {
-                                    ObjectMapper mapper = new ObjectMapper();
-                                    byte[] bytes = mapper.writeValueAsBytes(body);
-                                    return exchange.getResponse().writeWith(
-                                            Mono.just(exchange.getResponse().bufferFactory().wrap(bytes))
-                                    );
-                                } catch (JsonProcessingException ex) {
-                                    return exchange.getResponse().setComplete();
-                                }
+                                return Mono.error(new AppException(ErrorCode.SERVICE_UNAVAILABLE));
                             });
                 })
                 .switchIfEmpty(chain.filter(exchange));
