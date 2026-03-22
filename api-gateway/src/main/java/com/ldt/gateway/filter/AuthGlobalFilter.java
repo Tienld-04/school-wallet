@@ -26,7 +26,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private String internalSecret;
     @Value("${service.url.user-service}")
     private String userServiceUrl;
-    private final WebClient webClient = WebClient.create();
+    private final WebClient webClient;
+
+    public AuthGlobalFilter(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.build();
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
