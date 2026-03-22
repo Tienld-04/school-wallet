@@ -2,6 +2,8 @@ package com.ldt.wallet.service;
 
 import com.ldt.wallet.dto.request.WalletCreateRequest;
 import com.ldt.wallet.dto.request.WalletTransferRequest;
+import com.ldt.wallet.exception.AppException;
+import com.ldt.wallet.exception.ErrorCode;
 import com.ldt.wallet.model.Wallet;
 import com.ldt.wallet.model.WalletStatus;
 import com.ldt.wallet.model.WalletType;
@@ -29,14 +31,14 @@ public class WalletService {
     @Transactional
     public String transfer(WalletTransferRequest walletTransferRequest) {
         if(walletTransferRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0){
-            throw new RuntimeException("Số tiền phải lớn hơn 0");
+            throw new AppException(ErrorCode.INVALID_AMOUNT);
         }
         Wallet fromWallet = walletRepository.findByUserId(walletTransferRequest.getFromUserId())
-                .orElseThrow(() -> new RuntimeException("Ví nguồn không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
         Wallet toWallet = walletRepository.findByUserId(walletTransferRequest.getToUserId())
-                .orElseThrow(() -> new RuntimeException("Ví đich không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
         if(fromWallet.getBalance().compareTo(walletTransferRequest.getAmount()) < 0){
-            throw new RuntimeException("Số dư không đủ");
+            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
         }
         fromWallet.setBalance(fromWallet.getBalance().subtract(walletTransferRequest.getAmount()));
         toWallet.setBalance(toWallet.getBalance().add(walletTransferRequest.getAmount()));
