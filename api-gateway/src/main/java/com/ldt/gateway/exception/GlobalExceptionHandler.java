@@ -11,13 +11,17 @@ import reactor.core.publisher.Mono;
 
 /**
  * Vì Gateway dùng WebFlux và chạy ở tầng Filter, Do đó cần implement ErrorWebExceptionHandler.
- * Đặt thứ tự ưu tiên cao hơn lớp xử lý lỗi mặc định của Spring với @Order(-2)
+ * Đặt thứ tự ưu tiên cao hơn lớp xử lý lỗi mặc định của Spring @Order(-2)
  */
 @Configuration
 @Order(-2)
 public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public GlobalExceptionHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
@@ -39,6 +43,7 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
                     .build();
             exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         return exchange.getResponse().writeWith(Mono.fromSupplier(() -> {
