@@ -34,6 +34,10 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse transfer(TransferRequest transferRequest, String fromPhone) {
+
+        if (fromPhone.equals(transferRequest.getToPhoneNumber())) {
+            throw new RuntimeException("Bạn không thể tự chuyển tiền cho chính mình!");
+        }
         // Xác thực PIN giao dịch
         // fromPhone lấy từ header
         try {
