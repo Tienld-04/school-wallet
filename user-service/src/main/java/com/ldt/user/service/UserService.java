@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
@@ -174,6 +175,29 @@ public class UserService {
         } catch (Exception e) {
             throw new RuntimeException("Lỗi tạo chữ ký QR", e);
         }
+    }
+    /**
+     * Tạo Dynamic QR: người nhận set sẵn amount + description.
+     * Người gửi quét QR → thấy luôn thông tin người nhận + số tiền → chỉ cần nhập PIN.
+     * type = "SCHOOL_WALLET_DYNAMIC" để FE phân biệt với Static QR.
+     */
+    public QrTransferResponse generateDynamicQr(BigDecimal amount, String description) {
+        String userId = UserContext.getUserId();
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        String phone = user.getPhone();
+        String name  = user.getFullName();
+        String desc  = (description != null) ? description : "";
+        long expiredAt = System.currentTimeMillis() + 60 * 1000;
+        String data = phone + "|" + name + "|" + amount.toPlainString() + "|" + desc + "|" + expiredAt;
+        String sig  = hmacSha512(data, qrSecretKey);
+
+        String qrContent = String.format(
+                "{\"type\":\"SCHOOL_WALLET_DYNAMIC\",\"phone\":\"%s\",\"name\":\"%s\",\"amount\":%s,\"description\":\"%s\",\"expiredAt\":%d,\"sig\":\"%s\"}",
+                phone, name, amount.toPlainString(), desc, expiredAt, sig
+        );
+        return new QrTransferResponse(qrContent);
     }
 
 }
