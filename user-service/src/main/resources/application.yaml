@@ -25,3 +25,5 @@ internal:
   secret: "${INTERNAL_SECRET}"
 jwt:
   secret-key: "${JWT_SECRET_KEY}"
+qr:
+  secret-key: "${QR_SECRET_KEY}"

@@ -2,6 +2,7 @@ package com.ldt.user.service;
 
 import com.ldt.user.context.UserContext;
 import com.ldt.user.dto.request.UserCreateRequest;
+import com.ldt.user.dto.response.QrTransferResponse;
 import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.dto.wallet.CreateWalletRequest;
@@ -17,7 +18,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.UUID;
 
 @Service
@@ -30,6 +35,9 @@ public class UserService {
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
+
+    @Value("${qr.secret-key}")
+    private String qrSecretKey;
 
     @Transactional
     public void createUser(UserCreateRequest userCreateRequest) {
@@ -136,6 +144,36 @@ public class UserService {
         user.setPinFailedAttempts(0);
         user.setPinLockedUntil(null);
         userRepository.save(user);
+    }
+
+    /**
+     * Tạo QR content cho user hiện tại (lấy từ JWT via UserContext).
+     * QR content dạng JSON có chữ ký HMAC-SHA256 để chống giả mạo.
+     * FE nhận chuỗi này và tự render thành ảnh QR.
+     */
+    public QrTransferResponse generateMyQr() {
+        String userId = UserContext.getUserId();
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        String phone = user.getPhone();
+        String name  = user.getFullName();
+        String sig = hmacSha512(phone + "|" + name, qrSecretKey);
+        String qrContent = String.format(
+                "{\"type\":\"SCHOOL_WALLET\",\"phone\":\"%s\",\"name\":\"%s\",\"sig\":\"%s\"}",
+                phone, name, sig
+        );
+        return new QrTransferResponse(qrContent);
+    }
+    private String hmacSha512(String data, String secret) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA512");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
+            byte[] rawHmac = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(rawHmac);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi tạo chữ ký QR", e);
+        }
     }
 
 }

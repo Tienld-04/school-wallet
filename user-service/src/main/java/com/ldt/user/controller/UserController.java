@@ -4,6 +4,7 @@ import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.request.UserCreateRequest;
 import com.ldt.user.dto.request.VerifyPinRequest;
+import com.ldt.user.dto.response.QrTransferResponse;
 import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.service.AuthService;
@@ -52,11 +53,19 @@ public class UserController {
     /**
      * Xác thực mã PIN giao dịch của người dùng đang đăng nhập.
      * kiểm tra PIN sau khi người dùng nhập.
-     * Yêu cầu JWT hợp lệ
      */
     @PostMapping("/verify-pin")
     public ResponseEntity<Void> verifyTransactionPin(@Valid @RequestBody VerifyPinRequest request) {
         userService.verifyTransactionPin(request.getPin());
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Tạo QR content của user hiện tại.
+     */
+    @GetMapping("/my-qr")
+    public ResponseEntity<QrTransferResponse> getMyQr() {
+        return ResponseEntity.ok(userService.generateMyQr());
+    }
 }
+
