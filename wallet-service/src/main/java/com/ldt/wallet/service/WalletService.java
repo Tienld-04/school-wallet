@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -36,15 +37,43 @@ public class WalletService {
         if (walletTransferRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.INVALID_AMOUNT);
         }
-        Wallet fromWallet = walletRepository.findByUserId(walletTransferRequest.getFromUserId())
+        Wallet fromWallet = walletRepository.findByUserIdForUpdate(walletTransferRequest.getFromUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
-        Wallet toWallet = walletRepository.findByUserId(walletTransferRequest.getToUserId())
+        Wallet toWallet = walletRepository.findByUserIdForUpdate(walletTransferRequest.getToUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
-        if (fromWallet.getBalance().compareTo(walletTransferRequest.getAmount()) < 0) {
+        if (fromWallet.getStatus() == WalletStatus.LOCKED) {
+            throw new AppException(ErrorCode.WALLET_LOCKED);
+        }
+        if (toWallet.getStatus() == WalletStatus.LOCKED) {
+            throw new AppException(ErrorCode.WALLET_LOCKED);
+        }
+        // Reset daily/monthly spent nếu sang ngày/tháng mới
+        LocalDate today = LocalDate.now();
+        if (fromWallet.getLastDailyReset() == null || !fromWallet.getLastDailyReset().equals(today)) {
+            fromWallet.setDailySpent(BigDecimal.ZERO);
+            fromWallet.setLastDailyReset(today);
+        }
+        if (fromWallet.getLastMonthlyReset() == null || fromWallet.getLastMonthlyReset().getMonth() != today.getMonth()
+                || fromWallet.getLastMonthlyReset().getYear() != today.getYear()) {
+            fromWallet.setMonthlySpent(BigDecimal.ZERO);
+            fromWallet.setLastMonthlyReset(today);
+        }
+        // Check hạn mức
+        BigDecimal amount = walletTransferRequest.getAmount();
+        if (fromWallet.getDailySpent().add(amount).compareTo(fromWallet.getDailyLimit()) > 0) {
+            throw new AppException(ErrorCode.DAILY_LIMIT_EXCEEDED);
+        }
+        if (fromWallet.getMonthlySpent().add(amount).compareTo(fromWallet.getMonthlyLimit()) > 0) {
+            throw new AppException(ErrorCode.MONTHLY_LIMIT_EXCEEDED);
+        }
+        if (fromWallet.getBalance().compareTo(amount) < 0) {
             throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
         }
-        fromWallet.setBalance(fromWallet.getBalance().subtract(walletTransferRequest.getAmount()));
-        toWallet.setBalance(toWallet.getBalance().add(walletTransferRequest.getAmount()));
+        // Cập nhật số dư + hạn mức đã dùng
+        fromWallet.setBalance(fromWallet.getBalance().subtract(amount));
+        fromWallet.setDailySpent(fromWallet.getDailySpent().add(amount));
+        fromWallet.setMonthlySpent(fromWallet.getMonthlySpent().add(amount));
+        toWallet.setBalance(toWallet.getBalance().add(amount));
         walletRepository.save(fromWallet);
         walletRepository.save(toWallet);
         return "Chuyển tiền thành công";
