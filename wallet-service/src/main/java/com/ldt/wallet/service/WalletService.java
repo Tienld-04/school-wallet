@@ -2,6 +2,7 @@ package com.ldt.wallet.service;
 
 import com.ldt.wallet.dto.request.WalletCreateRequest;
 import com.ldt.wallet.dto.request.WalletTransferRequest;
+import com.ldt.wallet.dto.response.BalanceResponse;
 import com.ldt.wallet.exception.AppException;
 import com.ldt.wallet.exception.ErrorCode;
 import com.ldt.wallet.model.Wallet;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WalletService {
     private final WalletRepository walletRepository;
+
     @Transactional
     public void createWallet(WalletCreateRequest walletCreateRequest) {
         Wallet wallet = new Wallet();
@@ -28,16 +30,17 @@ public class WalletService {
         wallet.setStatus(WalletStatus.ACTIVE);
         walletRepository.save(wallet);
     }
+
     @Transactional
     public String transfer(WalletTransferRequest walletTransferRequest) {
-        if(walletTransferRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0){
+        if (walletTransferRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.INVALID_AMOUNT);
         }
         Wallet fromWallet = walletRepository.findByUserId(walletTransferRequest.getFromUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
         Wallet toWallet = walletRepository.findByUserId(walletTransferRequest.getToUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
-        if(fromWallet.getBalance().compareTo(walletTransferRequest.getAmount()) < 0){
+        if (fromWallet.getBalance().compareTo(walletTransferRequest.getAmount()) < 0) {
             throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
         }
         fromWallet.setBalance(fromWallet.getBalance().subtract(walletTransferRequest.getAmount()));
@@ -47,4 +50,15 @@ public class WalletService {
         return "Chuyển tiền thành công";
     }
 
+    // get balance wallet for user id
+    public BalanceResponse getBalanceByUserId(String userId) {
+        Wallet wallet = walletRepository.findByUserId(UUID.fromString(userId))
+                .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
+        BalanceResponse balanceResponse = BalanceResponse.builder()
+                .balance(wallet.getBalance())
+                .userId(wallet.getUserId())
+                .walletId(wallet.getWalletId())
+                .build();
+        return balanceResponse;
+    }
 }
