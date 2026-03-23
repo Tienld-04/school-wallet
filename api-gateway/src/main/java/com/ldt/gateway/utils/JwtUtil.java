@@ -1,4 +1,4 @@
-package com.ldt.gateway.util;
+package com.ldt.gateway.utils;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,11 +13,12 @@ import java.nio.charset.StandardCharsets;
 public class JwtUtil {
     @Value("${jwt.secret-key}")
     protected String SECRET_KEY;
-     @Bean
+
+    @Bean
     public ReactiveJwtDecoder jwtDecoder() {
         SecretKeySpec key = new SecretKeySpec(
                 SECRET_KEY.getBytes(StandardCharsets.UTF_8),
-                "HmacSHA512"  
+                "HmacSHA512"
         );
         return NimbusReactiveJwtDecoder
                 .withSecretKey(key)

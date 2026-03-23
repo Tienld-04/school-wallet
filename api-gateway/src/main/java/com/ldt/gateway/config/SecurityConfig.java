@@ -17,6 +17,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 public class SecurityConfig {
 
     private final ReactiveJwtDecoder jwtDecoder;
+
     public SecurityConfig(ReactiveJwtDecoder jwtDecoder) {
         this.jwtDecoder = jwtDecoder;
     }
@@ -43,6 +44,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     @Bean
     public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("ADMIN > USER");
