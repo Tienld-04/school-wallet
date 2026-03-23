@@ -21,6 +21,6 @@ management:
     gateway:
       enabled: true
 internal:
-  secret: "${INTERNAL_SECRET:internal-secret}"
+  secret: "${INTERNAL_SECRET}"
 jwt:
-  secret-key: "${JWT_SECRET_KEY:8poI/gBkjYUDph3tSwHX7QucdbRz8GtSimfw/08KNP7pR9qFjHHNcvyvXYEK0Thq}"
+  secret-key: "${JWT_SECRET_KEY}"
