@@ -13,7 +13,8 @@ public enum ErrorCode {
     INSUFFICIENT_BALANCE(1004, "Số dư không đủ", HttpStatus.BAD_REQUEST),
     WALLET_LOCKED(1005, "Ví đã bị khóa", HttpStatus.BAD_REQUEST),
     DAILY_LIMIT_EXCEEDED(1006, "Vượt quá hạn mức chuyển tiền trong ngày", HttpStatus.BAD_REQUEST),
-    MONTHLY_LIMIT_EXCEEDED(1007, "Vượt quá hạn mức chuyển tiền trong tháng", HttpStatus.BAD_REQUEST);
+    MONTHLY_LIMIT_EXCEEDED(1007, "Vượt quá hạn mức chuyển tiền trong tháng", HttpStatus.BAD_REQUEST),
+    INVALID_REQUEST(1008, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST);
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;
         this.code = code;
