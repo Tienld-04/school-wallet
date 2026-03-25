@@ -1,6 +1,8 @@
 package com.ldt.user.service;
 
 import com.ldt.user.dto.response.UserInternalResponse;
+import com.ldt.user.exception.AppException;
+import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.model.User;
 import com.ldt.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -17,7 +19,7 @@ public class InternalUserService {
     private final PasswordEncoder passwordEncoder;
 
     public UserInternalResponse getUserByPhone(String phone_number) {
-        User user = userRepository.findByPhone(phone_number).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByPhone(phone_number).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone());
     }
 
@@ -31,11 +33,11 @@ public class InternalUserService {
     @Transactional
     public void verifyPinByPhone(String phone, String rawPin) {
         User user = userRepository.findByPhone(phone)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
             long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
-            throw new RuntimeException("Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+            throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
         }
 
         if (!passwordEncoder.matches(rawPin, user.getTransactionPinHash())) {
@@ -44,10 +46,10 @@ public class InternalUserService {
             if (attempts >= 5) {
                 user.setPinLockedUntil(LocalDateTime.now().plusMinutes(15));
                 userRepository.save(user);
-                throw new RuntimeException("Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
+                throw new AppException(ErrorCode.PIN_LOCKED, "Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
             }
             userRepository.save(user);
-            throw new RuntimeException("Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
+            throw new AppException(ErrorCode.INVALID_PIN, "Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
         }
 
         user.setPinFailedAttempts(0);

@@ -10,7 +10,8 @@ import com.ldt.user.dto.response.QrVerifyResponse;
 import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.dto.wallet.CreateWalletRequest;
-import com.ldt.user.enums.QrCodeType;
+import com.ldt.user.exception.AppException;
+import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.mapper.UserMapper;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
@@ -49,10 +50,10 @@ public class UserService {
     public void createUser(UserCreateRequest userCreateRequest) {
 
         if (userRepository.existsByPhone(userCreateRequest.getPhone())) {
-            throw new RuntimeException("Số điện thoại đã được đăng ký");
+            throw new AppException(ErrorCode.PHONE_ALREADY_EXISTS);
         }
         if (userRepository.existsByEmail(userCreateRequest.getEmail())) {
-            throw new RuntimeException("Email đã được đăng ký");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         try {
             User user = new User();
@@ -72,8 +73,10 @@ public class UserService {
                     createWalletRequest,
                     Void.class
             );
+        } catch (AppException ae) {
+            throw ae;
         } catch (Exception e) {
-            throw new RuntimeException("Đăng ký thất bại: " + e.getMessage());
+            throw new AppException(ErrorCode.REGISTRATION_FAILED, "Đăng ký thất bại: " + e.getMessage());
         }
 //        User user = new User();
 //        user.setFullName(userCreateRequest.getFullName());
@@ -111,9 +114,9 @@ public class UserService {
      */
     public RecipientResponse getRecipientByPhone(String phone) {
         User user = userRepository.findByPhone(phone)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với SĐT: " + phone));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         if (user.getStatus() == UserStatus.LOCKED) {
-            throw new RuntimeException("Tài khoản người nhận đã bị khóa");
+            throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
         return new RecipientResponse(user.getFullName(), user.getPhone());
     }
@@ -128,11 +131,11 @@ public class UserService {
     public void verifyTransactionPin(String rawPin) {
         String userId = UserContext.getUserId();
         User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         // Kiểm tra tài khoản có đang bị khóa không
         if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
             long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
-            throw new RuntimeException("Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+            throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
         }
         // Xác thực PIN
         if (!passwordEncoder.matches(rawPin, user.getTransactionPinHash())) {
@@ -141,10 +144,10 @@ public class UserService {
             if (attempts >= 5) {
                 user.setPinLockedUntil(LocalDateTime.now().plusMinutes(15));
                 userRepository.save(user);
-                throw new RuntimeException("Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
+                throw new AppException(ErrorCode.PIN_LOCKED, "Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
             }
             userRepository.save(user);
-            throw new RuntimeException("Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
+            throw new AppException(ErrorCode.INVALID_PIN, "Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
         }
         user.setPinFailedAttempts(0);
         user.setPinLockedUntil(null);
@@ -159,7 +162,7 @@ public class UserService {
     public QrTransferResponse generateMyQr() {
         String userId = UserContext.getUserId();
         User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         String phone = user.getPhone();
         String name  = user.getFullName();
         String sig = hmacSha512(phone + "|" + name, qrSecretKey);
@@ -177,7 +180,7 @@ public class UserService {
             byte[] rawHmac = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(rawHmac);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi tạo chữ ký QR", e);
+            throw new AppException(ErrorCode.QR_SIGN_ERROR);
         }
     }
     /**
@@ -188,7 +191,7 @@ public class UserService {
     public QrTransferResponse generateDynamicQr(BigDecimal amount, String description) {
         String userId = UserContext.getUserId();
         User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         String phone = user.getPhone();
         String name  = user.getFullName();
         String desc  = (description != null) ? description : "";
@@ -211,7 +214,7 @@ public class UserService {
             JsonNode node = mapper.readTree(request.getQrContent());
             String type = node.path("type").asText();
             if (!"SCHOOL_WALLET_STATIC".equals(type) && !"SCHOOL_WALLET_DYNAMIC".equals(type)) {
-                throw new RuntimeException("Mã QR không thuộc hệ thống School Wallet");
+                throw new AppException(ErrorCode.QR_INVALID_SYSTEM);
             }
             String phone = node.path("phone").asText();
             String name  = node.path("name").asText();
@@ -224,12 +227,12 @@ public class UserService {
                 long expiredAt    = node.path("expiredAt").asLong();
 
                 if (System.currentTimeMillis() > expiredAt) {
-                    throw new RuntimeException("Mã QR này đã hết hạn");
+                    throw new AppException(ErrorCode.QR_EXPIRED);
                 }
                 String data = phone + "|" + name + "|" + amountStr + "|" + desc + "|" + expiredAt;
                 expectedSig = hmacSha512(data, qrSecretKey);
                 if (!expectedSig.equals(sig)) {
-                    throw new RuntimeException("Mã QR không hợp lệ hoặc đã bị sửa đổi số dư!");
+                    throw new AppException(ErrorCode.QR_INVALID);
                 }
                 return QrVerifyResponse.builder()
                         .phone(phone)
@@ -242,17 +245,17 @@ public class UserService {
                 String data = phone + "|" + name;
                 expectedSig = hmacSha512(data, qrSecretKey);
                 if (!expectedSig.equals(sig)) {
-                    throw new RuntimeException("Mã QR không hợp lệ hoặc đã bị giả mạo!");
+                    throw new AppException(ErrorCode.QR_INVALID);
                 }
                 return QrVerifyResponse.builder()
                         .phone(phone)
                         .name(name)
                         .build();
             }
-        } catch (RuntimeException re) {
-            throw re;
+        } catch (AppException ae) {
+            throw ae;
         } catch (Exception e) {
-            throw new RuntimeException("Định dạng QR không đúng", e);
+            throw new AppException(ErrorCode.QR_FORMAT_ERROR);
         }
     }
 
