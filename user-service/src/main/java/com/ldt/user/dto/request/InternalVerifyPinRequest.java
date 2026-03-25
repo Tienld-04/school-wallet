@@ -1,5 +1,6 @@
 package com.ldt.user.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +11,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class InternalVerifyPinRequest {
+    @NotBlank(message = "Số điện thoại không được để trống")
     private String phone;
+
+    @NotBlank(message = "Mã PIN không được để trống")
     private String pin;
 }
