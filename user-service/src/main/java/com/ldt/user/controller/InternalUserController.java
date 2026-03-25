@@ -4,6 +4,7 @@ import com.ldt.user.dto.request.InternalVerifyPinRequest;
 import com.ldt.user.dto.response.UserInternalResponse;
 import com.ldt.user.service.AuthService;
 import com.ldt.user.service.InternalUserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,7 @@ public class InternalUserController {
      * Chỉ được gọi nội bộ từ transaction-service (yêu cầu X-Internal-Secret).
      */
     @PostMapping("/verify-pin")
-    public ResponseEntity<Void> verifyPin(@RequestBody InternalVerifyPinRequest request) {
+    public ResponseEntity<Void> verifyPin(@Valid @RequestBody InternalVerifyPinRequest request) {
         internalUserService.verifyPinByPhone(request.getPhone(), request.getPin());
         return ResponseEntity.ok().build();
     }
