@@ -2,6 +2,7 @@ package com.ldt.user.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ldt.user.context.UserContext;
 import com.ldt.user.dto.request.QrVerifyRequest;
 import com.ldt.user.dto.request.UserCreateRequest;
@@ -39,6 +40,7 @@ public class UserService {
     private final RestTemplate restTemplate;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -166,12 +168,16 @@ public class UserService {
         String phone = user.getPhone();
         String name  = user.getFullName();
         String sig = hmacSha512(phone + "|" + name, qrSecretKey);
-        //String qrType = String.format(String.valueOf(QrCodeType.SCHOOL_WALLET_STATIC));
-        String qrContent = String.format(
-                "{\"type\":\"SCHOOL_WALLET_STATIC\",\"phone\":\"%s\",\"name\":\"%s\",\"sig\":\"%s\"}",
-                phone, name, sig
-        );
-        return new QrTransferResponse(qrContent);
+        try {
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("type", "SCHOOL_WALLET_STATIC");
+            node.put("phone", phone);
+            node.put("name", name);
+            node.put("sig", sig);
+            return new QrTransferResponse(objectMapper.writeValueAsString(node));
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.QR_SIGN_ERROR);
+        }
     }
     private String hmacSha512(String data, String secret) {
         try {
@@ -195,14 +201,23 @@ public class UserService {
         String phone = user.getPhone();
         String name  = user.getFullName();
         String desc  = (description != null) ? description : "";
-        long expiredAt = System.currentTimeMillis() + 60 * 1000;
-        String data = phone + "|" + name + "|" + amount.toPlainString() + "|" + desc + "|" + expiredAt;
+        String amountStr = amount.toPlainString();
+        long expiredAt = System.currentTimeMillis() + 5 * 60 * 1000;
+        String data = phone + "|" + name + "|" + amountStr + "|" + desc + "|" + expiredAt;
         String sig  = hmacSha512(data, qrSecretKey);
-        String qrContent = String.format(
-                "{\"type\":\"SCHOOL_WALLET_DYNAMIC\",\"phone\":\"%s\",\"name\":\"%s\",\"amount\":%s,\"description\":\"%s\",\"expiredAt\":%d,\"sig\":\"%s\"}",
-                phone, name, amount.toPlainString(), desc, expiredAt, sig
-        );
-        return new QrTransferResponse(qrContent);
+        try {
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("type", "SCHOOL_WALLET_DYNAMIC");
+            node.put("phone", phone);
+            node.put("name", name);
+            node.put("amount", amountStr);
+            node.put("description", desc);
+            node.put("expiredAt", expiredAt);
+            node.put("sig", sig);
+            return new QrTransferResponse(objectMapper.writeValueAsString(node));
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.QR_SIGN_ERROR);
+        }
     }
 
     /**
@@ -210,8 +225,7 @@ public class UserService {
      */
     public QrVerifyResponse verifyQr(QrVerifyRequest request) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode node = mapper.readTree(request.getQrContent());
+            JsonNode node = objectMapper.readTree(request.getQrContent());
             String type = node.path("type").asText();
             if (!"SCHOOL_WALLET_STATIC".equals(type) && !"SCHOOL_WALLET_DYNAMIC".equals(type)) {
                 throw new AppException(ErrorCode.QR_INVALID_SYSTEM);
