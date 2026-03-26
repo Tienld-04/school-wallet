@@ -1,6 +1,6 @@
 package com.ldt.transaction.config;
 
-import com.ldt.transaction.context.TransactionContext;
+import com.ldt.transaction.context.UserContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,14 +33,14 @@ public class ApiSecurityFilter extends OncePerRequestFilter {
         String role = request.getHeader("X-User-Role");
 
         if (userId != null) {
-            TransactionContext.setUserId(userId);
-            TransactionContext.setUserPhone(userPhone);
-            TransactionContext.setRole(role);
+            UserContext.setUserId(userId);
+            UserContext.setUserPhone(userPhone);
+            UserContext.setRole(role);
         }
         try {
             filterChain.doFilter(request, response);
         } finally {
-            TransactionContext.clear();
+            UserContext.clear();
         }
     }
 }
