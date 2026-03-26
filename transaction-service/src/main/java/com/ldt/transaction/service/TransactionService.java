@@ -5,6 +5,8 @@ import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.transfer.WalletTransferRequest;
 import com.ldt.transaction.dto.user.InternalVerifyPinRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
+import com.ldt.transaction.exception.AppException;
+import com.ldt.transaction.exception.ErrorCode;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
@@ -18,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,7 @@ public class TransactionService {
     public TransactionResponse transfer(TransferRequest transferRequest, String fromPhone) {
 
         if (fromPhone.equals(transferRequest.getToPhoneNumber())) {
-            throw new RuntimeException("Bạn không thể tự chuyển tiền cho chính mình!");
+            throw new AppException(ErrorCode.SELF_TRANSFER);
         }
         // Xác thực PIN giao dịch
         // fromPhone lấy từ header
@@ -47,14 +48,14 @@ public class TransactionService {
                     Void.class
             );
         } catch (HttpClientErrorException e) {
-            throw new RuntimeException(e.getResponseBodyAsString());
+            throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED, e.getResponseBodyAsString());
         } catch (Exception e) {
-            throw new RuntimeException("Không thể xác thực PIN: " + e.getMessage());
+            throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED, "Không thể xác thực PIN: " + e.getMessage());
         }
 
         //
         if (transactionRepository.existsByRequestId(transferRequest.getRequestId())) {
-            throw new RuntimeException("Giao dịch đang được xử lí");
+            throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
         }
         //
         ResponseEntity<UserInternalResponse> responseFromUser =
@@ -72,7 +73,7 @@ public class TransactionService {
         UserInternalResponse toUser = responseToUser.getBody();
         //
         if (toUser.getStatus().equals("LOCKED")) {
-            throw new RuntimeException("Ví bị khóa. Vui lòng nhập lại số điện thoại");
+            throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
         Transaction transaction = new Transaction();
         transaction.setRequestId(transferRequest.getRequestId());
