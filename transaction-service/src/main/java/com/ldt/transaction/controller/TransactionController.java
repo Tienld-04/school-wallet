@@ -3,6 +3,7 @@ package com.ldt.transaction.controller;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.service.TransactionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,7 @@ public class TransactionController {
 
     @PostMapping
     public ResponseEntity<TransactionResponse> transfer(
-            @RequestBody TransferRequest transferRequest,
+            @Valid @RequestBody TransferRequest transferRequest,
             @RequestHeader("X-User-Phone") String fromPhone) {
         return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone));
     }

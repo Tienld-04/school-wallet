@@ -1,7 +1,7 @@
 package com.ldt.transaction.context;
 
 
-public class TransactionContext {
+public class UserContext {
     private static final ThreadLocal<String> userId = new ThreadLocal<>();
     private static final ThreadLocal<String> userPhone = new ThreadLocal<>();
     private static final ThreadLocal<String> role = new ThreadLocal<>();
