@@ -17,6 +17,14 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  activemq:
+    broker-url: "tcp://localhost:61616"
+    user: admin
+    password: admin
+    in-memory: false
+  jms:
+    pub-sub-domain: true
+
 service:
   wallet-service:
     url: "http://localhost:8082"
