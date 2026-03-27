@@ -2,6 +2,7 @@ package com.ldt.transaction.controller;
 
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
+import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,21 @@ public class TransactionController {
     public ResponseEntity<TransactionResponse> transfer(
             @Valid @RequestBody TransferRequest transferRequest,
             @RequestHeader("X-User-Phone") String fromPhone) {
-        return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone));
+        return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone, TransactionType.TRANSFER));
     }
+
+    @PostMapping("/payment")
+    public ResponseEntity<TransactionResponse> payment(
+            @Valid @RequestBody TransferRequest transferRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone, TransactionType.PAYMENT));
+    }
+
+    @PostMapping("/topup")
+    public ResponseEntity<TransactionResponse> topup(
+            @Valid @RequestBody TransferRequest transferRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone, TransactionType.TOPUP));
+    }
+
 }

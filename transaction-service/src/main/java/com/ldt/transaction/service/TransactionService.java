@@ -39,7 +39,7 @@ public class TransactionService {
     private String userServiceUrl;
 
     @Transactional
-    public TransactionResponse transfer(TransferRequest transferRequest, String fromPhone) {
+    public TransactionResponse transfer(TransferRequest transferRequest, String fromPhone, TransactionType transactionType) {
 
         if (fromPhone.equals(transferRequest.getToPhoneNumber())) {
             throw new AppException(ErrorCode.SELF_TRANSFER);
@@ -90,7 +90,7 @@ public class TransactionService {
         transaction.setToFullName(toUser.getFullName());
         transaction.setAmount(transferRequest.getAmount());
         transaction.setDescription(transferRequest.getDescription());
-        transaction.setTransactionType(TransactionType.TRANSFER);
+        transaction.setTransactionType(transactionType);
         transaction.setStatus(TransactionStatus.PENDING);
         transaction = transactionRepository.save(transaction);
         //
