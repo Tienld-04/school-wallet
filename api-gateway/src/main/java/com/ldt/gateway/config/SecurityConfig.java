@@ -38,7 +38,7 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/public/**"
                         ).permitAll()
-
+                        .pathMatchers("/api/v1/transactions/topup").hasAuthority("ADMIN")
                         .anyExchange().authenticated()
                 );
 
