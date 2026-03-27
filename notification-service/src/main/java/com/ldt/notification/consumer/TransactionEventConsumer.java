@@ -12,20 +12,20 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class TransactionNotificationConsumer {
+public class TransactionEventConsumer {
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
     @JmsListener(destination = "transaction-notification", subscription = "notification-sub", containerFactory = "jmsListenerContainerFactory")
-    public void onTransactionNotification(String message) {
+    public void onTransactionEvent(String message) {
         try {
             TransactionNotificationEvent event = objectMapper.readValue(message, TransactionNotificationEvent.class);
-            log.info("Received transaction notification: {}", event.getTransactionId());
+            log.info("Received transaction event: {}", event.getTransactionId());
 
             notificationService.notifySender(event);
             notificationService.notifyReceiver(event);
         } catch (JsonProcessingException e) {
-            log.error("Failed to deserialize notification event: {}", e.getMessage());
+            log.error("Failed to deserialize transaction event: {}", e.getMessage());
         }
     }
 }
