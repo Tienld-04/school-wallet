@@ -11,7 +11,7 @@ FE gửi **1 request duy nhất** đến API Gateway, hệ thống tự động 
 ```
 FE (có JWT)
   │
-  │  POST /api/v1/transactions
+  │  POST /api/v1/transactions/transfer
   │  Header: Authorization: Bearer <jwt>
   │  Body: { requestId, toPhoneNumber, amount, description, pin }
   │

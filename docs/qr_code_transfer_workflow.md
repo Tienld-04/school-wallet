@@ -81,7 +81,7 @@ Người gửi B nhập:
 B nhập mã PIN giao dịch
         │
         ▼
-FE gọi: POST /api/v1/transactions
+FE gọi: POST /api/v1/transactions/transfer
         Header: Authorization: Bearer <JWT của B>
         Body:
         {
@@ -110,7 +110,7 @@ FE hiển thị màn hình kết quả giao dịch
 |-----|---------|-------|
 | `GET /api/v1/users/my-qr` | user-service | Tạo QR content có chữ ký HMAC_HS512 |
 | `POST /api/v1/users/qr/verify` | user-service | Xác minh chữ ký QR, trả về thông tin người nhận |
-| `POST /api/v1/transactions` | transaction-service | Thực hiện chuyển tiền (flow như bình thường) |
+| `POST /api/v1/transactions/transfer` | transaction-service | Thực hiện chuyển tiền (flow như bình thường) |
 
 ---
 
