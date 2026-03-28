@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class TransactionController {
     private final TransactionService transactionService;
 
-    @PostMapping
+    @PostMapping("/transfer")
     public ResponseEntity<TransactionResponse> transfer(
             @Valid @RequestBody TransferRequest transferRequest,
             @RequestHeader("X-User-Phone") String fromPhone) {
