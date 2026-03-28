@@ -13,3 +13,8 @@ spring:
       # false = Queue
       # true  = Topic
       pub-sub-domain: true
+
+sendgrid:
+  api-key: "${SENDGRID_API_KEY}"
+  from-email: "${SENDGRID_FROM_EMAIL}"
+  from-name: "School Wallet"
