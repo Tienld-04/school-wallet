@@ -11,11 +11,13 @@ public class UserInternalResponse {
     private UserStatus status;
     private String fullName;
     private String phone;
+    private String email;
 
-    public UserInternalResponse(UUID userId, UserStatus status, String fullName, String phone) {
+    public UserInternalResponse(UUID userId, UserStatus status, String fullName, String phone,  String email) {
         this.userId = userId;
         this.status = status;
         this.fullName = fullName;
         this.phone = phone;
+        this.email = email;
     }
 }

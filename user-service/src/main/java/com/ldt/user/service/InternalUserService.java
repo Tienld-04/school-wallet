@@ -20,7 +20,7 @@ public class InternalUserService {
 
     public UserInternalResponse getUserByPhone(String phone_number) {
         User user = userRepository.findByPhone(phone_number).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone());
+        return new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone(),  user.getEmail());
     }
 
     /**
