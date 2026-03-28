@@ -51,8 +51,14 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                             .retrieve()
                             .toBodilessEntity()
                             .flatMap(response -> {
-                                // Token ok → add header + forward
+                                // Token ok → strip headers cũ từ client, gắn giá trị thật
                                 ServerHttpRequest modified = exchange.getRequest().mutate()
+                                        .headers(h -> {
+                                            h.remove("X-Internal-Secret");
+                                            h.remove("X-User-Id");
+                                            h.remove("X-User-Role");
+                                            h.remove("X-User-Phone");
+                                        })
                                         .header("X-Internal-Secret", internalSecret)
                                         .header("X-User-Id", userId)
                                         .header("X-User-Role", role)
