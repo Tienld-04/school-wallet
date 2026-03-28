@@ -10,4 +10,5 @@ public class UserInternalResponse {
     private String status;
     private String fullName;
     private String phone;
+    private String email;
 }

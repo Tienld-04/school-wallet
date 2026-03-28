@@ -16,9 +16,11 @@ public class TransactionNotificationEvent implements Serializable {
     private UUID fromUserId;
     private String fromFullName;
     private String fromPhone;
+    private String fromEmail;
     private UUID toUserId;
     private String toFullName;
     private String toPhone;
+    private String toEmail;
     private BigDecimal amount;
     private String description;
     private String transactionType;
