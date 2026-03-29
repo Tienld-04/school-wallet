@@ -1,17 +1,28 @@
 server:
   port: 8082
+  tomcat:
+    threads:
+      max: 300
+      min-spare: 20
+    accept-count: 200
 spring:
   application:
     name: wallet-service
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/wallet_service}
-    username: ${DB_USERNAME:Tienld}
-    password: ${DB_PASSWORD:123456}
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/wallet_service}"
+    username: "${DB_USERNAME:Tienld}"
+    password: "${DB_PASSWORD:123456}"
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 5000
+      idle-timeout: 300000
+      max-lifetime: 600000
   jpa:
     hibernate:
       ddl-auto: update   # validate | update | create | create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
