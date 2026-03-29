@@ -13,7 +13,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "transactions", indexes = {
+        @Index(name = "idx_from_user_id", columnList = "from_user_id"),
+        @Index(name = "idx_to_user_id", columnList = "to_user_id"),
+        @Index(name = "idx_created_at", columnList = "created_at")
+})
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
