@@ -10,7 +10,7 @@ public enum ErrorCode {
     INVALID_REQUEST(1002, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
     SELF_TRANSFER(2001, "Bạn không thể tự chuyển tiền cho chính mình!", HttpStatus.BAD_REQUEST),
     PIN_VERIFICATION_FAILED(2002, "Không thể xác thực PIN", HttpStatus.BAD_REQUEST),
-    DUPLICATE_TRANSACTION(2003, "Giao dịch đang được xử lí", HttpStatus.CONFLICT),
+    DUPLICATE_TRANSACTION(2003, "Giao dịch đang được xử lý, vui lòng chờ", HttpStatus.CONFLICT),
     RECIPIENT_LOCKED(2004, "Ví bị khóa. Vui lòng nhập lại số điện thoại", HttpStatus.BAD_REQUEST),
     TRANSFER_FAILED(2005, "Chuyển tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
     ;

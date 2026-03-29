@@ -14,7 +14,8 @@ import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.producer.TransactionEventProducer;
 import com.ldt.transaction.repository.TransactionRepository;
-import jakarta.transaction.Transactional;
+import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class TransactionService {
     @Value("${user-service.url}")
     private String userServiceUrl;
 
-    @Transactional
+    @Transactional(noRollbackFor = AppException.class)
     public TransactionResponse transfer(TransferRequest transferRequest, String fromPhone, TransactionType transactionType) {
 
         if (fromPhone.equals(transferRequest.getToPhoneNumber())) {
@@ -57,9 +58,13 @@ public class TransactionService {
         } catch (Exception e) {
             throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED, "Không thể xác thực PIN: " + e.getMessage());
         }
-
         //
-        if (transactionRepository.existsByRequestId(transferRequest.getRequestId())) {
+        Optional<Transaction> existingTransaction = transactionRepository.findByRequestId(transferRequest.getRequestId());
+        if (existingTransaction.isPresent()) {
+            Transaction existing = existingTransaction.get();
+            if (existing.getStatus() == TransactionStatus.SUCCESS || existing.getStatus() == TransactionStatus.FAILED) {
+                return transactionMapper.toTransactionResponse(existing);
+            }
             throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
         }
         //
@@ -105,10 +110,14 @@ public class TransactionService {
                     Void.class
             );
             transaction.setStatus(TransactionStatus.SUCCESS);
+        } catch (HttpClientErrorException ex) {
+            transaction.setStatus(TransactionStatus.FAILED);
+            transactionRepository.save(transaction);
+            throw new AppException(ErrorCode.TRANSFER_FAILED, ex.getResponseBodyAsString());
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILED);
-            transaction = transactionRepository.save(transaction);
-            return transactionMapper.toTransactionResponse(transaction);
+            transactionRepository.save(transaction);
+            throw new AppException(ErrorCode.TRANSFER_FAILED, "Lỗi hệ thống: " + ex.getMessage());
         }
         transaction = transactionRepository.save(transaction);
 
