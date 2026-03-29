@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/internal/users")
 @RequiredArgsConstructor
@@ -20,6 +22,11 @@ public class InternalUserController {
     @GetMapping("/{phone_number}")
     public ResponseEntity<UserInternalResponse> getUserByPhone(@PathVariable String phone_number) {
         return ResponseEntity.ok(internalUserService.getUserByPhone(phone_number));
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<List<UserInternalResponse>> getUsersByPhones(@RequestBody List<String> phones) {
+        return ResponseEntity.ok(internalUserService.getUsersByPhones(phones));
     }
 
     @GetMapping("/validate")

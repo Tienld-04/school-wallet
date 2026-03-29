@@ -7,10 +7,12 @@ import com.ldt.user.model.User;
 import com.ldt.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,9 +20,17 @@ public class InternalUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Cacheable(value = "users", key = "#phone_number")
     public UserInternalResponse getUserByPhone(String phone_number) {
         User user = userRepository.findByPhone(phone_number).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone(),  user.getEmail());
+    }
+
+    public List<UserInternalResponse> getUsersByPhones(List<String> phones) {
+        List<User> users = userRepository.findByPhoneIn(phones);
+        return users.stream()
+                .map(user -> new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone(), user.getEmail()))
+                .toList();
     }
 
     /**
