@@ -14,7 +14,14 @@ import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.producer.TransactionEventProducer;
 import com.ldt.transaction.repository.TransactionRepository;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,8 +52,16 @@ public class TransactionService {
         if (fromPhone.equals(transferRequest.getToPhoneNumber())) {
             throw new AppException(ErrorCode.SELF_TRANSFER);
         }
-        // Xác thực PIN giao dịch
-        // fromPhone lấy từ header
+        // 1. Check duplicate
+        Optional<Transaction> existingTransaction = transactionRepository.findByRequestId(transferRequest.getRequestId());
+        if (existingTransaction.isPresent()) {
+            Transaction existing = existingTransaction.get();
+            if (existing.getStatus() == TransactionStatus.SUCCESS || existing.getStatus() == TransactionStatus.FAILED) {
+                return transactionMapper.toTransactionResponse(existing);
+            }
+            throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
+        }
+        // 2. Xác thực PIN giao dịch
         try {
             restTemplate.postForEntity(
                     userServiceUrl + "/internal/users/verify-pin",
@@ -58,29 +73,25 @@ public class TransactionService {
         } catch (Exception e) {
             throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED, "Không thể xác thực PIN: " + e.getMessage());
         }
-        //
-        Optional<Transaction> existingTransaction = transactionRepository.findByRequestId(transferRequest.getRequestId());
-        if (existingTransaction.isPresent()) {
-            Transaction existing = existingTransaction.get();
-            if (existing.getStatus() == TransactionStatus.SUCCESS || existing.getStatus() == TransactionStatus.FAILED) {
-                return transactionMapper.toTransactionResponse(existing);
-            }
-            throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
+        // 3. Lấy thông tin 2 user trong 1 request
+        List<String> phones = List.of(fromPhone, transferRequest.getToPhoneNumber());
+        ResponseEntity<List<UserInternalResponse>> batchResponse = restTemplate.exchange(
+                userServiceUrl + "/internal/users/batch",
+                HttpMethod.POST,
+                new HttpEntity<>(phones),
+                new ParameterizedTypeReference<>() {}
+        );
+        List<UserInternalResponse> users = batchResponse.getBody();
+        if (users == null || users.size() < 2) {
+            throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
         }
-        //
-        ResponseEntity<UserInternalResponse> responseFromUser =
-                restTemplate.getForEntity(
-                        userServiceUrl + "/internal/users/" + fromPhone,
-                        UserInternalResponse.class
-                );
-        UserInternalResponse fromUser = responseFromUser.getBody();
-        //
-        ResponseEntity<UserInternalResponse> responseToUser =
-                restTemplate.getForEntity(
-                        userServiceUrl + "/internal/users/" + transferRequest.getToPhoneNumber(),
-                        UserInternalResponse.class
-                );
-        UserInternalResponse toUser = responseToUser.getBody();
+        Map<String, UserInternalResponse> userMap = users.stream()
+                .collect(Collectors.toMap(UserInternalResponse::getPhone, Function.identity()));
+        UserInternalResponse fromUser = userMap.get(fromPhone);
+        UserInternalResponse toUser = userMap.get(transferRequest.getToPhoneNumber());
+        if (fromUser == null || toUser == null) {
+            throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
+        }
         //
         if (toUser.getStatus().equals("LOCKED")) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
@@ -97,7 +108,14 @@ public class TransactionService {
         transaction.setDescription(transferRequest.getDescription());
         transaction.setTransactionType(transactionType);
         transaction.setStatus(TransactionStatus.PENDING);
-        transaction = transactionRepository.save(transaction);
+        try {
+            transaction = transactionRepository.save(transaction);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Race condition: 2 request cùng requestId đến đồng thời
+            Transaction existing = transactionRepository.findByRequestId(transferRequest.getRequestId())
+                    .orElseThrow(() -> new AppException(ErrorCode.DUPLICATE_TRANSACTION));
+            return transactionMapper.toTransactionResponse(existing);
+        }
         //
         try {
             WalletTransferRequest walletReq = new WalletTransferRequest();
