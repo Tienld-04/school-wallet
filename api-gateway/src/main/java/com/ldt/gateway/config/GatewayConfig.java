@@ -17,6 +17,9 @@ public class GatewayConfig {
     @Value("${service.url.wallet-service}")
     private String walletServiceUrl;
 
+    @Value("${service.url.notification-service}")
+    private String notificationServiceUrl;
+
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
@@ -45,6 +48,13 @@ public class GatewayConfig {
                                 .rewritePath("/api/v1/wallets/(?<segment>.*)", "/api/wallets/${segment}")
                         )
                         .uri(walletServiceUrl))
+                // Route cho Notification Service (OTP)
+                .route("notification-service", r -> r
+                        .path("/api/v1/otp/**")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/otp/(?<segment>.*)", "/api/otp/${segment}")
+                        )
+                        .uri(notificationServiceUrl))
                 .build();
     }
 }
