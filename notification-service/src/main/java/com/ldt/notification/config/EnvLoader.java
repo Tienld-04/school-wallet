@@ -2,7 +2,7 @@ package com.ldt.notification.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
-public class EnvConfig {
+public class EnvLoader {
     public static void load() {
         Dotenv dotenv = Dotenv.configure()
                 .ignoreIfMissing()
