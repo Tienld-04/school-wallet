@@ -32,7 +32,7 @@ public class NotificationService {
             String subject = "School Wallet - Giao dịch chuyển tiền thành công";
             String html = buildTransactionEmailHtml(
                     event.getFromFullName(),
-                    "Chuyển tiền",
+                    event.getTransactionType(),
                     "-" + formatAmount(event) + " VND",
                     event.getToFullName(),
                     event.getToPhone(),
@@ -60,7 +60,7 @@ public class NotificationService {
             String subject = "School Wallet - Bạn nhận được tiền";
             String html = buildTransactionEmailHtml(
                     event.getToFullName(),
-                    "Nhận tiền",
+                    event.getTransactionType(),
                     "+" + formatAmount(event) + " VND",
                     event.getFromFullName(),
                     event.getFromPhone(),
@@ -137,12 +137,12 @@ public class NotificationService {
                                 <td style="font-size:14px;text-align:right;">%s</td>
                               </tr>
                             </table>
-                            <p style="font-size:13px;color:#999;">Nếu bạn không thực hiện giao dịch này, vui lòng liên hệ hỗ trợ ngay.</p>
+                            <p style="font-size:13px;color:#999;">Nếu bạn không thực hiện giao dịch này, vui lòng liên hệ 0936733881 để được hỗ trợ ngay.</p>
                           </td>
                         </tr>
                         <tr>
                           <td style="background:#f4f4f4;padding:16px;text-align:center;">
-                            <p style="font-size:12px;color:#aaa;margin:0;">© 2025 School Wallet. All rights reserved.</p>
+                            <p style="font-size:12px;color:#aaa;margin:0;">School Wallet. TienDev.</p>
                           </td>
                         </tr>
                       </table>
