@@ -13,6 +13,7 @@ public enum ErrorCode {
     DUPLICATE_TRANSACTION(2003, "Giao dịch đang được xử lý, vui lòng chờ", HttpStatus.CONFLICT),
     RECIPIENT_LOCKED(2004, "Ví bị khóa. Vui lòng nhập lại số điện thoại", HttpStatus.BAD_REQUEST),
     TRANSFER_FAILED(2005, "Chuyển tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
+    TRANSACTION_NOT_FOUND(2006, "Không tìm thấy giao dịch", HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {

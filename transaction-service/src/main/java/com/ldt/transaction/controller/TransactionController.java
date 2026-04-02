@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor
@@ -45,6 +47,12 @@ public class TransactionController {
             @RequestBody TransactionHistoryRequest request) {
         String userId = UserContext.getUserId();
         return ResponseEntity.ok(transactionService.getTransactionHistory(userId, request.getPage(), request.getSize()));
+    }
+
+    @GetMapping("/{transactionId}")
+    public ResponseEntity<TransactionHistoryResponse> getTransactionDetail(
+            @PathVariable UUID transactionId) {
+        return ResponseEntity.ok(transactionService.getTransactionDetail(transactionId));
     }
 
 }

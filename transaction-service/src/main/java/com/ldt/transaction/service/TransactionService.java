@@ -202,4 +202,24 @@ public class TransactionService {
                 .totalPages(transactionPage.getTotalPages())
                 .build();
     }
+
+    public TransactionHistoryResponse getTransactionDetail(UUID transactionId) {
+        Transaction tx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
+
+        return TransactionHistoryResponse.builder()
+                .transactionId(tx.getTransactionId())
+                .fromUserId(tx.getFromUserId())
+                .fromFullName(tx.getFromFullName())
+                .fromPhone(tx.getFromPhone())
+                .toUserId(tx.getToUserId())
+                .toFullName(tx.getToFullName())
+                .toPhone(tx.getToPhone())
+                .amount(tx.getAmount())
+                .description(tx.getDescription())
+                .transactionType(tx.getTransactionType().name())
+                .status(tx.getStatus().name())
+                .createdAt(tx.getCreatedAt())
+                .build();
+    }
 }
