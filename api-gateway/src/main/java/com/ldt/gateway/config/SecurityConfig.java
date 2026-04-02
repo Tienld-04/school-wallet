@@ -36,6 +36,7 @@ public class SecurityConfig {
                                 "/api/v1/users/register",
                                 "/api/v1/users/forgot-password",
                                 "/api/v1/otp/**",
+                                "/ws/**",
                                 "/actuator/**",
                                 "/public/**"
                         ).permitAll()

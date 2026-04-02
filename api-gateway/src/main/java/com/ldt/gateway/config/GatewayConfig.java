@@ -55,6 +55,10 @@ public class GatewayConfig {
                                 .rewritePath("/api/v1/otp/(?<segment>.*)", "/api/otp/${segment}")
                         )
                         .uri(notificationServiceUrl))
+                // WebSocket route cho notification real-time
+                .route("notification-ws", r -> r
+                        .path("/ws/**")
+                        .uri(notificationServiceUrl))
                 .build();
     }
 }
