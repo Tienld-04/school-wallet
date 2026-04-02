@@ -1,5 +1,7 @@
 package com.ldt.transaction.service;
 
+import com.ldt.transaction.dto.response.PageResponse;
+import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.event.TransactionNotificationEvent;
@@ -17,9 +19,14 @@ import com.ldt.transaction.repository.TransactionRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,5 +171,35 @@ public class TransactionService {
         });
 
         return transactionMapper.toTransactionResponse(transaction);
+    }
+
+    public PageResponse<TransactionHistoryResponse> getTransactionHistory(String userId, int page, int size) {
+        UUID userUUID = UUID.fromString(userId);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Transaction> transactionPage = transactionRepository.findByFromUserIdOrToUserId(userUUID, userUUID, pageable);
+        List<TransactionHistoryResponse> content = transactionPage.getContent().stream()
+                .map(tx -> TransactionHistoryResponse.builder()
+                        .transactionId(tx.getTransactionId())
+                        .fromUserId(tx.getFromUserId())
+                        .fromFullName(tx.getFromFullName())
+                        .fromPhone(tx.getFromPhone())
+                        .toUserId(tx.getToUserId())
+                        .toFullName(tx.getToFullName())
+                        .toPhone(tx.getToPhone())
+                        .amount(tx.getAmount())
+                        .description(tx.getDescription())
+                        .transactionType(tx.getTransactionType().name())
+                        .status(tx.getStatus().name())
+                        .createdAt(tx.getCreatedAt())
+                        .build())
+                .toList();
+
+        return PageResponse.<TransactionHistoryResponse>builder()
+                .content(content)
+                .page(transactionPage.getNumber())
+                .size(transactionPage.getSize())
+                .totalElements(transactionPage.getTotalElements())
+                .totalPages(transactionPage.getTotalPages())
+                .build();
     }
 }

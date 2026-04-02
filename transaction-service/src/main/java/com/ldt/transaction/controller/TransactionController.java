@@ -1,5 +1,9 @@
 package com.ldt.transaction.controller;
 
+import com.ldt.transaction.context.UserContext;
+import com.ldt.transaction.dto.response.PageResponse;
+import com.ldt.transaction.dto.request.TransactionHistoryRequest;
+import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.model.TransactionType;
@@ -34,6 +38,13 @@ public class TransactionController {
             @Valid @RequestBody TransferRequest transferRequest,
             @RequestHeader("X-User-Phone") String fromPhone) {
         return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone, TransactionType.TOPUP));
+    }
+
+    @PostMapping("/history")
+    public ResponseEntity<PageResponse<TransactionHistoryResponse>> getTransactionHistory(
+            @RequestBody TransactionHistoryRequest request) {
+        String userId = UserContext.getUserId();
+        return ResponseEntity.ok(transactionService.getTransactionHistory(userId, request.getPage(), request.getSize()));
     }
 
 }
