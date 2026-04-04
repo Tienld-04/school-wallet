@@ -70,17 +70,15 @@ public class AuthService {
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
 
         String newPassword = generateRandomPassword(6);
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+        String html = buildResetPasswordEmailHtml(user.getFullName(), newPassword);
+        Map<String, String> body = Map.of(
+                "toEmail", user.getEmail(),
+                "toName", user.getFullName(),
+                "subject", "School Wallet - Mật khẩu mới",
+                "htmlContent", html
+        );
 
         try {
-            String html = buildResetPasswordEmailHtml(user.getFullName(), newPassword);
-            Map<String, String> body = Map.of(
-                    "toEmail", user.getEmail(),
-                    "toName", user.getFullName(),
-                    "subject", "School Wallet - Mật khẩu mới",
-                    "htmlContent", html
-            );
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             restTemplate.postForEntity(
@@ -92,6 +90,9 @@ public class AuthService {
             log.error("Failed to send reset password email to: {}", user.getEmail(), e);
             throw new AppException(ErrorCode.SEND_EMAIL_FAILED);
         }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     private String generateRandomPassword(int length) {
