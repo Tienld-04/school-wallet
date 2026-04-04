@@ -16,10 +16,10 @@ import java.io.IOException;
 @Service
 @Slf4j
 public class EmailService {
-
     private final SendGrid sendGrid;
     private final Email fromEmail;
 
+    // TODO: Giữa tháng 5/2026 đổi key sendgird
     public EmailService(
             @Value("${sendgrid.api-key}") String apiKey,
             @Value("${sendgrid.from-email}") String fromEmailAddress,
