@@ -31,6 +31,8 @@ spring:
 service:
   wallet-service:
     url: "http://localhost:8082"
+  notification-service:
+    url: "http://localhost:8085"
 internal:
   secret: "${INTERNAL_SECRET}"
 jwt:

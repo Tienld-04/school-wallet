@@ -1,5 +1,6 @@
 package com.ldt.user.controller;
 
+import com.ldt.user.dto.auth.ForgotPasswordRequest;
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.auth.LogoutRequest;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -47,6 +49,12 @@ public class UserController {
     public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest logoutRequest){
         authService.logout(logoutRequest);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Mật khẩu mới đã được gửi đến email của bạn"));
     }
 
     @GetMapping("/info")

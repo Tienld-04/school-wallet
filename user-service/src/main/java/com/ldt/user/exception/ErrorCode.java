@@ -25,7 +25,9 @@ public enum ErrorCode {
     QR_SIGN_ERROR(1016, "Lỗi tạo chữ ký QR", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_VERIFICATION_TOKEN(1017, "Token xác thực không hợp lệ", HttpStatus.BAD_REQUEST),
     PHONE_MISMATCH(1018, "Số điện thoại không khớp với token xác thực", HttpStatus.BAD_REQUEST),
-    VERIFICATION_EXPIRED(1019, "Phiên xác thực đã hết hạn, vui lòng xác thực lại", HttpStatus.BAD_REQUEST);
+    VERIFICATION_EXPIRED(1019, "Phiên xác thực đã hết hạn, vui lòng xác thực lại", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_FOUND(1020, "Email không tồn tại trong hệ thống", HttpStatus.NOT_FOUND),
+    SEND_EMAIL_FAILED(1021, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;
