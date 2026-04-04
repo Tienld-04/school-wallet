@@ -37,3 +37,5 @@ jwt:
   secret-key: "${JWT_SECRET_KEY}"
 qr:
   secret-key: "${QR_SECRET_KEY}"
+otp:
+  token-expiration-minutes: 10

@@ -41,6 +41,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+   // private final VerificationTokenService verificationTokenService;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -50,14 +51,21 @@ public class UserService {
 
     @Transactional
     public void createUser(UserCreateRequest userCreateRequest) {
-
+        // 1. Verify token xác thực SĐT
+//        verificationTokenService.verifyOTPToken(
+//                userCreateRequest.getVerificationToken(),
+//                userCreateRequest.getPhone()
+//        );
+        // 2. Check phone and email
         if (userRepository.existsByPhone(userCreateRequest.getPhone())) {
             throw new AppException(ErrorCode.PHONE_ALREADY_EXISTS);
         }
         if (userRepository.existsByEmail(userCreateRequest.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
+
         try {
+            // 3. Tạo user
             User user = new User();
             user.setFullName(userCreateRequest.getFullName());
             user.setPhone(userCreateRequest.getPhone());
@@ -67,9 +75,10 @@ public class UserService {
             user.setRole(UserRole.USER);
             user.setStatus(UserStatus.ACTIVE);
             user = userRepository.save(user);
+
+            // 4. Tạo ví
             CreateWalletRequest createWalletRequest = new CreateWalletRequest();
             createWalletRequest.setUserId(user.getUserId());
-            // try catch
             restTemplate.postForObject(
                     walletServiceUrl + "/internal/wallets",
                     createWalletRequest,
@@ -80,23 +89,6 @@ public class UserService {
         } catch (Exception e) {
             throw new AppException(ErrorCode.REGISTRATION_FAILED, "Đăng ký thất bại: " + e.getMessage());
         }
-//        User user = new User();
-//        user.setFullName(userCreateRequest.getFullName());
-//        user.setPhone(userCreateRequest.getPhone());
-//        user.setEmail(userCreateRequest.getEmail());
-//        user.setPassword(passwordEncoder.encode(userCreateRequest.getPassword()));
-//        user.setTransactionPinHash(passwordEncoder.encode(userCreateRequest.getTransactionPin()));
-//        user.setRole(UserRole.USER);
-//        user.setStatus(UserStatus.ACTIVE);
-//        user = userRepository.save(user);
-//        CreateWalletRequest createWalletRequest = new CreateWalletRequest();
-//        createWalletRequest.setUserId(user.getUserId());
-//
-//        restTemplate.postForObject(
-//                walletServiceUrl + "/internal/wallets",
-//                createWalletRequest,
-//                Void.class
-//        );
     }
 
     public UserResponse getUserById(UUID userId) {

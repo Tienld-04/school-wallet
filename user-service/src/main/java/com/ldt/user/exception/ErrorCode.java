@@ -22,7 +22,10 @@ public enum ErrorCode {
     QR_EXPIRED(1013, "Mã QR đã hết hạn", HttpStatus.BAD_REQUEST),
     QR_INVALID_SYSTEM(1014, "Mã QR không thuộc hệ thống School Wallet", HttpStatus.BAD_REQUEST),
     QR_FORMAT_ERROR(1015, "Định dạng QR không đúng", HttpStatus.BAD_REQUEST),
-    QR_SIGN_ERROR(1016, "Lỗi tạo chữ ký QR", HttpStatus.INTERNAL_SERVER_ERROR);
+    QR_SIGN_ERROR(1016, "Lỗi tạo chữ ký QR", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_VERIFICATION_TOKEN(1017, "Token xác thực không hợp lệ", HttpStatus.BAD_REQUEST),
+    PHONE_MISMATCH(1018, "Số điện thoại không khớp với token xác thực", HttpStatus.BAD_REQUEST),
+    VERIFICATION_EXPIRED(1019, "Phiên xác thực đã hết hạn, vui lòng xác thực lại", HttpStatus.BAD_REQUEST);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;

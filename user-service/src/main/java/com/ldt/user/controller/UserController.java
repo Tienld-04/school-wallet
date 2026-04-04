@@ -2,6 +2,7 @@ package com.ldt.user.controller;
 
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
+import com.ldt.user.dto.auth.LogoutRequest;
 import com.ldt.user.dto.request.DynamicQrRequest;
 import com.ldt.user.dto.request.UserCreateRequest;
 import com.ldt.user.dto.request.VerifyPinRequest;
@@ -40,6 +41,12 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest){
         return ResponseEntity.ok(authService.login(loginRequest));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest logoutRequest){
+        authService.logout(logoutRequest);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/info")

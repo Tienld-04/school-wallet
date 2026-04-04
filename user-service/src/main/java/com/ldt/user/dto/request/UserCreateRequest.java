@@ -20,4 +20,6 @@ public class UserCreateRequest {
     @NotBlank @Size(min = 6, max = 6, message = "Mã PIN phải 6 số")
     private String transactionPin;
 
+    @NotBlank(message = "Token xác thực không được để trống")
+    private String verificationToken;
 }
