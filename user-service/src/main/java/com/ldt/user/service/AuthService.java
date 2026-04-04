@@ -1,5 +1,6 @@
 package com.ldt.user.service;
 
+import com.ldt.user.dto.auth.ChangePasswordRequest;
 import com.ldt.user.dto.auth.ForgotPasswordRequest;
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
@@ -22,10 +23,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.ldt.user.context.UserContext;
+
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -141,6 +145,22 @@ public class AuthService {
                 </body>
                 </html>
                 """.formatted(fullName, newPassword);
+    }
+
+    public void changePassword(ChangePasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        User user = userRepository.findById(UUID.fromString(UserContext.getUserId()))
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.INCORRECT_PASSWORD);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     public void logout(LogoutRequest request) {

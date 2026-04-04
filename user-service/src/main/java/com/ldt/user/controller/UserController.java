@@ -1,5 +1,6 @@
 package com.ldt.user.controller;
 
+import com.ldt.user.dto.auth.ChangePasswordRequest;
 import com.ldt.user.dto.auth.ForgotPasswordRequest;
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
@@ -55,6 +56,12 @@ public class UserController {
     public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
         authService.forgotPassword(request);
         return ResponseEntity.ok(Map.of("message", "Mật khẩu mới đã được gửi đến email của bạn"));
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request){
+        authService.changePassword(request);
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
     }
 
     @GetMapping("/info")
