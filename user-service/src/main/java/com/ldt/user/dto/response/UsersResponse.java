@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class AdminUserResponse {
+public class UsersResponse {
     private UUID userId;
     private String fullName;
     private String phone;

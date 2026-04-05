@@ -1,6 +1,6 @@
 package com.ldt.user.service;
 
-import com.ldt.user.dto.response.AdminUserResponse;
+import com.ldt.user.dto.response.UsersResponse;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.mapper.UserMapper;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +40,9 @@ public class AdminService {
     }
 
     /**
-     * Lấy danh sách người dùng có phân trang, lọc theo trạng thái, tìm kiếm theo tên hoặc SĐT
+     * Admin Lấy danh sách người dùng có phân trang, lọc theo trạng thái, tìm kiếm theo tên hoặc SĐT
      */
-    public Page<AdminUserResponse> getUsers(int page, int size, String status, String search) {
+    public Page<UsersResponse> getUsers(int page, int size, String status, String search) {
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -62,6 +63,22 @@ public class AdminService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return userRepository.findAll(spec, pageRequest).map(userMapper::toAdminUserResponse);
+        return userRepository.findAll(spec, pageRequest).map(userMapper::toUsersResponse);
+    }
+
+    /**
+     * Khóa/mở khóa tài khoản người dùng
+     */
+    public void toggleUserStatus(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            user.setStatus(UserStatus.LOCKED);
+        } else {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setFailedLoginCount(0);
+        }
+        userRepository.save(user);
     }
 }
