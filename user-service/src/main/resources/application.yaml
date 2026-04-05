@@ -20,6 +20,18 @@ spring:
       connection-timeout: 5000
       idle-timeout: 300000
       max-lifetime: 600000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 123456
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+          max-wait: 3000
   jpa:
     hibernate:
       ddl-auto: update   # validate | update | create | create-drop

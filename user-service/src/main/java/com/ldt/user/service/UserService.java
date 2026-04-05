@@ -18,8 +18,10 @@ import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.model.UserStatus;
 import com.ldt.user.repository.UserRepository;
+import com.ldt.user.service.verify.VerifyOTPTokenService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -42,7 +45,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
-    // private final VerificationTokenService verificationTokenService;
+    private final VerifyOTPTokenService verifyOTPTokenService;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -53,10 +56,10 @@ public class UserService {
     @Transactional
     public void createUser(UserCreateRequest userCreateRequest) {
         // 1. Verify token xác thực SĐT
-//        verificationTokenService.verifyOTPToken(
-//                userCreateRequest.getVerificationToken(),
-//                userCreateRequest.getPhone()
-//        );
+        verifyOTPTokenService.verifyOTPToken(
+                userCreateRequest.getVerificationToken(),
+                userCreateRequest.getPhone()
+        );
         // 2. Check phone and email
         if (userRepository.existsByPhone(userCreateRequest.getPhone())) {
             throw new AppException(ErrorCode.PHONE_ALREADY_EXISTS);
@@ -88,7 +91,8 @@ public class UserService {
         } catch (AppException ae) {
             throw ae;
         } catch (Exception e) {
-            throw new AppException(ErrorCode.REGISTRATION_FAILED, "Đăng ký thất bại: " + e.getMessage());
+            log.error("Registration failed for phone {}: {}", userCreateRequest.getPhone(), e.getMessage());
+            throw new AppException(ErrorCode.REGISTRATION_FAILED, "Đăng ký thất bại. Vui lòng thử lại sau");
         }
     }
 

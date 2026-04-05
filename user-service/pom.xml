@@ -108,6 +108,11 @@
             <artifactId>dotenv-java</artifactId>
             <version>3.0.0</version>
         </dependency>
+        <!-- Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <!-- Apache HttpClient 5 for RestTemplate connection pool -->
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
