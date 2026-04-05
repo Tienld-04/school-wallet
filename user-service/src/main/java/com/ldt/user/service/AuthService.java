@@ -63,6 +63,7 @@ public class AuthService {
         String token = jwtService.generateToken(user);
         return new LoginResponse(token);
     }
+
     private final InvalidatedTokenRepository invalidatedTokenRepository;
 
     public boolean isTokenBlacklisted(String jti) {

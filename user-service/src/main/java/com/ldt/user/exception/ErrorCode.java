@@ -29,7 +29,8 @@ public enum ErrorCode {
     EMAIL_NOT_FOUND(1020, "Email không tồn tại trong hệ thống", HttpStatus.NOT_FOUND),
     SEND_EMAIL_FAILED(1021, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR),
     INCORRECT_PASSWORD(1022, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
-    PASSWORD_MISMATCH(1023, "Xác nhận mật khẩu không khớp", HttpStatus.BAD_REQUEST);
+    PASSWORD_MISMATCH(1023, "Xác nhận mật khẩu không khớp", HttpStatus.BAD_REQUEST),
+    ACCESS_DENIED(1024, "Bạn không có quyền thực hiện chức năng này", HttpStatus.FORBIDDEN);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;

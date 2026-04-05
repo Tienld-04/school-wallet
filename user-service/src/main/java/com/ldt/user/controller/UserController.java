@@ -6,6 +6,7 @@ import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.auth.LogoutRequest;
 import com.ldt.user.dto.request.DynamicQrRequest;
+import com.ldt.user.dto.request.ResetPinRequest;
 import com.ldt.user.dto.request.UserCreateRequest;
 import com.ldt.user.dto.request.VerifyPinRequest;
 import com.ldt.user.dto.response.QrTransferResponse;
@@ -28,44 +29,41 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final AuthService authService;
 
-    @PostMapping("/register")
-    public ResponseEntity<String> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest){
-        userService.createUser(userCreateRequest);
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping("/register")
+//    public ResponseEntity<String> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest){
+//        userService.createUser(userCreateRequest);
+//        return ResponseEntity.ok().build();
+//    }
+//    @PostMapping("/login")
+//    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest){
+//        return ResponseEntity.ok(authService.login(loginRequest));
+//    }
+//
+//    @PostMapping("/logout")
+//    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest logoutRequest){
+//        authService.logout(logoutRequest);
+//        return ResponseEntity.ok().build();
+//    }
 
+    //    @PostMapping("/forgot-password")
+//    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
+//        authService.forgotPassword(request);
+//        return ResponseEntity.ok(Map.of("message", "Mật khẩu mới đã được gửi đến email của bạn"));
+//    }
+//
+//    @PutMapping("/change-password")
+//    public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request){
+//        authService.changePassword(request);
+//        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
+//    }
     @GetMapping("/{userId}")
-    public ResponseEntity<UserResponse> getUsersById(@PathVariable UUID userId){
+    public ResponseEntity<UserResponse> getUsersById(@PathVariable UUID userId) {
         return ResponseEntity.ok(userService.getUserById(userId));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest){
-        return ResponseEntity.ok(authService.login(loginRequest));
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest logoutRequest){
-        authService.logout(logoutRequest);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/forgot-password")
-    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
-        authService.forgotPassword(request);
-        return ResponseEntity.ok(Map.of("message", "Mật khẩu mới đã được gửi đến email của bạn"));
-    }
-
-    @PutMapping("/change-password")
-    public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request){
-        authService.changePassword(request);
-        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
-    }
-
     @GetMapping("/info")
-    public ResponseEntity<UserResponse> getUserCurrent(){
+    public ResponseEntity<UserResponse> getUserCurrent() {
         return ResponseEntity.ok(userService.getUserCurent());
     }
 

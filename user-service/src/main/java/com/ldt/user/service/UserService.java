@@ -29,6 +29,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -41,7 +42,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
-   // private final VerificationTokenService verificationTokenService;
+    // private final VerificationTokenService verificationTokenService;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -158,7 +159,7 @@ public class UserService {
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         String phone = user.getPhone();
-        String name  = user.getFullName();
+        String name = user.getFullName();
         String sig = hmacSha512(phone + "|" + name, qrSecretKey);
         try {
             ObjectNode node = objectMapper.createObjectNode();
@@ -171,6 +172,7 @@ public class UserService {
             throw new AppException(ErrorCode.QR_SIGN_ERROR);
         }
     }
+
     private String hmacSha512(String data, String secret) {
         try {
             Mac mac = Mac.getInstance("HmacSHA512");
@@ -181,6 +183,7 @@ public class UserService {
             throw new AppException(ErrorCode.QR_SIGN_ERROR);
         }
     }
+
     /**
      * Tạo Dynamic QR: người nhận set sẵn amount + description.
      * Người gửi quét QR → thấy luôn thông tin người nhận + số tiền → chỉ cần nhập PIN.
@@ -191,12 +194,12 @@ public class UserService {
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         String phone = user.getPhone();
-        String name  = user.getFullName();
-        String desc  = (description != null) ? description : "";
+        String name = user.getFullName();
+        String desc = (description != null) ? description : "";
         String amountStr = amount.toPlainString();
         long expiredAt = System.currentTimeMillis() + 5 * 60 * 1000;
         String data = phone + "|" + name + "|" + amountStr + "|" + desc + "|" + expiredAt;
-        String sig  = hmacSha512(data, qrSecretKey);
+        String sig = hmacSha512(data, qrSecretKey);
         try {
             ObjectNode node = objectMapper.createObjectNode();
             node.put("type", "SCHOOL_WALLET_DYNAMIC");
@@ -223,14 +226,14 @@ public class UserService {
                 throw new AppException(ErrorCode.QR_INVALID_SYSTEM);
             }
             String phone = node.path("phone").asText();
-            String name  = node.path("name").asText();
-            String sig   = node.path("sig").asText();
+            String name = node.path("name").asText();
+            String sig = node.path("sig").asText();
             String expectedSig;
             // for dynamic qr
             if ("SCHOOL_WALLET_DYNAMIC".equals(type)) {
-                String amountStr  = node.path("amount").asText();
-                String desc       = node.path("description").asText();
-                long expiredAt    = node.path("expiredAt").asLong();
+                String amountStr = node.path("amount").asText();
+                String desc = node.path("description").asText();
+                long expiredAt = node.path("expiredAt").asLong();
 
                 if (System.currentTimeMillis() > expiredAt) {
                     throw new AppException(ErrorCode.QR_EXPIRED);
