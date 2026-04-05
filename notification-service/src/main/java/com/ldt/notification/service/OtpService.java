@@ -23,7 +23,6 @@ public class OtpService {
     // TODO: Check lại OTP
     private final RedisTemplate<String, String> redisTemplate;
     private final PasswordEncoder passwordEncoder;
-    //private final ESmsService smsService;
     private final SpeedSmsService speedSmsService;
 
     @Value("${otp.expiration-minutes}")
@@ -61,7 +60,7 @@ public class OtpService {
         redisTemplate.opsForValue().set(otpKey, passwordEncoder.encode(otp), expirationMinutes, TimeUnit.MINUTES);
         redisTemplate.opsForValue().set(cooldownKey, "1", resendCooldownSeconds, TimeUnit.SECONDS);
         redisTemplate.delete(attemptsKey);
-        String content = "Ma xac thuc cua ban la: " + otp + ". Het han sau " + expirationMinutes + " phut.";
+        String content = "[School Wallet] - Ma xac thuc cua ban la: " + otp + ". Het han sau " + expirationMinutes + " phut.";
         //smsService.sendSms(phone, content);
         speedSmsService.sendSms(phone, content);
         log.info("OTP sent to phone: {}", phone);

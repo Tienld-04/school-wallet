@@ -32,16 +32,10 @@ sendgrid:
   api-key: "${SENDGRID_API_KEY}"
   from-email: "${SENDGRID_FROM_EMAIL}"
   from-name: "School Wallet"
-
-esms:
-  api-key: "${ESMS_API_KEY}"
-  secret-key: "${ESMS_SECRET_KEY}"
-  sms-type: 8
-
 speedsms:
   access-token: "${SPEEDSMS_ACCESS_TOKEN}"
-  sender: "${SPEEDSMS_SENDER:Notify}"
-  type: 4
+  sender: "${SPEEDSMS_SENDER}"
+  type: 5
 otp:
   expiration-minutes: 5
   max-attempts: 5
