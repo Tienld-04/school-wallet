@@ -20,6 +20,13 @@ import java.util.Map;
 public class AdminController {
     private final AdminService adminService;
 
+    @GetMapping("/user-statuses")
+    public ResponseEntity<List<String>> getUserStatuses() {
+        return ResponseEntity.ok(
+                Arrays.stream(UserStatus.values()).map(Enum::name).toList()
+        );
+    }
+
     @GetMapping("/users")
     public ResponseEntity<Page<AdminUserResponse>> getUsers(
             @RequestParam(defaultValue = "0") int page,
