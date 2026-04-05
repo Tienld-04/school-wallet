@@ -59,7 +59,6 @@ public class OtpService {
         String attemptsKey = ATTEMPTS_PREFIX + phone;
         redisTemplate.opsForValue().set(otpKey, passwordEncoder.encode(otp), expirationMinutes, TimeUnit.MINUTES);
         redisTemplate.opsForValue().set(cooldownKey, "1", resendCooldownSeconds, TimeUnit.SECONDS);
-        redisTemplate.delete(attemptsKey);
         String content = "[School Wallet] - Ma xac thuc cua ban la: " + otp + ". Het han sau " + expirationMinutes + " phut.";
         //smsService.sendSms(phone, content);
         speedSmsService.sendSms(phone, content);
