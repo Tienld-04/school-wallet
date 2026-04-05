@@ -23,6 +23,20 @@ public class GatewayConfig {
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
+                // Route cho Auth
+                .route("auth-service", r -> r
+                        .path("/api/v1/auth/**")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/auth/(?<segment>.*)", "/api/auth/${segment}")
+                        )
+                        .uri(userServiceUrl))
+                // Route cho Admin
+                .route("admin-service", r -> r
+                        .path("/api/v1/admin/**")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/admin/(?<segment>.*)", "/api/admin/${segment}")
+                        )
+                        .uri(userServiceUrl))
                 // Route cho User Service
                 .route("user-service", r -> r
                         .path("/api/v1/users/**")

@@ -32,14 +32,15 @@ public class SecurityConfig {
                 )
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(
-                                "/api/v1/users/login",
-                                "/api/v1/users/register",
-                                "/api/v1/users/forgot-password",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/forgot-password",
                                 "/api/v1/otp/**",
                                 "/ws/**",
                                 "/actuator/**",
                                 "/public/**"
                         ).permitAll()
+                        .pathMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/topup").hasAuthority("ADMIN")
                         .anyExchange().authenticated()
                 );
