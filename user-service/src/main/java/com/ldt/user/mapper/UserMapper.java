@@ -2,6 +2,7 @@ package com.ldt.user.mapper;
 
 
 import com.ldt.user.dto.request.UserCreateRequest;
+import com.ldt.user.dto.response.AdminUserResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.model.User;
 import org.mapstruct.Mapper;
@@ -10,4 +11,5 @@ import org.mapstruct.Mapper;
 public interface UserMapper {
     User toUser(UserCreateRequest request);
     UserResponse toUserResponse(User user);
+    AdminUserResponse toAdminUserResponse(User user);
 }

@@ -1,15 +1,17 @@
 package com.ldt.user.controller;
 
 import com.ldt.user.dto.request.ResetPinRequest;
+import com.ldt.user.dto.response.AdminUserResponse;
+import com.ldt.user.model.UserStatus;
 import com.ldt.user.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,6 +19,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+
+    @GetMapping("/users")
+    public ResponseEntity<Page<AdminUserResponse>> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(adminService.getUsers(page, size, status, search));
+    }
 
     @PutMapping("/reset-pin")
     public ResponseEntity<Map<String, String>> resetTransactionPin(@Valid @RequestBody ResetPinRequest request) {
