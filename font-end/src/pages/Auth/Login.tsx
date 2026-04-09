@@ -1,30 +1,36 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 import useAuth from '../../hooks/useAuth';
 import AuthLayout from '../../layouts/AuthLayout';
 import Input from '../../components/common/Input/Input';
 import Button from '../../components/common/Button/Button';
 import { validatePhone, validatePassword } from '../../utils/validators';
 
-const Login = () => {
+interface LoginForm {
+  phone: string;
+  password: string;
+}
+
+const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [form, setForm] = useState({ phone: '', password: '' });
-  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState<LoginForm>({ phone: '', password: '' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (apiError) setApiError('');
   };
 
-  const validate = () => {
-    const newErrors = {};
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
     const phoneErr = validatePhone(form.phone);
     const passErr = validatePassword(form.password);
     if (phoneErr) newErrors.phone = phoneErr;
@@ -33,20 +39,22 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
     setApiError('');
-
     try {
       await login(form.phone, form.password);
       toast.success('Đăng nhập thành công!');
       navigate('/dashboard');
     } catch (err) {
-      const message = err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
-      setApiError(message);
+      if (axios.isAxiosError(err)) {
+        setApiError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+      } else {
+        setApiError('Đăng nhập thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }
@@ -66,23 +74,51 @@ const Login = () => {
       )}
 
       <form className="flex flex-col gap-[18px]" onSubmit={handleSubmit}>
-        <Input label="Số điện thoại" name="phone" value={form.phone} onChange={handleChange} placeholder="Nhập số điện thoại" error={errors.phone} maxLength={10} icon="📱" />
-        <Input label="Mật khẩu" type="password" name="password" value={form.password} onChange={handleChange} placeholder="Nhập mật khẩu" error={errors.password} icon="🔒" />
+        <Input
+          label="Số điện thoại"
+          name="phone"
+          value={form.phone}
+          onChange={handleChange}
+          placeholder="Nhập số điện thoại"
+          error={errors.phone}
+          maxLength={10}
+          icon="📱"
+        />
+        <Input
+          label="Mật khẩu"
+          type="password"
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          placeholder="Nhập mật khẩu"
+          error={errors.password}
+          icon="🔒"
+        />
 
         <div className="text-right -mt-2">
-          <Link to="/forgot-password" className="text-[0.8125rem] text-slate-500 font-medium hover:text-primary-600 transition-colors">
+          <Link
+            to="/forgot-password"
+            className="text-[0.8125rem] text-slate-500 font-medium hover:text-primary-600 transition-colors"
+          >
             Quên mật khẩu?
           </Link>
         </div>
 
         <div className="mt-1.5">
-          <Button type="submit" fullWidth loading={loading} size="lg">Đăng nhập</Button>
+          <Button type="submit" fullWidth loading={loading} size="lg">
+            Đăng nhập
+          </Button>
         </div>
       </form>
 
       <p className="text-center mt-5 text-sm text-slate-500">
         Chưa có tài khoản?{' '}
-        <Link to="/register" className="font-semibold text-primary-600 hover:text-primary-500 hover:underline">Đăng ký ngay</Link>
+        <Link
+          to="/register"
+          className="font-semibold text-primary-600 hover:text-primary-500 hover:underline"
+        >
+          Đăng ký ngay
+        </Link>
       </p>
     </AuthLayout>
   );

@@ -1,26 +1,26 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { getToken, setToken as saveToken, removeToken } from '../utils/storage';
 import authApi from '../api/authApi';
+import type { AuthContextType, LoginResponse } from '../types';
 
-export const AuthContext = createContext(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }) => {
-  const [token, setTokenState] = useState(getToken());
-  const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setTokenState] = useState<string | null>(getToken());
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!getToken());
 
   useEffect(() => {
     setIsAuthenticated(!!token);
   }, [token]);
 
-  const login = useCallback(async (phone, password) => {
+  const login = useCallback(async (phone: string, password: string): Promise<LoginResponse> => {
     const response = await authApi.login({ phone, password });
-    const jwt = response.token;
-    saveToken(jwt);
-    setTokenState(jwt);
+    saveToken(response.token);
+    setTokenState(response.token);
     return response;
   }, []);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (): Promise<void> => {
     const currentToken = getToken();
     if (currentToken) {
       try {
@@ -33,12 +33,7 @@ export const AuthProvider = ({ children }) => {
     setTokenState(null);
   }, []);
 
-  const value = {
-    token,
-    isAuthenticated,
-    login,
-    logout,
-  };
+  const value: AuthContextType = { token, isAuthenticated, login, logout };
 
   return (
     <AuthContext.Provider value={value}>

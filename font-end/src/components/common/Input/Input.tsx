@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
-const Input = ({
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  label?: string;
+  error?: string;
+  icon?: string;
+}
+
+const Input: React.FC<InputProps> = ({
   label,
   type = 'text',
   name,
@@ -47,7 +53,7 @@ const Input = ({
           <button
             type="button"
             className="absolute right-3 bg-transparent border-none cursor-pointer text-lg p-1 opacity-60 hover:opacity-100 transition-opacity"
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => setShowPassword((prev) => !prev)}
             tabIndex={-1}
           >
             {showPassword ? '🙈' : '👁'}

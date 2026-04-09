@@ -78,11 +78,11 @@ public class UserController {
     /**
      * Xác thực mã PIN giao dịch của người dùng đang đăng nhập.
      */
-    @PostMapping("/verify-pin")
-    public ResponseEntity<Void> verifyTransactionPin(@Valid @RequestBody VerifyPinRequest request) {
-        userService.verifyTransactionPin(request.getPin());
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping("/verify-pin")
+//    public ResponseEntity<Void> verifyTransactionPin(@Valid @RequestBody VerifyPinRequest request) {
+//        userService.verifyTransactionPin(request.getPin());
+//        return ResponseEntity.ok().build();
+//    }
 
     /**
      * Static QR: Tạo QR content cá nhân của user hiện tại (không có số tiền).

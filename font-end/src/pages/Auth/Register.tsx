@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 import AuthLayout from '../../layouts/AuthLayout';
 import Input from '../../components/common/Input/Input';
 import Button from '../../components/common/Button/Button';
@@ -11,17 +12,30 @@ import {
   validateFullName, validatePin, validateOtp,
 } from '../../utils/validators';
 
-const STEPS = { PHONE: 1, OTP: 2, INFO: 3 };
+const STEPS = { PHONE: 1, OTP: 2, INFO: 3 } as const;
+type StepValue = typeof STEPS[keyof typeof STEPS];
 const RESEND_COOLDOWN = 60;
 
-const StepIndicator = ({ step }) => {
-  const stepClass = (s) =>
+const STEP_DESC: Record<StepValue, string> = {
+  [STEPS.PHONE]: 'Nhập số điện thoại để bắt đầu',
+  [STEPS.OTP]: 'Nhập mã OTP đã gửi đến điện thoại',
+  [STEPS.INFO]: 'Hoàn tất thông tin đăng ký',
+};
+
+interface StepIndicatorProps {
+  step: StepValue;
+}
+
+const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => {
+  const stepClass = (s: number): string =>
     `w-8 h-8 rounded-full flex items-center justify-center text-[0.8125rem] font-bold border-2 transition-all duration-200 ${
-      step > s ? 'border-secondary-500 bg-secondary-500 text-white'
-      : step === s ? 'border-primary-500 bg-primary-50 text-primary-600'
-      : 'border-slate-200 bg-white text-slate-400'
+      step > s
+        ? 'border-secondary-500 bg-secondary-500 text-white'
+        : step === s
+        ? 'border-primary-500 bg-primary-50 text-primary-600'
+        : 'border-slate-200 bg-white text-slate-400'
     }`;
-  const lineClass = (s) =>
+  const lineClass = (s: number): string =>
     `w-10 h-0.5 transition-all duration-200 ${step > s ? 'bg-secondary-400' : 'bg-slate-200'}`;
 
   return (
@@ -35,21 +49,25 @@ const StepIndicator = ({ step }) => {
   );
 };
 
-const STEP_DESC = {
-  [STEPS.PHONE]: 'Nhập số điện thoại để bắt đầu',
-  [STEPS.OTP]: 'Nhập mã OTP đã gửi đến điện thoại',
-  [STEPS.INFO]: 'Hoàn tất thông tin đăng ký',
-};
+interface RegisterForm {
+  phone: string;
+  otp: string;
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  transactionPin: string;
+}
 
-const Register = () => {
+const Register: React.FC = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(STEPS.PHONE);
-  const [form, setForm] = useState({
+  const [step, setStep] = useState<StepValue>(STEPS.PHONE);
+  const [form, setForm] = useState<RegisterForm>({
     phone: '', otp: '', fullName: '', email: '',
     password: '', confirmPassword: '', transactionPin: '',
   });
   const [verificationToken, setVerificationToken] = useState('');
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [cooldown, setCooldown] = useState(0);
@@ -60,43 +78,57 @@ const Register = () => {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  const handleChange = useCallback((e) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (apiError) setApiError('');
   }, [errors, apiError]);
 
-  const handleSendOtp = async (e) => {
+  const handleError = (err: unknown, fallback: string) => {
+    if (axios.isAxiosError(err)) {
+      setApiError(err.response?.data?.message || fallback);
+    } else {
+      setApiError(fallback);
+    }
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const phoneErr = validatePhone(form.phone);
     if (phoneErr) return setErrors({ phone: phoneErr });
 
-    setLoading(true); setApiError('');
+    setLoading(true);
+    setApiError('');
     try {
       await otpApi.send(form.phone);
       toast.success('Mã OTP đã được gửi!');
       setStep(STEPS.OTP);
       setCooldown(RESEND_COOLDOWN);
     } catch (err) {
-      setApiError(err.response?.data?.message || 'Gửi OTP thất bại.');
-    } finally { setLoading(false); }
+      handleError(err, 'Gửi OTP thất bại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyOtp = async (e) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpErr = validateOtp(form.otp);
     if (otpErr) return setErrors({ otp: otpErr });
 
-    setLoading(true); setApiError('');
+    setLoading(true);
+    setApiError('');
     try {
       const res = await otpApi.verify(form.phone, form.otp);
       setVerificationToken(res.verificationToken);
       toast.success('Xác thực OTP thành công!');
       setStep(STEPS.INFO);
     } catch (err) {
-      setApiError(err.response?.data?.message || 'Mã OTP không đúng.');
-    } finally { setLoading(false); }
+      handleError(err, 'Mã OTP không đúng.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResendOtp = async () => {
@@ -106,14 +138,17 @@ const Register = () => {
       await otpApi.send(form.phone);
       toast.success('Đã gửi lại mã OTP!');
       setCooldown(RESEND_COOLDOWN);
-    } catch { toast.error('Gửi lại OTP thất bại.'); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error('Gửi lại OTP thất bại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors = {};
-    const checks = [
+    const newErrors: Record<string, string> = {};
+    const checks: [string, string][] = [
       ['fullName', validateFullName(form.fullName)],
       ['email', validateEmail(form.email)],
       ['password', validatePassword(form.password)],
@@ -124,7 +159,8 @@ const Register = () => {
     else if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
     if (Object.keys(newErrors).length) return setErrors(newErrors);
 
-    setLoading(true); setApiError('');
+    setLoading(true);
+    setApiError('');
     try {
       await authApi.register({
         fullName: form.fullName, phone: form.phone, email: form.email,
@@ -133,8 +169,10 @@ const Register = () => {
       toast.success('Đăng ký thành công! Vui lòng đăng nhập.');
       navigate('/login');
     } catch (err) {
-      setApiError(err.response?.data?.message || 'Đăng ký thất bại.');
-    } finally { setLoading(false); }
+      handleError(err, 'Đăng ký thất bại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -173,7 +211,11 @@ const Register = () => {
             {cooldown > 0 ? (
               <span className="text-slate-400">Gửi lại sau {cooldown}s</span>
             ) : (
-              <button type="button" onClick={handleResendOtp} className="bg-transparent border-none text-primary-600 font-semibold cursor-pointer text-sm hover:underline">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                className="bg-transparent border-none text-primary-600 font-semibold cursor-pointer text-sm hover:underline"
+              >
                 Gửi lại mã OTP
               </button>
             )}
@@ -197,7 +239,9 @@ const Register = () => {
 
       <p className="text-center mt-5 text-sm text-slate-500">
         Đã có tài khoản?{' '}
-        <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-500 hover:underline">Đăng nhập</Link>
+        <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-500 hover:underline">
+          Đăng nhập
+        </Link>
       </p>
     </AuthLayout>
   );

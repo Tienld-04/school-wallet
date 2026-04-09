@@ -1,4 +1,16 @@
-const variantClasses = {
+import React from 'react';
+
+type Variant = 'primary' | 'secondary' | 'ghost';
+type Size = 'sm' | 'md' | 'lg';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant;
+  size?: Size;
+  fullWidth?: boolean;
+  loading?: boolean;
+}
+
+const variantClasses: Record<Variant, string> = {
   primary:
     'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-md shadow-primary-600/30 hover:from-primary-500 hover:to-primary-600 hover:shadow-lg hover:shadow-primary-600/40 hover:-translate-y-0.5 active:translate-y-0',
   secondary:
@@ -7,13 +19,13 @@ const variantClasses = {
     'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-800',
 };
 
-const sizeClasses = {
+const sizeClasses: Record<Size, string> = {
   sm: 'px-4 py-2 text-[0.8125rem]',
   md: 'px-6 py-3 text-[0.9375rem]',
   lg: 'px-7 py-3.5 text-base',
 };
 
-const Button = ({
+const Button: React.FC<ButtonProps> = ({
   children,
   type = 'button',
   variant = 'primary',
@@ -34,7 +46,13 @@ const Button = ({
       {...props}
     >
       {loading ? (
-        <span className={`w-5 h-5 border-[2.5px] rounded-full animate-spin ${variant === 'primary' ? 'border-white/30 border-t-white' : 'border-primary-600/20 border-t-primary-600'}`} />
+        <span
+          className={`w-5 h-5 border-[2.5px] rounded-full animate-spin ${
+            variant === 'primary'
+              ? 'border-white/30 border-t-white'
+              : 'border-primary-600/20 border-t-primary-600'
+          }`}
+        />
       ) : (
         children
       )}
