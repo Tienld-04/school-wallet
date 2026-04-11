@@ -193,7 +193,7 @@ const Register: React.FC = () => {
       {/* Step 1 */}
       {step === STEPS.PHONE && (
         <form className="flex flex-col gap-[18px]" onSubmit={handleSendOtp}>
-          <Input label="Số điện thoại" name="phone" value={form.phone} onChange={handleChange} placeholder="Nhập số điện thoại 10 chữ số" error={errors.phone} maxLength={10} icon="📱" />
+          <Input label="Số điện thoại" name="phone" value={form.phone} onChange={handleChange} placeholder="Nhập số điện thoại 10 chữ số" error={errors.phone} maxLength={10} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>} />
           <div className="mt-1.5">
             <Button type="submit" fullWidth loading={loading} size="lg">Gửi mã OTP</Button>
           </div>
@@ -203,7 +203,7 @@ const Register: React.FC = () => {
       {/* Step 2 */}
       {step === STEPS.OTP && (
         <form className="flex flex-col gap-[18px]" onSubmit={handleVerifyOtp}>
-          <Input label="Mã OTP" name="otp" value={form.otp} onChange={handleChange} placeholder="Nhập mã 6 chữ số" error={errors.otp} maxLength={6} icon="🔑" />
+          <Input label="Mã OTP" name="otp" value={form.otp} onChange={handleChange} placeholder="Nhập mã 6 chữ số" error={errors.otp} maxLength={6} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>} />
           <div className="mt-1.5">
             <Button type="submit" fullWidth loading={loading} size="lg">Xác nhận OTP</Button>
           </div>
@@ -226,11 +226,11 @@ const Register: React.FC = () => {
       {/* Step 3 */}
       {step === STEPS.INFO && (
         <form className="flex flex-col gap-[18px]" onSubmit={handleRegister}>
-          <Input label="Họ và tên" name="fullName" value={form.fullName} onChange={handleChange} placeholder="Nhập họ và tên" error={errors.fullName} icon="👤" />
-          <Input label="Email" type="email" name="email" value={form.email} onChange={handleChange} placeholder="Nhập địa chỉ email" error={errors.email} icon="✉️" />
-          <Input label="Mật khẩu" type="password" name="password" value={form.password} onChange={handleChange} placeholder="Tối thiểu 6 ký tự" error={errors.password} icon="🔒" />
-          <Input label="Xác nhận mật khẩu" type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Nhập lại mật khẩu" error={errors.confirmPassword} icon="🔒" />
-          <Input label="Mã PIN giao dịch" name="transactionPin" value={form.transactionPin} onChange={handleChange} placeholder="Nhập 6 chữ số PIN" error={errors.transactionPin} maxLength={6} icon="🔐" />
+          <Input label="Họ và tên" name="fullName" value={form.fullName} onChange={handleChange} placeholder="Nhập họ và tên" error={errors.fullName} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} />
+          <Input label="Email" type="email" name="email" value={form.email} onChange={handleChange} placeholder="Nhập địa chỉ email" error={errors.email} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>} />
+          <Input label="Mật khẩu" type="password" name="password" value={form.password} onChange={handleChange} placeholder="Tối thiểu 6 ký tự" error={errors.password} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
+          <Input label="Xác nhận mật khẩu" type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Nhập lại mật khẩu" error={errors.confirmPassword} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
+          <Input label="Mã PIN giao dịch" name="transactionPin" value={form.transactionPin} onChange={handleChange} placeholder="Nhập 6 chữ số PIN" error={errors.transactionPin} maxLength={6} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>} />
           <div className="mt-1.5">
             <Button type="submit" fullWidth loading={loading} size="lg">Đăng ký</Button>
           </div>

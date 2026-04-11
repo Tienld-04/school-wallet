@@ -6,5 +6,6 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    allowedHosts: ['pyrotechnic-caroline-dankly.ngrok-free.dev'],
   },
 });
