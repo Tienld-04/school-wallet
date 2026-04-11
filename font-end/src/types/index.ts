@@ -21,8 +21,17 @@ export interface OtpVerifyResponse {
 }
 
 export interface ChangePasswordRequest {
-  oldPassword: string;
+  currentPassword: string;
   newPassword: string;
+  confirmPassword: string;
+}
+
+export interface UserResponse {
+  userId: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  createdAt: string;
 }
 
 export interface ApiErrorResponse {

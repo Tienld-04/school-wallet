@@ -4,7 +4,12 @@ import useAuth from '../hooks/useAuth';
 import Login from '../pages/Auth/Login';
 import Register from '../pages/Auth/Register';
 import ForgotPassword from '../pages/Auth/ForgotPassword';
+import MainLayout from '../layouts/MainLayout';
 import Dashboard from '../pages/Dashboard';
+import Transfer from '../pages/Transfer';
+import Payment from '../pages/Payment';
+import TopUp from '../pages/TopUp';
+import Profile from '../pages/Profile';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -22,7 +27,15 @@ const AppRoutes: React.FC = () => {
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+
+      <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/transfer" element={<Transfer />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/top-up" element={<TopUp />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

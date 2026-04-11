@@ -14,8 +14,8 @@ const authApi = {
   forgotPassword: (email: string): Promise<void> =>
     axiosClient.post<void>('/auth/forgot-password', { email }),
 
-  changePassword: (data: ChangePasswordRequest): Promise<void> =>
-    axiosClient.put<void>('/auth/change-password', data),
+  changePassword: (data: ChangePasswordRequest): Promise<{ message: string }> =>
+    axiosClient.put<{ message: string }>('/auth/change-password', data),
 };
 
 export default authApi;
