@@ -30,7 +30,10 @@ public enum ErrorCode {
     SEND_EMAIL_FAILED(1021, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR),
     INCORRECT_PASSWORD(1022, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
     PASSWORD_MISMATCH(1023, "Xác nhận mật khẩu không khớp", HttpStatus.BAD_REQUEST),
-    ACCESS_DENIED(1024, "Bạn không có quyền thực hiện chức năng này", HttpStatus.FORBIDDEN);
+    ACCESS_DENIED(1024, "Bạn không có quyền thực hiện chức năng này", HttpStatus.FORBIDDEN),
+    MERCHANT_NOT_FOUND(1025, "Merchant không tồn tại", HttpStatus.NOT_FOUND),
+    MERCHANT_NAME_ALREADY_EXISTS(1026, "Tên merchant đã tồn tại", HttpStatus.BAD_REQUEST),
+    INVALID_MERCHANT_TYPE(1027, "Loại merchant không hợp lệ", HttpStatus.BAD_REQUEST);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;
