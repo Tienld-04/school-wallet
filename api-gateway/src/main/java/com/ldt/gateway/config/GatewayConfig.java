@@ -44,6 +44,19 @@ public class GatewayConfig {
                                 .rewritePath("/api/v1/users/(?<segment>.*)", "/api/users/${segment}")
                         )
                         .uri(userServiceUrl))
+                // Route cho Merchant
+                .route("merchant-service", r -> r
+                        .path("/api/v1/merchants/**")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/merchants/(?<segment>.*)", "/api/merchants/${segment}")
+                        )
+                        .uri(userServiceUrl))
+                .route("merchant-service-root", r -> r
+                        .path("/api/v1/merchants")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/merchants", "/api/merchants")
+                        )
+                        .uri(userServiceUrl))
                 .route("transaction-service-root", r -> r
                         .path("/api/v1/transactions")
                         .filters(f -> f

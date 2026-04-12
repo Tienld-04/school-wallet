@@ -47,8 +47,11 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/public/**"
                         ).permitAll()
+                        .pathMatchers("/api/v1/merchants/list").permitAll()
+                        .pathMatchers("/api/v1/merchants/my-user").authenticated()
                         .pathMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/topup").hasAuthority("ADMIN")
+                        .pathMatchers("/api/v1/merchants/**", "/api/v1/merchants").hasAuthority("ADMIN")
                         .anyExchange().authenticated()
                 );
 
