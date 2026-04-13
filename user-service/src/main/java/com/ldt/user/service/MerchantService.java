@@ -127,6 +127,7 @@ public class MerchantService {
                         .name(m.getName())
                         .type(m.getType().name())
                         .userId(m.getUser().getUserId())
+                        .userPhone(m.getUser().getPhone())
                         .build())
                 .toList();
     }

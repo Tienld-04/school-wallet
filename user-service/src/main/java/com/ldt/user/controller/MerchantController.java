@@ -59,7 +59,7 @@ public class MerchantController {
         return ResponseEntity.ok(merchantService.getMerchant(merchantId));
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<MerchantResponse> createMerchant(@Valid @RequestBody MerchantRequest request) {
         return ResponseEntity.ok(merchantService.createMerchant(request));
     }

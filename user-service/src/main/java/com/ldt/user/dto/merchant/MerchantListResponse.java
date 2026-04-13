@@ -12,4 +12,5 @@ public class MerchantListResponse {
     private String name;
     private String type;
     private UUID userId;
+    private String userPhone;
 }
