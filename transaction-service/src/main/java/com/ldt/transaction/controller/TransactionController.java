@@ -6,6 +6,7 @@ import com.ldt.transaction.dto.request.TransactionHistoryRequest;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
+import com.ldt.transaction.dto.payment.PaymentRequest;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.service.TransactionService;
 import jakarta.validation.Valid;
@@ -40,6 +41,13 @@ public class TransactionController {
             @Valid @RequestBody TransferRequest transferRequest,
             @RequestHeader("X-User-Phone") String fromPhone) {
         return ResponseEntity.ok(transactionService.transfer(transferRequest, fromPhone, TransactionType.TOPUP));
+    }
+
+    @PostMapping("/merchant/payment")
+    public ResponseEntity<TransactionResponse> merchantPayment(
+            @Valid @RequestBody PaymentRequest paymentRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService.merchantPayment(paymentRequest, fromPhone));
     }
 
     @PostMapping("/history")
