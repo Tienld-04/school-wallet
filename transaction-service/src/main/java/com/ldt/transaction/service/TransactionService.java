@@ -1,6 +1,7 @@
 package com.ldt.transaction.service;
 
 import com.ldt.transaction.dto.response.PageResponse;
+import com.ldt.transaction.dto.response.RecentTransactionResponse;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
@@ -17,6 +18,7 @@ import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.producer.TransactionEventProducer;
 import com.ldt.transaction.repository.TransactionRepository;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -302,19 +304,26 @@ public class TransactionService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Transaction> transactionPage = transactionRepository.findByFromUserIdOrToUserId(userUUID, userUUID, pageable);
         List<TransactionHistoryResponse> content = transactionPage.getContent().stream()
-                .map(tx -> TransactionHistoryResponse.builder()
-                        .transactionId(tx.getTransactionId())
-                        .fromFullName(tx.getFromFullName())
-                        .fromPhone(tx.getFromPhone())
-                        .toFullName(tx.getToFullName())
-                        .toPhone(tx.getToPhone())
-                        .amount(tx.getAmount())
-                        .description(tx.getDescription())
-                        .transactionType(tx.getTransactionType().name())
-                        .status(tx.getStatus().name())
-                        .merchantId(tx.getMerchantId())
-                        .createdAt(tx.getCreatedAt())
-                        .build())
+                .map(tx -> {
+                    boolean isOutgoing = tx.getFromUserId().equals(userUUID);
+                    BigDecimal displayAmount = isOutgoing
+                            ? tx.getAmount().negate()
+                            : tx.getAmount();
+                    return TransactionHistoryResponse.builder()
+                            .transactionId(tx.getTransactionId())
+                            .fromFullName(tx.getFromFullName())
+                            .fromPhone(tx.getFromPhone())
+                            .toFullName(tx.getToFullName())
+                            .toPhone(tx.getToPhone())
+                            .amount(tx.getAmount())
+                            .displayAmount(displayAmount)
+                            .description(tx.getDescription())
+                            .transactionType(tx.getTransactionType().name())
+                            .status(tx.getStatus().name())
+                            .merchantId(tx.getMerchantId())
+                            .createdAt(tx.getCreatedAt())
+                            .build();
+                })
                 .toList();
 
         return PageResponse.<TransactionHistoryResponse>builder()
@@ -343,5 +352,24 @@ public class TransactionService {
                 .merchantId(tx.getMerchantId())
                 .createdAt(tx.getCreatedAt())
                 .build();
+    }
+
+    public List<RecentTransactionResponse> getRecentTransactions(String userId) {
+        UUID userUUID = UUID.fromString(userId);
+        List<Transaction> transactions = transactionRepository
+                .findTop5ByFromUserIdOrToUserIdOrderByCreatedAtDesc(userUUID, userUUID);
+
+        return transactions.stream()
+                .map(tx -> {
+                    boolean isOutgoing = tx.getFromUserId().equals(userUUID);
+                    String formattedAmount = (isOutgoing ? "-" : "+") + tx.getAmount().toBigInteger();
+                    return RecentTransactionResponse.builder()
+                            .transactionId(tx.getTransactionId())
+                            .description(tx.getDescription())
+                            .amount(formattedAmount)
+                            .createdAt(tx.getCreatedAt())
+                            .build();
+                })
+                .toList();
     }
 }

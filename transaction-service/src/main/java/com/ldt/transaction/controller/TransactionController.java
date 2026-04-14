@@ -3,6 +3,7 @@ package com.ldt.transaction.controller;
 import com.ldt.transaction.context.UserContext;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.request.TransactionHistoryRequest;
+import com.ldt.transaction.dto.response.RecentTransactionResponse;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -48,6 +50,12 @@ public class TransactionController {
             @Valid @RequestBody PaymentRequest paymentRequest,
             @RequestHeader("X-User-Phone") String fromPhone) {
         return ResponseEntity.ok(transactionService.merchantPayment(paymentRequest, fromPhone));
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<RecentTransactionResponse>> getRecentTransactions() {
+        String userId = UserContext.getUserId();
+        return ResponseEntity.ok(transactionService.getRecentTransactions(userId));
     }
 
     @PostMapping("/history")
