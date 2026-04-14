@@ -16,6 +16,7 @@ public class TransactionHistoryResponse {
     private String toFullName;
     private String toPhone;
     private BigDecimal amount;
+    private BigDecimal displayAmount; // +amount (nhận) hoặc -amount (gửi)
     private String description;
     private String transactionType;
     private String status;
