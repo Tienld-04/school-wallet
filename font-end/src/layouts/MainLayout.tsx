@@ -49,8 +49,30 @@ const WalletIcon: React.FC = () => (
   </svg>
 );
 
+const adminMenuItems = [
+  {
+    to: '/admin/users',
+    label: 'Quản lý người dùng',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    to: '/admin/merchants',
+    label: 'Quản lý Merchant',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+];
+
 const MainLayout: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, role } = useAuth();
+  const isAdmin = role === 'ADMIN';
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -94,6 +116,23 @@ const MainLayout: React.FC = () => {
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
+
+          {isAdmin && (
+            <>
+              {!collapsed && (
+                <p className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wider px-3 pt-5 pb-1">
+                  Quản trị
+                </p>
+              )}
+              {collapsed && <div className="my-2 mx-2 h-px bg-slate-100" />}
+              {adminMenuItems.map((item) => (
+                <NavLink key={item.to} to={item.to} className={linkClass}>
+                  <span className="shrink-0">{item.icon}</span>
+                  {!collapsed && <span>{item.label}</span>}
+                </NavLink>
+              ))}
+            </>
+          )}
         </nav>
 
         {/* Bottom: Profile + Logout */}

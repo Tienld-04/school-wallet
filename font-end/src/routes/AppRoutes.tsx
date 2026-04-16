@@ -10,10 +10,19 @@ import Transfer from '../pages/Transfer';
 import Payment from '../pages/Payment';
 import TopUp from '../pages/TopUp';
 import Profile from '../pages/Profile';
+import UserManagement from '../pages/admin/UserManagement';
+import MerchantManagement from '../pages/admin/MerchantManagement';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, role } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (role !== 'ADMIN') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 };
 
 const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -34,6 +43,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/payment" element={<Payment />} />
         <Route path="/top-up" element={<TopUp />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+        <Route path="/admin/merchants" element={<AdminRoute><MerchantManagement /></AdminRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />
