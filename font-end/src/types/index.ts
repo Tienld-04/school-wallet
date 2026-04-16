@@ -38,6 +38,26 @@ export interface ApiErrorResponse {
   message: string;
 }
 
+export interface MerchantType {
+  code: string;
+  description: string;
+}
+
+export interface MerchantListResponse {
+  merchantId: string;
+  name: string;
+  type: string;
+  userId: string;
+  userPhone: string;
+}
+
+export interface RecentTransactionResponse {
+  transactionId: string;
+  description: string;
+  amount: string;
+  createdAt: string;
+}
+
 export interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;

@@ -1,24 +1,8 @@
-import React from 'react';
-
-const MOCK_BALANCE = 1_250_000;
-const MOCK_ACCOUNT = '1234 5678 90';
-const MOCK_NAME = 'Nguyễn Văn A';
-
-interface Transaction {
-  id: number;
-  type: 'credit' | 'debit';
-  desc: string;
-  amount: number;
-  time: string;
-  date: string;
-}
-
-const mockTransactions: Transaction[] = [
-  { id: 1, type: 'credit', desc: 'Nạp tiền ví',        amount: 500_000,   time: '10:30', date: 'Hôm nay' },
-  { id: 2, type: 'debit',  desc: 'Thanh toán học phí', amount: 1_200_000, time: '09:15', date: 'Hôm nay' },
-  { id: 3, type: 'credit', desc: 'Nhận chuyển khoản',  amount: 200_000,   time: '18:45', date: 'Hôm qua' },
-  { id: 4, type: 'debit',  desc: 'Thanh toán căng-tin', amount: 35_000,   time: '12:00', date: 'Hôm qua' },
-];
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import transactionApi from '../api/transactionApi';
+import userApi from '../api/userApi';
+import type { RecentTransactionResponse, UserResponse } from '../types';
 
 const quickActions = [
   { label: 'Nạp tiền',    bg: 'bg-secondary-50', text: 'text-secondary-600', icon: (
@@ -43,9 +27,56 @@ const quickActions = [
   )},
 ];
 
-const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n) + ' đ';
+const formatDate = (dateStr: string) => {
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    if (isToday) return `Hôm nay · ${time}`;
+    if (isYesterday) return `Hôm qua · ${time}`;
+    return `${date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} · ${time}`;
+  } catch {
+    return dateStr;
+  }
+};
 
 const Dashboard: React.FC = () => {
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [transactions, setTransactions] = useState<RecentTransactionResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [userData, txData] = await Promise.all([
+          userApi.getInfo(),
+          transactionApi.getRecent(),
+        ]);
+        setUser(userData);
+        setTransactions(txData);
+      } catch {
+        toast.error('Không thể tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-[3px] border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl space-y-5">
       {/* ── Balance Card ── */}
@@ -57,16 +88,16 @@ const Dashboard: React.FC = () => {
 
         <div className="relative z-10">
           <p className="text-primary-200 text-sm mb-1">Số dư khả dụng</p>
-          <p className="text-[2.25rem] font-bold tracking-tight mb-5">{fmt(MOCK_BALANCE)}</p>
+          <p className="text-[2.25rem] font-bold tracking-tight mb-5">— đ</p>
 
           <div className="flex items-end justify-between">
             <div>
               <p className="text-primary-300 text-xs mb-0.5">Số tài khoản</p>
-              <p className="font-mono text-white text-sm tracking-[0.15em]">{MOCK_ACCOUNT}</p>
+              <p className="font-mono text-white text-sm tracking-[0.15em]">{user?.phone || '—'}</p>
             </div>
             <div className="text-right">
               <p className="text-primary-300 text-xs mb-0.5">Chủ tài khoản</p>
-              <p className="text-white text-sm font-medium">{MOCK_NAME}</p>
+              <p className="text-white text-sm font-medium">{user?.fullName || '—'}</p>
             </div>
           </div>
         </div>
@@ -91,43 +122,43 @@ const Dashboard: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
           <h3 className="font-semibold text-slate-900">Giao dịch gần đây</h3>
-          <button className="text-sm text-primary-600 font-medium hover:underline">
-            Xem tất cả
-          </button>
         </div>
 
-        {mockTransactions.length === 0 ? (
+        {transactions.length === 0 ? (
           <div className="px-6 py-12 text-center text-slate-400 text-sm">
             Chưa có giao dịch nào
           </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {mockTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center gap-4 px-6 py-4">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-base shrink-0 ${
-                    tx.type === 'credit'
-                      ? 'bg-secondary-50 text-secondary-600'
-                      : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {tx.type === 'credit' ? '↓' : '↑'}
-                </div>
+            {transactions.map((tx) => {
+              const isCredit = tx.amount.startsWith('+');
+              return (
+                <div key={tx.transactionId} className="flex items-center gap-4 px-6 py-4">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-base shrink-0 ${
+                      isCredit
+                        ? 'bg-secondary-50 text-secondary-600'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {isCredit ? '↓' : '↑'}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{tx.desc}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{tx.date} · {tx.time}</p>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{tx.description}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{formatDate(tx.createdAt)}</p>
+                  </div>
 
-                <p
-                  className={`text-sm font-semibold shrink-0 ${
-                    tx.type === 'credit' ? 'text-secondary-600' : 'text-slate-700'
-                  }`}
-                >
-                  {tx.type === 'credit' ? '+' : '-'}{fmt(tx.amount)}
-                </p>
-              </div>
-            ))}
+                  <p
+                    className={`text-sm font-semibold shrink-0 ${
+                      isCredit ? 'text-secondary-600' : 'text-slate-700'
+                    }`}
+                  >
+                    {tx.amount} đ
+                  </p>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
