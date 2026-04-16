@@ -51,6 +51,12 @@ export interface MerchantListResponse {
   userPhone: string;
 }
 
+export interface BalanceResponse {
+  userId: string;
+  walletId: string;
+  balance: number;
+}
+
 export interface RecentTransactionResponse {
   transactionId: string;
   description: string;
