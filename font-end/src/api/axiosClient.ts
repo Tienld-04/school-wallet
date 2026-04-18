@@ -15,7 +15,10 @@ declare module 'axios' {
 
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  },
   timeout: 15000,
 });
 
