@@ -32,11 +32,11 @@
         </processorPath>
         <module name="notification-service" />
         <module name="wallet-service" />
-        <module name="payment-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="gateway" target="21" />
+      <module name="payment-service" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
