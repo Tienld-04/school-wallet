@@ -45,7 +45,7 @@ public class MerchantController {
         );
     }
 
-    @GetMapping
+    @GetMapping("/list/my-admin")
     public ResponseEntity<Page<MerchantResponse>> getMerchants(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

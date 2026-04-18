@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import adminApi from '../../api/adminApi';
+import Pagination from '../../components/common/Pagination/Pagination';
 import type { UsersResponse } from '../../types';
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -157,14 +158,10 @@ const UserManagement: React.FC = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100">
-            <p className="text-xs text-slate-400">{totalElements} người dùng</p>
-            <div className="flex gap-1">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition-all">Trước</button>
-              <span className="px-3 py-1.5 text-xs text-slate-600">{page + 1} / {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition-all">Sau</button>
-            </div>
+        {!loading && users.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 flex-wrap gap-3">
+            <p className="text-xs text-slate-500">Tổng {totalElements} người dùng</p>
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         )}
       </div>

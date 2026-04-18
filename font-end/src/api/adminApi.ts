@@ -13,7 +13,7 @@ const adminApi = {
 
   // Merchants
   getMerchants: (page: number, size: number, type?: string, search?: string): Promise<PageResponse<MerchantResponse>> =>
-    axiosClient.get<PageResponse<MerchantResponse>>('/merchants', {
+    axiosClient.get<PageResponse<MerchantResponse>>('/merchants/list/my-admin', {
       params: { page, size, ...(type && { type }), ...(search && { search }) },
     }),
 
