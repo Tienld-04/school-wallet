@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import adminApi from '../../api/adminApi';
 import merchantApi from '../../api/merchantApi';
+import Pagination from '../../components/common/Pagination/Pagination';
 import type { MerchantResponse, MerchantType, MerchantRequest } from '../../types';
 
 const MerchantManagement: React.FC = () => {
   const [merchants, setMerchants] = useState<MerchantResponse[]>([]);
   const [types, setTypes] = useState<MerchantType[]>([]);
   const [page, setPage] = useState(0);
+  const size = 10;
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -26,16 +28,16 @@ const MerchantManagement: React.FC = () => {
   const fetchMerchants = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await adminApi.getMerchants(page, 10, filterType || undefined, search || undefined);
-      setMerchants(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      const data = await adminApi.getMerchants(page, size, filterType || undefined, search || undefined);
+      setMerchants(data.content || []);
+      setTotalPages(data.totalPages || 0);
+      setTotalElements(data.totalElements || 0);
     } catch {
       toast.error('Không thể tải danh sách merchant');
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, search]);
+  }, [page, size, filterType, search]);
 
   useEffect(() => {
     merchantApi.getTypes().then(setTypes).catch(() => {});
@@ -217,14 +219,10 @@ const MerchantManagement: React.FC = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100">
-            <p className="text-xs text-slate-400">{totalElements} merchant</p>
-            <div className="flex gap-1">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition-all">Trước</button>
-              <span className="px-3 py-1.5 text-xs text-slate-600">{page + 1} / {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition-all">Sau</button>
-            </div>
+        {!loading && merchants.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 flex-wrap gap-3">
+            <p className="text-xs text-slate-500">Tổng {totalElements} merchant</p>
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         )}
       </div>
