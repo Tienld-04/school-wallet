@@ -1,0 +1,45 @@
+server:
+  port: 8084
+  tomcat:
+    threads:
+      max: 300
+      min-spare: 20
+    accept-count: 200
+spring:
+  application:
+    name: transaction-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/transaction_service
+    username: Tienld
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 5000
+      idle-timeout: 300000
+      max-lifetime: 600000
+  jpa:
+    hibernate:
+      ddl-auto: update   # validate | update | create | create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  activemq:
+    broker-url: "tcp://localhost:61616"
+    user: admin
+    password: admin
+    in-memory: false
+  jms:
+    pub-sub-domain: true
+
+service:
+  wallet-service:
+    url: "http://localhost:8082"
+user-service:
+  url: "http://localhost:8081"
+internal:
+  secret: "${INTERNAL_SECRET:internal-secret}"

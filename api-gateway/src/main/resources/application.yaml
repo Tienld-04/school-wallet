@@ -1,0 +1,27 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+service:
+  url:
+    user-service: "${USER_SERVICE_URL:http://localhost:8081}"
+    wallet-service: "${WALLET_SERVICE_URL:http://localhost:8082}"
+    transaction-service: "${TRANSACTION_SERVICE_URL:http://localhost:8084}"
+    notification-service: "${NOTIFICATION_SERVICE_URL:http://localhost:8085}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,routes
+  endpoint:
+    health:
+      show-details: always
+  health:
+    gateway:
+      enabled: true
+internal:
+  secret: "${INTERNAL_SECRET}"
+jwt:
+  secret-key: "${JWT_SECRET_KEY}"

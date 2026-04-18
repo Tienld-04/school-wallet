@@ -1,0 +1,55 @@
+server:
+  port: 8081
+  tomcat:
+    threads:
+      max: 300
+      min-spare: 20
+    accept-count: 200
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/user_service
+    username: Tienld
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 5000
+      idle-timeout: 300000
+      max-lifetime: 600000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 123456
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+          max-wait: 3000
+  jpa:
+    hibernate:
+      ddl-auto: update   # validate | update | create | create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+service:
+  wallet-service:
+    url: "http://localhost:8082"
+  notification-service:
+    url: "http://localhost:8085"
+internal:
+  secret: "${INTERNAL_SECRET}"
+jwt:
+  secret-key: "${JWT_SECRET_KEY}"
+qr:
+  secret-key: "${QR_SECRET_KEY}"
+otp:
+  token-expiration-minutes: 10
