@@ -10,9 +10,9 @@ spring:
     name: user-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/user_service
-    username: Tienld
-    password: 123456
+    url: "${DB_USER_URL:jdbc:postgresql://localhost:5432/user_service}"
+    username: "${DB_USER_USERNAME:Tienld}"
+    password: "${DB_USER_PASSWORD:123456}"
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 30
@@ -22,9 +22,9 @@ spring:
       max-lifetime: 600000
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: 123456
+      host: "${REDIS_HOST:localhost}"
+      port: "${REDIS_PORT:6379}"
+      password: "${REDIS_PASSWORD:123456}"
       timeout: 3000
       lettuce:
         pool:
@@ -42,9 +42,9 @@ spring:
 
 service:
   wallet-service:
-    url: "http://localhost:8082"
+    url: "${WALLET_SERVICE_URL:http://localhost:8082}"
   notification-service:
-    url: "http://localhost:8085"
+    url: "${NOTIFICATION_SERVICE_URL:http://localhost:8085}"
 internal:
   secret: "${INTERNAL_SECRET}"
 jwt:

@@ -10,9 +10,9 @@ spring:
     name: transaction-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/transaction_service
-    username: Tienld
-    password: 123456
+    url: "${DB_TRANSACTION_URL:jdbc:postgresql://localhost:5432/transaction_service}"
+    username: "${DB_TRANSACTION_USERNAME:Tienld}"
+    password: "${DB_TRANSACTION_PASSWORD:123456}"
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 30
@@ -29,17 +29,17 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   activemq:
-    broker-url: "tcp://localhost:61616"
-    user: admin
-    password: admin
+    broker-url: "${ACTIVEMQ_BROKER_URL:tcp://localhost:61616}"
+    user: "${ACTIVEMQ_USER:admin}"
+    password: "${ACTIVEMQ_PASSWORD:admin}"
     in-memory: false
   jms:
     pub-sub-domain: true
 
 service:
   wallet-service:
-    url: "http://localhost:8082"
+    url: "${WALLET_SERVICE_URL:http://localhost:8082}"
 user-service:
-  url: "http://localhost:8081"
+  url: "${USER_SERVICE_URL:http://localhost:8081}"
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
