@@ -106,14 +106,14 @@ const Profile: React.FC = () => {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Thông tin cá nhân</h1>
-      <p className="text-sm text-slate-500 mb-8">Quản lý thông tin tài khoản của bạn</p>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Thông tin cá nhân</h1>
+      <p className="text-sm text-slate-500 mb-6 sm:mb-8">Quản lý thông tin tài khoản của bạn</p>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-6 w-fit">
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5 sm:mb-6 w-fit">
         <button
           onClick={() => setTab('info')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-all ${
             tab === 'info'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -123,7 +123,7 @@ const Profile: React.FC = () => {
         </button>
         <button
           onClick={() => setTab('password')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-all ${
             tab === 'password'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -137,22 +137,22 @@ const Profile: React.FC = () => {
       {tab === 'info' && user && (
         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {/* Avatar section */}
-          <div className="px-6 py-8 flex items-center gap-5 border-b border-slate-50">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-primary-500/20">
+          <div className="px-4 sm:px-6 py-6 sm:py-8 flex items-center gap-4 sm:gap-5 border-b border-slate-50">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg shadow-primary-500/20 shrink-0">
               {user.fullName.charAt(0)}
             </div>
-            <div>
-              <p className="text-lg font-bold text-slate-900">{user.fullName}</p>
-              <p className="text-sm text-slate-400 mt-0.5">{user.email}</p>
+            <div className="min-w-0">
+              <p className="text-base sm:text-lg font-bold text-slate-900 truncate">{user.fullName}</p>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5 truncate">{user.email}</p>
             </div>
           </div>
 
           {/* Info rows */}
           <div className="divide-y divide-slate-50">
             {infoRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between px-6 py-4">
-                <span className="text-sm text-slate-500">{row.label}</span>
-                <span className="text-sm font-medium text-slate-800">{row.value}</span>
+              <div key={row.label} className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4">
+                <span className="text-sm text-slate-500 shrink-0">{row.label}</span>
+                <span className="text-sm font-medium text-slate-800 text-right truncate">{row.value}</span>
               </div>
             ))}
           </div>
@@ -161,7 +161,7 @@ const Profile: React.FC = () => {
 
       {/* Password tab */}
       {tab === 'password' && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-6">
           {passwordSuccess && (
             <div className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
               <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shrink-0">

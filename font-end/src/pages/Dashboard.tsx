@@ -83,9 +83,9 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="max-w-3xl space-y-4 sm:space-y-5">
       {/* ── Balance Card ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-800 p-6 text-white shadow-lg shadow-primary-600/20">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-800 p-5 sm:p-6 text-white shadow-lg shadow-primary-600/20">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute w-52 h-52 rounded-full bg-white/5 -top-14 -right-14" />
           <div className="absolute w-36 h-36 rounded-full bg-white/5 bottom-0 right-10 translate-y-1/2" />
@@ -111,27 +111,27 @@ const Dashboard: React.FC = () => {
               )}
             </button>
           </div>
-          <p className="text-[2.25rem] font-bold tracking-tight mb-5">
+          <p className="text-[1.625rem] sm:text-[2.25rem] font-bold tracking-tight mb-5 break-words">
             {showBalance
               ? (balance ? new Intl.NumberFormat('vi-VN').format(balance.balance) + ' đ' : '— đ')
               : '••••••• đ'}
           </p>
 
-          <div className="flex items-end justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
             <div>
               <p className="text-primary-300 text-xs mb-0.5">Số tài khoản</p>
               <p className="font-mono text-white text-sm tracking-[0.15em]">{user?.phone || '—'}</p>
             </div>
-            <div className="text-right">
+            <div className="sm:text-right">
               <p className="text-primary-300 text-xs mb-0.5">Chủ tài khoản</p>
-              <p className="text-white text-base font-semibold uppercase">{user?.fullName || '—'}</p>
+              <p className="text-white text-sm sm:text-base font-semibold uppercase truncate">{user?.fullName || '—'}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Quick Actions ── */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {quickActions.map((a) => (
           <button
             key={a.label}
@@ -147,12 +147,12 @@ const Dashboard: React.FC = () => {
 
       {/* ── Recent Transactions ── */}
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-50">
           <h3 className="font-semibold text-slate-900">Giao dịch gần đây</h3>
         </div>
 
         {transactions.length === 0 ? (
-          <div className="px-6 py-12 text-center text-slate-400 text-sm">
+          <div className="px-4 sm:px-6 py-12 text-center text-slate-400 text-sm">
             Chưa có giao dịch nào
           </div>
         ) : (
@@ -160,7 +160,7 @@ const Dashboard: React.FC = () => {
             {transactions.map((tx) => {
               const isCredit = tx.amount.startsWith('+');
               return (
-                <div key={tx.transactionId} className="flex items-center gap-4 px-6 py-4">
+                <div key={tx.transactionId} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-base shrink-0 ${
                       isCredit
