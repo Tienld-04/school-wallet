@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 
 const menuItems = [
@@ -74,7 +74,24 @@ const MainLayout: React.FC = () => {
   const { logout, role } = useAuth();
   const isAdmin = role === 'ADMIN';
   const navigate = useNavigate();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -88,20 +105,32 @@ const MainLayout: React.FC = () => {
         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
     }`;
 
+  const showLabel = !collapsed || mobileOpen;
+
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50">
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 z-30 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* ── Sidebar ── */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white border-r border-slate-100 flex flex-col z-20 transition-all duration-300 ${
-          collapsed ? 'w-[72px]' : 'w-[260px]'
-        }`}
+        className={`fixed top-0 left-0 h-full bg-white border-r border-slate-100 flex flex-col z-40 transition-transform duration-300
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+          ${collapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'}
+          w-[260px]`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-slate-100 shrink-0">
           <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center shrink-0">
             <WalletIcon />
           </div>
-          {!collapsed && (
+          {showLabel && (
             <span className="font-bold text-slate-900 text-[0.9375rem] whitespace-nowrap">
               School Wallet
             </span>
@@ -113,22 +142,22 @@ const MainLayout: React.FC = () => {
           {menuItems.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'} className={linkClass}>
               <span className="shrink-0">{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
+              {showLabel && <span>{item.label}</span>}
             </NavLink>
           ))}
 
           {isAdmin && (
             <>
-              {!collapsed && (
+              {showLabel && (
                 <p className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wider px-3 pt-5 pb-1">
                   Quản trị
                 </p>
               )}
-              {collapsed && <div className="my-2 mx-2 h-px bg-slate-100" />}
+              {!showLabel && <div className="my-2 mx-2 h-px bg-slate-100" />}
               {adminMenuItems.map((item) => (
                 <NavLink key={item.to} to={item.to} className={linkClass}>
                   <span className="shrink-0">{item.icon}</span>
-                  {!collapsed && <span>{item.label}</span>}
+                  {showLabel && <span>{item.label}</span>}
                 </NavLink>
               ))}
             </>
@@ -143,7 +172,7 @@ const MainLayout: React.FC = () => {
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
               </svg>
             </span>
-            {!collapsed && <span>Thông tin cá nhân</span>}
+            {showLabel && <span>Thông tin cá nhân</span>}
           </NavLink>
 
           <button
@@ -155,27 +184,48 @@ const MainLayout: React.FC = () => {
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
               </svg>
             </span>
-            {!collapsed && <span>Đăng xuất</span>}
+            {showLabel && <span>Đăng xuất</span>}
           </button>
         </div>
       </aside>
 
       {/* ── Main content ── */}
-      <div className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-[72px]' : 'ml-[260px]'}`}>
+      <div className={`transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'}`}>
         {/* Top bar */}
-        <header className="h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center px-6 gap-4">
+        <header className="h-16 bg-white border-b border-slate-100 sticky top-0 z-20 flex items-center px-4 sm:px-6 gap-4">
+          {/* Mobile hamburger */}
           <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            onClick={() => setMobileOpen(true)}
+            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors lg:hidden"
+            aria-label="Mở menu"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
+
+          {/* Desktop collapse toggle */}
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="w-9 h-9 rounded-lg hidden lg:flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            aria-label="Thu gọn menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+              <WalletIcon />
+            </div>
+            <span className="font-bold text-slate-900 text-sm">School Wallet</span>
+          </div>
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
