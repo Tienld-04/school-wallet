@@ -103,6 +103,9 @@ public class TransactionService {
             throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
         }
         //
+        if (fromUser.getStatus().equals("LOCKED")) {
+            throw new AppException(ErrorCode.SENDER_LOCKED);
+        }
         if (toUser.getStatus().equals("LOCKED")) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
@@ -132,6 +135,13 @@ public class TransactionService {
             walletReq.setFromUserId(fromUser.getUserId());
             walletReq.setToUserId(toUser.getUserId());
             walletReq.setAmount(transferRequest.getAmount());
+            walletReq.setTransactionId(transaction.getTransactionId());
+            walletReq.setReason(switch (transactionType) {
+                case TOPUP   -> "TOP_UP";
+                case PAYMENT -> "PAYMENT";
+                default      -> "TRANSFER_OUT";
+            });
+            walletReq.setNote(transferRequest.getDescription());
             restTemplate.postForEntity(
                     walletServiceUrl + "/internal/wallets/transfer",
                     walletReq,
@@ -175,7 +185,7 @@ public class TransactionService {
 
         return transactionMapper.toTransactionResponse(transaction);
     }
-    //
+    // Thanh toán cho merchant
     @Transactional(noRollbackFor = AppException.class)
     public TransactionResponse merchantPayment(PaymentRequest request, String fromPhone) {
         if (fromPhone.equals(request.getMerchantPhone())) {
@@ -221,6 +231,9 @@ public class TransactionService {
         if (fromUser == null || toUser == null) {
             throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
         }
+        if (fromUser.getStatus().equals("LOCKED")) {
+            throw new AppException(ErrorCode.SENDER_LOCKED);
+        }
         if (toUser.getStatus().equals("LOCKED")) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
@@ -255,6 +268,9 @@ public class TransactionService {
             walletReq.setFromUserId(fromUser.getUserId());
             walletReq.setToUserId(toUser.getUserId());
             walletReq.setAmount(request.getAmount());
+            walletReq.setTransactionId(transaction.getTransactionId());
+            walletReq.setReason("PAYMENT");
+            walletReq.setNote(description);
             restTemplate.postForEntity(
                     walletServiceUrl + "/internal/wallets/transfer",
                     walletReq,
@@ -298,7 +314,7 @@ public class TransactionService {
 
         return transactionMapper.toTransactionResponse(transaction);
     }
-
+    // Lấy lịch sử giao dịch của user
     public PageResponse<TransactionHistoryResponse> getTransactionHistory(String userId, int page, int size) {
         UUID userUUID = UUID.fromString(userId);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -334,7 +350,7 @@ public class TransactionService {
                 .totalPages(transactionPage.getTotalPages())
                 .build();
     }
-
+    // Lấy chi tiết 1 giao dịch
     public TransactionHistoryResponse getTransactionDetail(UUID transactionId) {
         Transaction tx = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
@@ -353,7 +369,7 @@ public class TransactionService {
                 .createdAt(tx.getCreatedAt())
                 .build();
     }
-
+    // Lấy 5 giao dịch gần nhất của user
     public List<RecentTransactionResponse> getRecentTransactions(String userId) {
         UUID userUUID = UUID.fromString(userId);
         List<Transaction> transactions = transactionRepository
