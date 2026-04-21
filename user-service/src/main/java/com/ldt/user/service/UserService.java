@@ -97,13 +97,15 @@ public class UserService {
     }
 
     public UserResponse getUserById(UUID userId) {
-        User user = userRepository.findById(userId).orElse(null);
+        User user = userRepository.findById(userId)
+        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
     }
 
     public UserResponse getUserCurent() {
         String user_id = UserContext.getUserId();
-        User user = userRepository.findById(UUID.fromString(user_id)).orElse(null);
+        User user = userRepository.findById(UUID.fromString(user_id))
+        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
     }
 
