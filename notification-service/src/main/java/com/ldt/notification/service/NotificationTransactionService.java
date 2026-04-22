@@ -16,7 +16,7 @@ import java.util.Locale;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NotificationService {
+public class NotificationTransactionService {
 
     private final EmailService emailService;
     private final NotificationLogService notificationLogService;

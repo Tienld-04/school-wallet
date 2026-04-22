@@ -29,7 +29,7 @@ public class EmailService {
         this.fromEmail = new Email(fromEmailAddress, fromName);
     }
 
-    public void sendEmail(String toEmailAddress, String toName, String subject, String htmlContent) {
+    public boolean sendEmail(String toEmailAddress, String toName, String subject, String htmlContent) {
         Email to = new Email(toEmailAddress, toName);
         Content content = new Content("text/html", htmlContent);
         Mail mail = new Mail(fromEmail, subject, to, content);
@@ -43,12 +43,15 @@ public class EmailService {
 
             if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
                 log.info("Email sent successfully to: {} | Subject: {}", toEmailAddress, subject);
+                return true;
             } else {
                 log.error("Failed to send email to: {} | Status: {} | Body: {}",
                         toEmailAddress, response.getStatusCode(), response.getBody());
+                return false;
             }
         } catch (IOException e) {
             log.error("Error sending email to: {} | Error: {}", toEmailAddress, e.getMessage());
+            return false;
         }
     }
 }
