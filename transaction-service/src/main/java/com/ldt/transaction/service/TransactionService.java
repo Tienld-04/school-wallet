@@ -174,6 +174,7 @@ public class TransactionService {
                 .description(transaction.getDescription())
                 .transactionType(transaction.getTransactionType().name())
                 .status(transaction.getStatus().name())
+                .transactionTime(transaction.getCreatedAt())
                 .build();
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -303,6 +304,7 @@ public class TransactionService {
                 .description(transaction.getDescription())
                 .transactionType(transaction.getTransactionType().name())
                 .status(transaction.getStatus().name())
+                .transactionTime(transaction.getCreatedAt())
                 .build();
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
