@@ -1,6 +1,9 @@
 package com.ldt.notification.service;
 
 import com.ldt.notification.event.TransactionNotificationEvent;
+import com.ldt.notification.model.NotificationChannel;
+import com.ldt.notification.model.NotificationDirection;
+import com.ldt.notification.model.NotificationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import java.util.Locale;
 public class NotificationService {
 
     private final EmailService emailService;
+    private final NotificationLogService notificationLogService;
 
     public void notifySender(TransactionNotificationEvent event) {
         String message = String.format(
@@ -39,9 +43,19 @@ public class NotificationService {
                     event.getDescription(),
                     event.getTransactionId().toString(),
                     event.getStatus(),
-                    "#e74c3c"
+                    "#e74c3c",
+                    event.getTransactionTime()
             );
-            emailService.sendEmail(event.getFromEmail(), event.getFromFullName(), subject, html);
+            boolean sent = emailService.sendEmail(event.getFromEmail(), event.getFromFullName(), subject, html);
+            notificationLogService.logTransaction(
+                    NotificationChannel.EMAIL,
+                    event.getFromEmail(),
+                    event.getFromUserId(),
+                    event,
+                    NotificationDirection.DEBIT,
+                    sent ? NotificationStatus.SENT : NotificationStatus.FAILED,
+                    sent ? null : "SendGrid failed"
+            );
         }
     }
 
@@ -67,9 +81,19 @@ public class NotificationService {
                     event.getDescription(),
                     event.getTransactionId().toString(),
                     event.getStatus(),
-                    "#27ae60"
+                    "#27ae60",
+                    event.getTransactionTime()
             );
-            emailService.sendEmail(event.getToEmail(), event.getToFullName(), subject, html);
+            boolean sent = emailService.sendEmail(event.getToEmail(), event.getToFullName(), subject, html);
+            notificationLogService.logTransaction(
+                    NotificationChannel.EMAIL,
+                    event.getToEmail(),
+                    event.getToUserId(),
+                    event,
+                    NotificationDirection.CREDIT,
+                    sent ? NotificationStatus.SENT : NotificationStatus.FAILED,
+                    sent ? null : "SendGrid failed"
+            );
         }
     }
 
@@ -87,9 +111,11 @@ public class NotificationService {
             String description,
             String transactionId,
             String status,
-            String amountColor
+            String amountColor,
+            LocalDateTime transactionTime
     ) {
-        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        String time = (transactionTime != null ? transactionTime : LocalDateTime.now())
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
         return """
                 <!DOCTYPE html>
                 <html>

@@ -3,6 +3,7 @@ package com.ldt.transaction.service;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
+import com.ldt.transaction.dto.response.TransactionStatusHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
@@ -50,6 +51,7 @@ public class TransactionService {
     private final RestTemplate restTemplate;
     private final TransactionMapper transactionMapper;
     private final TransactionEventProducer notificationProducer;
+    private final TransactionStatusHistoryService statusHistoryService;
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
 
@@ -129,6 +131,7 @@ public class TransactionService {
                     .orElseThrow(() -> new AppException(ErrorCode.DUPLICATE_TRANSACTION));
             return transactionMapper.toTransactionResponse(existing);
         }
+        statusHistoryService.record(transaction.getTransactionId(), null, TransactionStatus.PENDING, "Giao dịch được khởi tạo");
         //
         try {
             WalletTransferRequest walletReq = new WalletTransferRequest();
@@ -151,13 +154,16 @@ public class TransactionService {
         } catch (HttpClientErrorException ex) {
             transaction.setStatus(TransactionStatus.FAILED);
             transactionRepository.save(transaction);
+            statusHistoryService.record(transaction.getTransactionId(), TransactionStatus.PENDING, TransactionStatus.FAILED, ex.getResponseBodyAsString());
             throw new AppException(ErrorCode.TRANSFER_FAILED, ex.getResponseBodyAsString());
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILED);
             transactionRepository.save(transaction);
+            statusHistoryService.record(transaction.getTransactionId(), TransactionStatus.PENDING, TransactionStatus.FAILED, "Lỗi hệ thống: " + ex.getMessage());
             throw new AppException(ErrorCode.TRANSFER_FAILED, "Lỗi hệ thống: " + ex.getMessage());
         }
         transaction = transactionRepository.save(transaction);
+        statusHistoryService.record(transaction.getTransactionId(), TransactionStatus.PENDING, TransactionStatus.SUCCESS, "Chuyển tiền thành công");
 
         // Event transfer -> ActiveMq
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
@@ -263,6 +269,7 @@ public class TransactionService {
                     .orElseThrow(() -> new AppException(ErrorCode.DUPLICATE_TRANSACTION));
             return transactionMapper.toTransactionResponse(existing);
         }
+        statusHistoryService.record(transaction.getTransactionId(), null, TransactionStatus.PENDING, "Giao dịch được khởi tạo");
         // 5. Gọi wallet-service chuyển tiền
         try {
             WalletTransferRequest walletReq = new WalletTransferRequest();
@@ -281,13 +288,16 @@ public class TransactionService {
         } catch (HttpClientErrorException ex) {
             transaction.setStatus(TransactionStatus.FAILED);
             transactionRepository.save(transaction);
+            statusHistoryService.record(transaction.getTransactionId(), TransactionStatus.PENDING, TransactionStatus.FAILED, ex.getResponseBodyAsString());
             throw new AppException(ErrorCode.TRANSFER_FAILED, ex.getResponseBodyAsString());
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILED);
             transactionRepository.save(transaction);
+            statusHistoryService.record(transaction.getTransactionId(), TransactionStatus.PENDING, TransactionStatus.FAILED, "Lỗi hệ thống: " + ex.getMessage());
             throw new AppException(ErrorCode.TRANSFER_FAILED, "Lỗi hệ thống: " + ex.getMessage());
         }
         transaction = transactionRepository.save(transaction);
+        statusHistoryService.record(transaction.getTransactionId(), TransactionStatus.PENDING, TransactionStatus.SUCCESS, "Thanh toán merchant thành công");
 
         // 6. Event notification
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
@@ -357,6 +367,12 @@ public class TransactionService {
         Transaction tx = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
 
+        boolean isAdmin = "ADMIN".equals(UserContext.getRole());
+        UUID callerId = UUID.fromString(UserContext.getUserId());
+        if (!isAdmin && !callerId.equals(tx.getFromUserId()) && !callerId.equals(tx.getToUserId())) {
+            throw new AppException(ErrorCode.TRANSACTION_NOT_FOUND);
+        }
+
         return TransactionHistoryResponse.builder()
                 .transactionId(tx.getTransactionId())
                 .fromFullName(tx.getFromFullName())
@@ -371,6 +387,14 @@ public class TransactionService {
                 .createdAt(tx.getCreatedAt())
                 .build();
     }
+    // Lấy lịch sử trạng thái của 1 giao dịch
+    public List<TransactionStatusHistoryResponse> getStatusHistory(UUID transactionId) {
+        if (!transactionRepository.existsById(transactionId)) {
+            throw new AppException(ErrorCode.TRANSACTION_NOT_FOUND);
+        }
+        return statusHistoryService.getByTransactionId(transactionId);
+    }
+
     // Lấy 5 giao dịch gần nhất của user
     public List<RecentTransactionResponse> getRecentTransactions(String userId) {
         UUID userUUID = UUID.fromString(userId);
