@@ -97,6 +97,29 @@ export interface PageResponse<T> {
   size: number;
 }
 
+export interface RecipientResponse {
+  fullName: string;
+  phone: string;
+}
+
+export interface TransferRequest {
+  requestId: string;
+  toPhoneNumber: string;
+  amount: number;
+  description: string;
+  pin: string;
+}
+
+export interface TransferResponse {
+  transactionId: string;
+  fromUserId: string;
+  toUserId: string;
+  amount: number;
+  description: string;
+  status: string;
+  transactionType: string;
+}
+
 export interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
