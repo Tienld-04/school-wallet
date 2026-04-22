@@ -34,6 +34,8 @@ public class TransactionEventConsumer {
             webSocketNotificationService.pushUnreadCount(event.getToUserId());
         } catch (JsonProcessingException e) {
             log.error("Failed to deserialize transaction event: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error processing transaction event: {}", e.getMessage(), e);
         }
     }
 }
