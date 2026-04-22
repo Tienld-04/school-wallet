@@ -151,8 +151,7 @@ public class WalletService {
             LedgerReason.TRANSFER_IN,   "Nhận tiền chuyển khoản",
             LedgerReason.TRANSFER_OUT,  "Chuyển tiền đi",
             LedgerReason.TOP_UP,        "Nạp tiền",
-            LedgerReason.REFUND,        "Hoàn tiền",
-            LedgerReason.ADJUSTMENT,    "Điều chỉnh số dư"
+            LedgerReason.REFUND,        "Hoàn tiền"
     );
 
     private LedgerEntryResponse toLedgerEntryResponse(WalletLedger entry, String currency) {
