@@ -35,8 +35,8 @@ const UserManagement: React.FC = () => {
     try {
       const data = await adminApi.getUsers(page, 10, filterStatus || undefined, search || undefined);
       setUsers(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      setTotalPages(data.page.totalPages);
+      setTotalElements(data.page.totalElements);
     } catch {
       toast.error('Không thể tải danh sách người dùng');
     } finally {

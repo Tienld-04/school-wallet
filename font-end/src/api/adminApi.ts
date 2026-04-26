@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { UsersResponse, PageResponse, MerchantResponse, MerchantRequest } from '../types';
+import type { UsersResponse, PageResponse, MerchantResponse, MerchantRequest, KycAdminListResponse } from '../types';
 
 const adminApi = {
   // Users
@@ -10,6 +10,18 @@ const adminApi = {
 
   toggleUserStatus: (userId: string): Promise<{ message: string }> =>
     axiosClient.put<{ message: string }>(`/admin/users/${userId}/toggle-status`),
+
+  // KYC
+  getKycList: (page: number, size: number, status?: string): Promise<PageResponse<KycAdminListResponse>> =>
+    axiosClient.get<PageResponse<KycAdminListResponse>>('/admin/kyc', {
+      params: { page, size, ...(status && { status }) },
+    }),
+
+  approveKyc: (kycId: string): Promise<{ message: string }> =>
+    axiosClient.put<{ message: string }>(`/admin/kyc/${kycId}/approve`),
+
+  rejectKyc: (kycId: string, rejectionReason: string): Promise<{ message: string }> =>
+    axiosClient.put<{ message: string }>(`/admin/kyc/${kycId}/reject`, { rejectionReason }),
 
   // Merchants
   getMerchants: (page: number, size: number, type?: string, search?: string): Promise<PageResponse<MerchantResponse>> =>
