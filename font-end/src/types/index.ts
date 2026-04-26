@@ -121,6 +121,35 @@ export interface TransferResponse {
   transactionType: string;
 }
 
+export interface KycRequest {
+  fullName: string;
+  dateOfBirth: string;
+  idNumber: string;
+  idIssueDate: string;
+  idIssuePlace: string;
+  studentCode: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
+  studentCardUrl?: string;
+}
+
+export interface KycResponse {
+  kycId: string;
+  fullName: string;
+  dateOfBirth: string;
+  idNumber: string;
+  idIssueDate: string;
+  idIssuePlace: string;
+  studentCode: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
+  studentCardUrl?: string;
+  status: string;
+  submittedAt: string;
+  verifiedAt?: string;
+  rejectionReason?: string;
+}
+
 export interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;

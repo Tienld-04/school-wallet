@@ -5,6 +5,8 @@ import com.ldt.user.dto.auth.ForgotPasswordRequest;
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.auth.LogoutRequest;
+import com.ldt.user.dto.kyc.KycRequest;
+import com.ldt.user.dto.kyc.KycResponse;
 import com.ldt.user.dto.request.DynamicQrRequest;
 import com.ldt.user.dto.request.ResetPinRequest;
 import com.ldt.user.dto.request.UserCreateRequest;
@@ -15,6 +17,7 @@ import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.service.AuthService;
 import com.ldt.user.dto.request.QrVerifyRequest;
 import com.ldt.user.dto.response.QrVerifyResponse;
+import com.ldt.user.service.KycService;
 import com.ldt.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,34 +32,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final KycService kycService;
 
-//    @PostMapping("/register")
-//    public ResponseEntity<String> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest){
-//        userService.createUser(userCreateRequest);
-//        return ResponseEntity.ok().build();
-//    }
-//    @PostMapping("/login")
-//    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest){
-//        return ResponseEntity.ok(authService.login(loginRequest));
-//    }
-//
-//    @PostMapping("/logout")
-//    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest logoutRequest){
-//        authService.logout(logoutRequest);
-//        return ResponseEntity.ok().build();
-//    }
-
-    //    @PostMapping("/forgot-password")
-//    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
-//        authService.forgotPassword(request);
-//        return ResponseEntity.ok(Map.of("message", "Mật khẩu mới đã được gửi đến email của bạn"));
-//    }
-//
-//    @PutMapping("/change-password")
-//    public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request){
-//        authService.changePassword(request);
-//        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
-//    }
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getUsersById(@PathVariable UUID userId) {
         return ResponseEntity.ok(userService.getUserById(userId));
@@ -114,5 +91,16 @@ public class UserController {
             @Valid @RequestBody QrVerifyRequest request) {
         return ResponseEntity.ok(userService.verifyQr(request));
     }
+
+    @PostMapping("/kyc")
+    public ResponseEntity<KycResponse> submitKyc(@Valid @RequestBody KycRequest request) {
+        return ResponseEntity.ok(kycService.submitKyc(request));
+    }
+
+    @GetMapping("/kyc")
+    public ResponseEntity<KycResponse> getMyKyc() {
+        return ResponseEntity.ok(kycService.getMyKyc());
+    }
+
 }
 
