@@ -14,6 +14,7 @@ import com.ldt.user.dto.wallet.CreateWalletRequest;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.mapper.UserMapper;
+import com.ldt.user.model.KycStatus;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.model.UserStatus;
@@ -78,6 +79,7 @@ public class UserService {
             user.setTransactionPinHash(passwordEncoder.encode(userCreateRequest.getTransactionPin()));
             user.setRole(UserRole.USER);
             user.setStatus(UserStatus.ACTIVE);
+            user.setKycStatus(KycStatus.UNVERIFIED);
             user = userRepository.save(user);
 
             // 4. Tạo ví

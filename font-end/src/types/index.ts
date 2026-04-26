@@ -32,6 +32,7 @@ export interface UserResponse {
   phone: string;
   email: string;
   role: string;
+  kycStatus: string;
   createdAt: string;
 }
 

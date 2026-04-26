@@ -94,6 +94,13 @@ const Profile: React.FC = () => {
     );
   }
 
+  const kycStatusConfig: Record<string, { label: string; className: string }> = {
+    UNVERIFIED: { label: 'Chưa xác minh', className: 'bg-slate-100 text-slate-500' },
+    PENDING:    { label: 'Chờ duyệt',     className: 'bg-amber-50 text-amber-600' },
+    VERIFIED:   { label: 'Đã xác minh',   className: 'bg-emerald-50 text-emerald-600' },
+    REJECTED:   { label: 'Bị từ chối',    className: 'bg-red-50 text-red-500' },
+  };
+
   const infoRows = user
     ? [
         { label: 'Họ và tên', value: user.fullName },
@@ -155,6 +162,12 @@ const Profile: React.FC = () => {
                 <span className="text-sm font-medium text-slate-800 text-right truncate">{row.value}</span>
               </div>
             ))}
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4">
+              <span className="text-sm text-slate-500 shrink-0">Trạng thái KYC</span>
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${kycStatusConfig[user.kycStatus]?.className ?? 'bg-slate-100 text-slate-500'}`}>
+                {kycStatusConfig[user.kycStatus]?.label ?? user.kycStatus}
+              </span>
+            </div>
           </div>
         </div>
       )}

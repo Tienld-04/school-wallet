@@ -45,6 +45,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "kyc_status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private KycStatus kycStatus = KycStatus.UNVERIFIED;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
