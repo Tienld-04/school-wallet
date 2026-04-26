@@ -1,5 +1,7 @@
 package com.ldt.user.controller;
 
+import com.ldt.user.dto.kyc.KycAdminListResponse;
+import com.ldt.user.dto.kyc.KycRejectRequest;
 import com.ldt.user.dto.request.ResetPinRequest;
 import com.ldt.user.dto.response.UsersResponse;
 import com.ldt.user.model.UserStatus;
@@ -47,5 +49,27 @@ public class AdminController {
     public ResponseEntity<Map<String, String>> resetTransactionPin(@Valid @RequestBody ResetPinRequest request) {
         adminService.resetTransactionPin(request.getPhone(), request.getNewPin());
         return ResponseEntity.ok(Map.of("message", "Cấp lại mã PIN thành công"));
+    }
+    
+    @GetMapping("/kyc")
+    public ResponseEntity<Page<KycAdminListResponse>> getKycList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(adminService.getKycList(page, size, status));
+    }
+
+    @PutMapping("/kyc/{kycId}/approve")
+    public ResponseEntity<Map<String, String>> approveKyc(@PathVariable UUID kycId) {
+        adminService.approveKyc(kycId);
+        return ResponseEntity.ok(Map.of("message", "Duyệt KYC thành công"));
+    }
+
+    @PutMapping("/kyc/{kycId}/reject")
+    public ResponseEntity<Map<String, String>> rejectKyc(
+            @PathVariable UUID kycId,
+            @Valid @RequestBody KycRejectRequest request) {
+        adminService.rejectKyc(kycId, request.getRejectionReason());
+        return ResponseEntity.ok(Map.of("message", "Từ chối KYC thành công"));
     }
 }
