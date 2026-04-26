@@ -14,6 +14,7 @@ import com.ldt.user.dto.wallet.CreateWalletRequest;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.mapper.UserMapper;
+import com.ldt.user.model.KycStatus;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.model.UserStatus;
@@ -78,6 +79,7 @@ public class UserService {
             user.setTransactionPinHash(passwordEncoder.encode(userCreateRequest.getTransactionPin()));
             user.setRole(UserRole.USER);
             user.setStatus(UserStatus.ACTIVE);
+            user.setKycStatus(KycStatus.UNVERIFIED);
             user = userRepository.save(user);
 
             // 4. Tạo ví
@@ -97,13 +99,15 @@ public class UserService {
     }
 
     public UserResponse getUserById(UUID userId) {
-        User user = userRepository.findById(userId).orElse(null);
+        User user = userRepository.findById(userId)
+        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
     }
 
     public UserResponse getUserCurent() {
         String user_id = UserContext.getUserId();
-        User user = userRepository.findById(UUID.fromString(user_id)).orElse(null);
+        User user = userRepository.findById(UUID.fromString(user_id))
+        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
     }
 

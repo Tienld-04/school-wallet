@@ -1,164 +1,91 @@
 package com.ldt.notification.service;
 
+import com.ldt.notification.context.UserContext;
+import com.ldt.notification.dto.NotificationResponse;
 import com.ldt.notification.event.TransactionNotificationEvent;
+import com.ldt.notification.model.Notification;
+import com.ldt.notification.model.NotificationDirection;
+import com.ldt.notification.model.NotificationType;
+import com.ldt.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.util.UUID;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
-    private final EmailService emailService;
+    private final NotificationRepository notificationRepository;
 
-    public void notifySender(TransactionNotificationEvent event) {
-        String message = String.format(
-                "Bạn đã chuyển %s VND cho %s (%s). Nội dung: %s. Mã GD: %s",
-                formatAmount(event),
-                event.getToFullName(),
-                event.getToPhone(),
-                event.getDescription(),
-                event.getTransactionId()
-        );
-        log.info("[NOTIFICATION - SENDER] To: {} | {}", event.getFromPhone(), message);
-
-        if (event.getFromEmail() != null) {
-            String subject = "School Wallet - Giao dịch chuyển tiền thành công";
-            String html = buildTransactionEmailHtml(
-                    event.getFromFullName(),
-                    event.getTransactionType(),
-                    "-" + formatAmount(event) + " VND",
-                    event.getToFullName(),
-                    event.getToPhone(),
-                    event.getDescription(),
-                    event.getTransactionId().toString(),
-                    event.getStatus(),
-                    "#e74c3c"
-            );
-            emailService.sendEmail(event.getFromEmail(), event.getFromFullName(), subject, html);
+    public void save(TransactionNotificationEvent event, UUID userId, NotificationDirection direction) {
+        try {
+            boolean isDebit = direction == NotificationDirection.DEBIT;
+            notificationRepository.save(Notification.builder()
+                    .userId(userId)
+                    .title(buildTitle(event.getTransactionType(), direction))
+                    .type(NotificationType.TRANSACTION)
+                    .transactionId(event.getTransactionId())
+                    .transactionType(event.getTransactionType())
+                    .amount(event.getAmount())
+                    .direction(direction)
+                    .counterpartyName(isDebit ? event.getToFullName() : event.getFromFullName())
+                    .counterpartyPhone(isDebit ? event.getToPhone() : event.getFromPhone())
+                    .transactionStatus(event.getStatus())
+                    .description(event.getDescription())
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to save notification inbox for userId={}: {}", userId, e.getMessage());
         }
     }
-
-    public void notifyReceiver(TransactionNotificationEvent event) {
-        String message = String.format(
-                "Bạn nhận được %s VND từ %s (%s). Nội dung: %s. Mã GD: %s",
-                formatAmount(event),
-                event.getFromFullName(),
-                event.getFromPhone(),
-                event.getDescription(),
-                event.getTransactionId()
-        );
-        log.info("[NOTIFICATION - RECEIVER] To: {} | {}", event.getToPhone(), message);
-
-        if (event.getToEmail() != null) {
-            String subject = "School Wallet - Bạn nhận được tiền";
-            String html = buildTransactionEmailHtml(
-                    event.getToFullName(),
-                    event.getTransactionType(),
-                    "+" + formatAmount(event) + " VND",
-                    event.getFromFullName(),
-                    event.getFromPhone(),
-                    event.getDescription(),
-                    event.getTransactionId().toString(),
-                    event.getStatus(),
-                    "#27ae60"
-            );
-            emailService.sendEmail(event.getToEmail(), event.getToFullName(), subject, html);
-        }
+    
+    private String buildTitle(String transactionType, NotificationDirection direction) {
+        boolean isDebit = direction == NotificationDirection.DEBIT;
+        return switch (transactionType) {
+            case "TRANSFER" -> isDebit ? "Chuyển tiền thành công" : "Bạn nhận được tiền";
+            case "TOPUP" -> "Nạp tiền thành công";
+            case "PAYMENT" -> isDebit ? "Thanh toán thành công" : "Bạn nhận được thanh toán";
+            case "MERCHANT_PAYMENT" -> isDebit ? "Thanh toán merchant thành công" : "Merchant nhận được thanh toán";
+            default -> isDebit ? "Giao dịch thành công" : "Bạn nhận được tiền";
+        };
+    }
+    
+    // Lấy inbox + tự động đánh dấu tất cả đã đọc khi user mở chuông thông báo
+    @Transactional
+    public Page<NotificationResponse> getInbox(int page, int size) {
+        UUID userId = UUID.fromString(UserContext.getUserId());
+        Page<NotificationResponse> result = notificationRepository
+                .findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size))
+                .map(this::toResponse);
+        notificationRepository.markAllAsRead(userId);
+        return result;
     }
 
-    private String formatAmount(TransactionNotificationEvent event) {
-        NumberFormat formatter = NumberFormat.getInstance(new Locale("vi", "VN"));
-        return formatter.format(event.getAmount());
+    public long getUnreadCount() {
+        UUID userId = UUID.fromString(UserContext.getUserId());
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 
-    private String buildTransactionEmailHtml(
-            String recipientName,
-            String transactionType,
-            String amount,
-            String counterpartyName,
-            String counterpartyPhone,
-            String description,
-            String transactionId,
-            String status,
-            String amountColor
-    ) {
-        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
-        return """
-                <!DOCTYPE html>
-                <html>
-                <head><meta charset="UTF-8"></head>
-                <body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,sans-serif;">
-                  <table width="100%%" cellpadding="0" cellspacing="0" style="padding:20px;">
-                    <tr><td align="center">
-                      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;">
-                        <tr>
-                          <td style="background:#2c3e50;padding:24px;text-align:center;">
-                            <h1 style="color:#ffffff;margin:0;font-size:24px;">School Wallet</h1>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding:32px;">
-                            <p style="font-size:16px;color:#333;">Xin chào <strong>%s</strong>,</p>
-                            <p style="font-size:15px;color:#555;">Giao dịch của bạn đã được xử lý:</p>
-                            <table width="100%%" cellpadding="10" cellspacing="0" style="background:#f9f9f9;border-radius:6px;margin:16px 0;">
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Loại giao dịch</td>
-                                <td style="font-size:14px;text-align:right;font-weight:bold;">%s</td>
-                              </tr>
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Số tiền</td>
-                                <td style="font-size:18px;text-align:right;font-weight:bold;color:%s;">%s</td>
-                              </tr>
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Đối tác</td>
-                                <td style="font-size:14px;text-align:right;">%s (%s)</td>
-                              </tr>
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Nội dung</td>
-                                <td style="font-size:14px;text-align:right;">%s</td>
-                              </tr>
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Mã giao dịch</td>
-                                <td style="font-size:12px;text-align:right;color:#888;">%s</td>
-                              </tr>
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Trạng thái</td>
-                                <td style="font-size:14px;text-align:right;font-weight:bold;color:#27ae60;">%s</td>
-                              </tr>
-                              <tr>
-                                <td style="color:#888;font-size:14px;">Thời gian</td>
-                                <td style="font-size:14px;text-align:right;">%s</td>
-                              </tr>
-                            </table>
-                            <p style="font-size:13px;color:#999;">Nếu bạn không thực hiện giao dịch này, vui lòng liên hệ 0936733881 để được hỗ trợ ngay.</p>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="background:#f4f4f4;padding:16px;text-align:center;">
-                            <p style="font-size:12px;color:#aaa;margin:0;">School Wallet. TienDev.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td></tr>
-                  </table>
-                </body>
-                </html>
-                """.formatted(
-                recipientName,
-                transactionType,
-                amountColor, amount,
-                counterpartyName, counterpartyPhone,
-                description,
-                transactionId,
-                status,
-                time
-        );
+    private NotificationResponse toResponse(Notification n) {
+        return NotificationResponse.builder()
+                .id(n.getId())
+                .title(n.getTitle())
+                .description(n.getDescription())
+                .type(n.getType().name())
+                .isRead(n.isRead())
+                .transactionId(n.getTransactionId())
+                .transactionType(n.getTransactionType())
+                .amount(n.getAmount())
+                .direction(n.getDirection() != null ? n.getDirection().name() : null)
+                .counterpartyName(n.getCounterpartyName())
+                .counterpartyPhone(n.getCounterpartyPhone())
+                .createdAt(n.getCreatedAt())
+                .build();
     }
+
 }

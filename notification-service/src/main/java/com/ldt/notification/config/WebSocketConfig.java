@@ -12,12 +12,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Client subscribe vào prefix /topic hoặc /queue
-        config.enableSimpleBroker("/topic", "/queue");
-        // Client gửi message lên server với prefix /app
-        config.setApplicationDestinationPrefixes("/app");
-        // Prefix cho gửi đến user cụ thể: /user/{userId}/queue/...
-        config.setUserDestinationPrefix("/user");
+        config.enableSimpleBroker("/topic");
     }
 
     @Override

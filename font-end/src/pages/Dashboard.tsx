@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import transactionApi from '../api/transactionApi';
 import userApi from '../api/userApi';
@@ -6,27 +7,33 @@ import walletApi from '../api/walletApi';
 import type { RecentTransactionResponse, UserResponse, BalanceResponse } from '../types';
 
 const quickActions = [
-  { label: 'Nạp tiền',    bg: 'bg-secondary-50', text: 'text-secondary-600', icon: (
+  { label: 'Nạp tiền',    path: '/top-up',   bg: 'bg-secondary-50', text: 'text-secondary-600', icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
     </svg>
   )},
-  { label: 'Chuyển tiền', bg: 'bg-primary-50',   text: 'text-primary-600', icon: (
+  { label: 'Chuyển tiền', path: '/transfer', bg: 'bg-primary-50',   text: 'text-primary-600', icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
     </svg>
   )},
-  { label: 'Thanh toán',  bg: 'bg-orange-50',    text: 'text-orange-500', icon: (
+  { label: 'Thanh toán',  path: '/payment',  bg: 'bg-orange-50',    text: 'text-orange-500', icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
     </svg>
   )},
-  { label: 'Lịch sử',    bg: 'bg-slate-100',    text: 'text-slate-500', icon: (
+  { label: 'Lịch sử',    path: null,        bg: 'bg-slate-100',    text: 'text-slate-500', icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
     </svg>
   )},
 ];
+
+const formatAmount = (amount: string) => {
+  const sign = amount[0] === '+' || amount[0] === '-' ? amount[0] : '';
+  const digits = amount.replace(/[^0-9]/g, '');
+  return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
 
 const formatDate = (dateStr: string) => {
   try {
@@ -48,6 +55,7 @@ const formatDate = (dateStr: string) => {
 };
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserResponse | null>(null);
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [transactions, setTransactions] = useState<RecentTransactionResponse[]>([]);
@@ -113,8 +121,11 @@ const Dashboard: React.FC = () => {
           </div>
           <p className="text-[1.625rem] sm:text-[2.25rem] font-bold tracking-tight mb-5 break-words">
             {showBalance
-              ? (balance ? new Intl.NumberFormat('vi-VN').format(balance.balance) + ' đ' : '— đ')
-              : '••••••• đ'}
+              ? (balance
+                  ? <>{new Intl.NumberFormat('vi-VN').format(balance.balance)}<span className="text-base font-medium ml-1.5 opacity-80">VND</span></>
+                  : '—')
+              : '•••••••'}
+            {!showBalance && <span className="text-base font-medium ml-1.5 opacity-80">VND</span>}
           </p>
 
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
@@ -135,6 +146,7 @@ const Dashboard: React.FC = () => {
         {quickActions.map((a) => (
           <button
             key={a.label}
+            onClick={() => a.path && navigate(a.path)}
             className="flex flex-col items-center gap-2.5 py-4 px-2 bg-white rounded-xl border border-slate-100 hover:border-primary-200 hover:shadow-sm transition-all"
           >
             <div className={`w-11 h-11 rounded-full flex items-center justify-center ${a.bg} ${a.text}`}>
@@ -176,12 +188,8 @@ const Dashboard: React.FC = () => {
                     <p className="text-xs text-slate-400 mt-0.5">{formatDate(tx.createdAt)}</p>
                   </div>
 
-                  <p
-                    className={`text-sm font-semibold shrink-0 ${
-                      isCredit ? 'text-secondary-600' : 'text-slate-700'
-                    }`}
-                  >
-                    {tx.amount} đ
+                  <p className={`text-sm font-semibold shrink-0 ${isCredit ? 'text-secondary-600' : 'text-slate-700'}`}>
+                    {formatAmount(tx.amount)}<span className="text-xs font-medium ml-1 opacity-60">VND</span>
                   </p>
                 </div>
               );

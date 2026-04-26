@@ -11,7 +11,8 @@ public enum ErrorCode {
     SELF_TRANSFER(2001, "Bạn không thể tự chuyển tiền cho chính mình!", HttpStatus.BAD_REQUEST),
     PIN_VERIFICATION_FAILED(2002, "Không thể xác thực PIN", HttpStatus.BAD_REQUEST),
     DUPLICATE_TRANSACTION(2003, "Giao dịch đang được xử lý, vui lòng chờ", HttpStatus.CONFLICT),
-    RECIPIENT_LOCKED(2004, "Ví bị khóa. Vui lòng nhập lại số điện thoại", HttpStatus.BAD_REQUEST),
+    SENDER_LOCKED(2004, "Tài khoản của bạn đã bị khóa, không thể thực hiện giao dịch", HttpStatus.FORBIDDEN),
+    RECIPIENT_LOCKED(2008, "Tài khoản người nhận đã bị khóa", HttpStatus.BAD_REQUEST),
     TRANSFER_FAILED(2005, "Chuyển tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
     TRANSACTION_NOT_FOUND(2006, "Không tìm thấy giao dịch", HttpStatus.NOT_FOUND),
     ;

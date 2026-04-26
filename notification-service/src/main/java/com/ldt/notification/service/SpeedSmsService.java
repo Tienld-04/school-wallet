@@ -2,6 +2,9 @@ package com.ldt.notification.service;
 
 import com.ldt.notification.exception.AppException;
 import com.ldt.notification.exception.ErrorCode;
+import com.ldt.notification.model.NotificationChannel;
+import com.ldt.notification.model.NotificationStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -15,11 +18,13 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class SpeedSmsService {
     // TODO: Check lại OTP
     private static final String API_URL = "https://api.speedsms.vn/index.php";
 
+    private final NotificationLogService notificationLogService;
     private final RestTemplate restTemplate;
 
     @Value("${speedsms.access-token}")
@@ -37,10 +42,6 @@ public class SpeedSmsService {
      */
     @Value("${speedsms.type:5}")
     private int smsType;
-
-    public SpeedSmsService() {
-        this.restTemplate = new RestTemplate();
-    }
 
     public void sendSms(String phone, String content) {
         String url = API_URL + "/sms/send";
@@ -63,12 +64,17 @@ public class SpeedSmsService {
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.error("Failed to send SMS to: {} | Status: {} | Body: {}",
                         phone, response.getStatusCode(), response.getBody());
+                notificationLogService.logInternal(NotificationChannel.SMS, phone,
+                        NotificationStatus.FAILED, "SpeedSMS status: " + response.getStatusCode());
                 throw new AppException(ErrorCode.OTP_SEND_FAILED);
             }
+            notificationLogService.logInternal(NotificationChannel.SMS, phone, NotificationStatus.SENT, null);
         } catch (AppException ae) {
             throw ae;
         } catch (Exception e) {
             log.error("Error sending SMS to: {} | Error: {}", phone, e.getMessage());
+            notificationLogService.logInternal(NotificationChannel.SMS, phone,
+                    NotificationStatus.FAILED, e.getMessage());
             throw new AppException(ErrorCode.OTP_SEND_FAILED, "Gửi SMS thất bại: " + e.getMessage());
         }
     }

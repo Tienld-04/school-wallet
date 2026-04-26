@@ -5,6 +5,7 @@ import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.request.TransactionHistoryRequest;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
+import com.ldt.transaction.dto.response.TransactionStatusHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
@@ -69,6 +70,12 @@ public class TransactionController {
     public ResponseEntity<TransactionHistoryResponse> getTransactionDetail(
             @PathVariable UUID transactionId) {
         return ResponseEntity.ok(transactionService.getTransactionDetail(transactionId));
+    }
+
+    @GetMapping("/{transactionId}/status-history")
+    public ResponseEntity<List<TransactionStatusHistoryResponse>> getStatusHistory(
+            @PathVariable UUID transactionId) {
+        return ResponseEntity.ok(transactionService.getStatusHistory(transactionId));
     }
 
 }

@@ -76,10 +76,17 @@ public class GatewayConfig {
                         )
                         .uri(walletServiceUrl))
                 // Route cho Notification Service (OTP)
-                .route("notification-service", r -> r
+                .route("notification-otp", r -> r
                         .path("/api/v1/otp/**")
                         .filters(f -> f
                                 .rewritePath("/api/v1/otp/(?<segment>.*)", "/api/otp/${segment}")
+                        )
+                        .uri(notificationServiceUrl))
+                // Route cho Notification inbox
+                .route("notification-service", r -> r
+                        .path("/api/v1/notifications/**")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/notifications/(?<segment>.*)", "/api/notifications/${segment}")
                         )
                         .uri(notificationServiceUrl))
                 // WebSocket route cho notification real-time

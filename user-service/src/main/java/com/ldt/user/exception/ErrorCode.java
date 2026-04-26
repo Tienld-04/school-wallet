@@ -33,7 +33,12 @@ public enum ErrorCode {
     ACCESS_DENIED(1024, "Bạn không có quyền thực hiện chức năng này", HttpStatus.FORBIDDEN),
     MERCHANT_NOT_FOUND(1025, "Merchant không tồn tại", HttpStatus.NOT_FOUND),
     MERCHANT_NAME_ALREADY_EXISTS(1026, "Tên merchant đã tồn tại", HttpStatus.BAD_REQUEST),
-    INVALID_MERCHANT_TYPE(1027, "Loại merchant không hợp lệ", HttpStatus.BAD_REQUEST);
+    INVALID_MERCHANT_TYPE(1027, "Loại merchant không hợp lệ", HttpStatus.BAD_REQUEST),
+    KYC_ALREADY_VERIFIED(1028, "Tài khoản đã được xác minh KYC", HttpStatus.BAD_REQUEST),
+    KYC_PENDING(1029, "Hồ sơ KYC đang chờ duyệt", HttpStatus.BAD_REQUEST),
+    KYC_NOT_FOUND(1030, "Không tìm thấy hồ sơ KYC", HttpStatus.NOT_FOUND),
+    KYC_STUDENT_CODE_EXISTS(1031, "Mã sinh viên đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST),
+    KYC_ID_NUMBER_EXISTS(1032, "Số CCCD đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;

@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -25,4 +26,5 @@ public class TransactionNotificationEvent implements Serializable {
     private String description;
     private String transactionType;
     private String status;
+    private LocalDateTime transactionTime;
 }

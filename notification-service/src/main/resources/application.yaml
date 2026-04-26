@@ -1,30 +1,55 @@
 server:
   port: 8085
+  tomcat:
+    threads:
+      max: 20
+      min-spare: 3
+    accept-count: 30
+    connection-timeout: 20s
 spring:
   application:
     name: notification-service
+  jmx:
+    enabled: false
   activemq:
-#    broker-url: "tcp://activemq:61616"
-    broker-url: "tcp://localhost:61616"
-    user: admin
-    password: admin
+    broker-url: "${ACTIVEMQ_BROKER_URL:tcp://localhost:61616}"
+    user: "${ACTIVEMQ_USER:admin}"
+    password: "${ACTIVEMQ_PASSWORD:admin}"
     in-memory: false
   jms:
       # false = Queue
       # true  = Topic
       pub-sub-domain: true
+  datasource:
+    url: "${DB_NOTIFICATION_URL:jdbc:postgresql://localhost:5432/notification_service}"
+    username: "${DB_NOTIFICATION_USERNAME:Tienld}"
+    password: "${DB_NOTIFICATION_PASSWORD:123456}"
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 4
+      connection-timeout: 3000
+      idle-timeout: 180000
+      max-lifetime: 300000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: 123456
+      host: "${REDIS_HOST:localhost}"
+      port: "${REDIS_PORT:6379}"
+      password: "${REDIS_PASSWORD:123456}"
       timeout: 3000
       lettuce:
         pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 2
-          max-wait: 3000
+          max-active: 6
+          max-idle: 3
+          min-idle: 1
+          max-wait: 2000
 
 internal:
   secret: "${INTERNAL_SECRET}"

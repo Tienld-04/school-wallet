@@ -12,6 +12,7 @@ public class UserResponse {
     private String phone;
     private String email;
     private String role;
+    private String kycStatus;
     private LocalDateTime createdAt;
 
 }

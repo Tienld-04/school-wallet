@@ -32,6 +32,7 @@ export interface UserResponse {
   phone: string;
   email: string;
   role: string;
+  kycStatus: string;
   createdAt: string;
 }
 
@@ -95,6 +96,58 @@ export interface PageResponse<T> {
   totalPages: number;
   number: number;
   size: number;
+}
+
+export interface RecipientResponse {
+  fullName: string;
+  phone: string;
+}
+
+export interface TransferRequest {
+  requestId: string;
+  toPhoneNumber: string;
+  amount: number;
+  description: string;
+  pin: string;
+}
+
+export interface TransferResponse {
+  transactionId: string;
+  fromUserId: string;
+  toUserId: string;
+  amount: number;
+  description: string;
+  status: string;
+  transactionType: string;
+}
+
+export interface KycRequest {
+  fullName: string;
+  dateOfBirth: string;
+  idNumber: string;
+  idIssueDate: string;
+  idIssuePlace: string;
+  studentCode: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
+  studentCardUrl?: string;
+}
+
+export interface KycResponse {
+  kycId: string;
+  fullName: string;
+  dateOfBirth: string;
+  idNumber: string;
+  idIssueDate: string;
+  idIssuePlace: string;
+  studentCode: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
+  studentCardUrl?: string;
+  status: string;
+  submittedAt: string;
+  verifiedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface AuthContextType {
