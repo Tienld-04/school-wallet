@@ -270,17 +270,48 @@ const Profile: React.FC = () => {
 
           {/* VERIFIED */}
           {user.kycStatus === 'VERIFIED' && (
-            <div className="flex flex-col items-center py-8 gap-3 text-center">
-              <div className="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+            kycLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="w-7 h-7 border-[3px] border-primary-200 border-t-primary-600 rounded-full animate-spin" />
               </div>
-              <p className="text-base font-semibold text-emerald-700">Tài khoản đã được xác minh KYC</p>
-              {kycData?.verifiedAt && (
-                <p className="text-sm text-slate-400">Ngày xác minh: {formatDate(kycData.verifiedAt)}</p>
-              )}
-            </div>
+            ) : (
+              <>
+                {/* Badge xác minh */}
+                <div className="flex items-center gap-3 mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-700">Đã xác minh danh tính</p>
+                    {kycData?.verifiedAt && (
+                      <p className="text-xs text-emerald-600 mt-0.5">Ngày duyệt: {formatDate(kycData.verifiedAt)}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Thông tin KYC */}
+                {kycData && (
+                  <div className="divide-y divide-slate-50">
+                    {[
+                      { label: 'Họ và tên', value: kycData.fullName },
+                      { label: 'Ngày sinh', value: formatDate(kycData.dateOfBirth) },
+                      { label: 'Số CCCD', value: kycData.idNumber },
+                      { label: 'Ngày cấp', value: formatDate(kycData.idIssueDate) },
+                      { label: 'Nơi cấp', value: kycData.idIssuePlace },
+                      { label: 'Mã sinh viên', value: kycData.studentCode },
+                      { label: 'Ngày nộp hồ sơ', value: formatDate(kycData.submittedAt) },
+                    ].map((row) => (
+                      <div key={row.label} className="flex items-center justify-between gap-3 py-3">
+                        <span className="text-sm text-slate-500 shrink-0">{row.label}</span>
+                        <span className="text-sm font-medium text-slate-800 text-right truncate">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )
           )}
 
           {/* PENDING */}
