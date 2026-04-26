@@ -1,8 +1,20 @@
 server:
   port: 8080
+  netty:
+    connection-timeout: 10s
+    idle-timeout: 60s
+  compression:
+    enabled: true
+    mime-types: application/json,text/plain
+    min-response-size: 1024
 spring:
   application:
     name: api-gateway
+  jmx:
+    enabled: false
+  http:
+    codecs:
+      max-in-memory-size: 2MB
 service:
   url:
     user-service: "${USER_SERVICE_URL:http://localhost:8081}"

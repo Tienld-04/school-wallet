@@ -1,8 +1,16 @@
 server:
   port: 8085
+  tomcat:
+    threads:
+      max: 20
+      min-spare: 3
+    accept-count: 30
+    connection-timeout: 20s
 spring:
   application:
     name: notification-service
+  jmx:
+    enabled: false
   activemq:
     broker-url: "${ACTIVEMQ_BROKER_URL:tcp://localhost:61616}"
     user: "${ACTIVEMQ_USER:admin}"
@@ -18,11 +26,11 @@ spring:
     password: "${DB_NOTIFICATION_PASSWORD:123456}"
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 5000
-      idle-timeout: 300000
-      max-lifetime: 600000
+      maximum-pool-size: 8
+      minimum-idle: 4
+      connection-timeout: 3000
+      idle-timeout: 180000
+      max-lifetime: 300000
   jpa:
     hibernate:
       ddl-auto: update
@@ -38,10 +46,10 @@ spring:
       timeout: 3000
       lettuce:
         pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 2
-          max-wait: 3000
+          max-active: 6
+          max-idle: 3
+          min-idle: 1
+          max-wait: 2000
 
 internal:
   secret: "${INTERNAL_SECRET}"

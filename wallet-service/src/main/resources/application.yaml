@@ -2,23 +2,26 @@ server:
   port: 8082
   tomcat:
     threads:
-      max: 300
-      min-spare: 20
-    accept-count: 200
+      max: 50
+      min-spare: 5
+    accept-count: 50
+    connection-timeout: 20s
 spring:
   application:
     name: wallet-service
+  jmx:
+    enabled: false
   datasource:
     url: "${DB_WALLET_URL:jdbc:postgresql://localhost:5432/wallet_service}"
     username: "${DB_WALLET_USERNAME:Tienld}"
     password: "${DB_WALLET_PASSWORD:123456}"
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 30
+      maximum-pool-size: 10
       minimum-idle: 10
-      connection-timeout: 5000
-      idle-timeout: 300000
-      max-lifetime: 600000
+      connection-timeout: 3000
+      idle-timeout: 180000
+      max-lifetime: 300000
   jpa:
     hibernate:
       ddl-auto: update   # validate | update | create | create-drop
