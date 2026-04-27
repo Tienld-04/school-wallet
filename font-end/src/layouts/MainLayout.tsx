@@ -68,6 +68,15 @@ const adminMenuItems = [
       </svg>
     ),
   },
+  {
+    to: '/admin/kyc',
+    label: 'Quản lý KYC',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9S3 16.97 3 12 7.03 3 12 3s9 4.03 9 9z"/>
+      </svg>
+    ),
+  },
 ];
 
 const MainLayout: React.FC = () => {

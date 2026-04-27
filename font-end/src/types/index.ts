@@ -92,10 +92,12 @@ export interface MerchantRequest {
 
 export interface PageResponse<T> {
   content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
+  page: {
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+  };
 }
 
 export interface RecipientResponse {
@@ -119,6 +121,25 @@ export interface TransferResponse {
   description: string;
   status: string;
   transactionType: string;
+}
+
+export interface KycAdminListResponse {
+  kycId: string;
+  userId: string;
+  fullName: string;
+  dateOfBirth: string;
+  idNumber: string;
+  idIssueDate: string;
+  idIssuePlace: string;
+  studentCode: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
+  studentCardUrl?: string;
+  status: string;
+  submittedAt: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface KycRequest {

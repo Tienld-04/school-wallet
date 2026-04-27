@@ -29,7 +29,7 @@ const getPageNumbers = (current: number, total: number): (number | 'dots')[] => 
 };
 
 const Pagination: React.FC<PaginationProps> = ({ page, totalPages, onPageChange }) => {
-  const safeTotal = Math.max(totalPages, 1);
+  const safeTotal = Math.max(Number.isFinite(totalPages) ? totalPages : 1, 1);
   const pages = getPageNumbers(page, safeTotal);
 
   const baseBtn = 'min-w-[34px] h-[34px] flex items-center justify-center text-xs font-medium rounded-lg transition-all';
