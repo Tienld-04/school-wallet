@@ -105,6 +105,22 @@ export interface RecipientResponse {
   phone: string;
 }
 
+export interface QrTransferResponse {
+  qrContent: string;
+}
+
+export interface DynamicQrRequest {
+  amount: number;
+  description?: string;
+}
+
+export interface QrVerifyResponse {
+  phone: string;
+  name: string;
+  amount?: number;
+  description?: string;
+}
+
 export interface TransferRequest {
   requestId: string;
   toPhoneNumber: string;
