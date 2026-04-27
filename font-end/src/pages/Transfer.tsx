@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import userApi from '../api/userApi';
 import transactionApi from '../api/transactionApi';
-import type { RecipientResponse } from '../types';
+import type { QrVerifyResponse, RecipientResponse } from '../types';
+import QrTransferScreen from '../components/qr/QrTransferScreen';
 
 type Step = 'method' | 'phone' | 'details' | 'pin';
 
@@ -18,6 +19,7 @@ const Transfer: React.FC = () => {
   const [pin, setPin] = useState(['', '', '', '', '', '']);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -28,6 +30,25 @@ const Transfer: React.FC = () => {
     setAmount('');
     setDescription('');
     setPin(['', '', '', '', '', '']);
+  };
+
+  const handleQrVerified = (data: QrVerifyResponse) => {
+    setQrOpen(false);
+    setPhone(data.phone);
+    setRecipient({ fullName: data.name, phone: data.phone });
+    if (data.amount != null) {
+      // Dynamic QR — số tiền đã được set bởi người nhận
+      setAmount(String(data.amount));
+      setDescription(data.description ?? '');
+      setPin(['', '', '', '', '', '']);
+      setStep('pin');
+      setTimeout(() => pinRefs.current[0]?.focus(), 100);
+    } else {
+      // Static QR — người gửi tự nhập số tiền
+      setAmount('');
+      setDescription('');
+      setStep('details');
+    }
   };
 
   const handleSearchRecipient = async () => {
@@ -116,9 +137,12 @@ const Transfer: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-100 p-6">
           <p className="text-sm font-medium text-slate-600 mb-5">Chọn phương thức chuyển tiền</p>
           <div className="grid grid-cols-2 gap-4">
-            {/* Quét QR — chưa có */}
-            <div className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 select-none">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center">
+            {/* Quét QR */}
+            <button
+              onClick={() => setQrOpen(true)}
+              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-primary-200 bg-primary-50 hover:bg-primary-100 hover:border-primary-400 transition-all duration-200 text-primary-700 cursor-pointer group"
+            >
+              <div className="w-14 h-14 bg-primary-100 group-hover:bg-primary-200 rounded-2xl flex items-center justify-center transition-colors">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="7" height="7" rx="1" />
                   <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -131,9 +155,9 @@ const Transfer: React.FC = () => {
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold">Quét mã QR</p>
-                <p className="text-xs mt-0.5 text-slate-400">Sắp ra mắt</p>
+                <p className="text-xs mt-0.5 text-primary-500">Quét hoặc tải ảnh QR</p>
               </div>
-            </div>
+            </button>
 
             {/* Nhập số tài khoản */}
             <button
@@ -383,6 +407,13 @@ const Transfer: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* QR scan / show overlay */}
+      <QrTransferScreen
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        onVerified={handleQrVerified}
+      />
     </div>
   );
 };
