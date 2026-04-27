@@ -30,8 +30,8 @@ const MerchantManagement: React.FC = () => {
     try {
       const data = await adminApi.getMerchants(page, size, filterType || undefined, search || undefined);
       setMerchants(data.content || []);
-      setTotalPages(data.totalPages || 0);
-      setTotalElements(data.totalElements || 0);
+      setTotalPages(data.page?.totalPages || 0);
+      setTotalElements(data.page?.totalElements || 0);
     } catch {
       toast.error('Không thể tải danh sách merchant');
     } finally {
