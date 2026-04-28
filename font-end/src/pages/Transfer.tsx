@@ -306,41 +306,41 @@ const Transfer: React.FC = () => {
 
       {/* ── STEP: nhập mã PIN (overlay) ── */}
       {step === 'pin' && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden rounded-t-3xl sm:rounded-3xl pb-[env(safe-area-inset-bottom)]">
 
             {/* Header gradient */}
-            <div className="bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 px-6 pt-8 pb-10 text-center relative">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div className="bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 px-5 pt-6 pb-8 text-center relative">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mx-auto mb-2 shadow-inner">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </div>
-              <h3 className="text-white font-bold text-xl tracking-tight">Xác nhận giao dịch</h3>
-              <p className="text-primary-200 text-sm mt-1">Nhập mã PIN 6 số của bạn</p>
+              <h3 className="text-white font-bold text-lg tracking-tight">Xác nhận giao dịch</h3>
+              <p className="text-primary-200 text-xs mt-0.5">Nhập mã PIN 6 số của bạn</p>
               {/* Wave */}
-              <div className="absolute bottom-0 left-0 right-0 h-6 bg-white rounded-t-[2rem]" />
+              <div className="absolute bottom-0 left-0 right-0 h-5 bg-white rounded-t-[1.75rem]" />
             </div>
 
-            <div className="px-6 pb-6 space-y-5">
+            <div className="px-5 pb-5 space-y-4">
               {/* Tóm tắt giao dịch */}
-              <div className="bg-slate-50 rounded-2xl p-4 space-y-2.5 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Người nhận</span>
-                  <span className="font-semibold text-slate-800">{recipient?.fullName}</span>
+              <div className="bg-slate-50 rounded-2xl p-3.5 space-y-2 text-sm">
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-slate-400 shrink-0">Người nhận</span>
+                  <span className="font-semibold text-slate-800 truncate">{recipient?.fullName}</span>
                 </div>
                 <div className="h-px bg-slate-100" />
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Số tiền</span>
-                  <span className="font-bold text-primary-600 text-lg">{formatVND(amount)}<span className="text-sm font-medium ml-1">VND</span></span>
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-slate-400 shrink-0">Số tiền</span>
+                  <span className="font-bold text-primary-600 text-base">{formatVND(amount)}<span className="text-xs font-medium ml-1">VND</span></span>
                 </div>
                 {description && (
                   <>
                     <div className="h-px bg-slate-100" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Nội dung</span>
-                      <span className="font-medium text-slate-700 text-right max-w-[160px] truncate">{description}</span>
+                    <div className="flex justify-between items-center gap-3">
+                      <span className="text-slate-400 shrink-0">Nội dung</span>
+                      <span className="font-medium text-slate-700 text-right truncate">{description}</span>
                     </div>
                   </>
                 )}
@@ -348,19 +348,21 @@ const Transfer: React.FC = () => {
 
               {/* PIN circles */}
               <div>
-                <p className="text-xs text-slate-400 text-center mb-5 uppercase tracking-widest font-semibold">Mã PIN</p>
-                <div className="flex justify-center gap-3">
+                <p className="text-[11px] text-slate-400 text-center mb-3 uppercase tracking-widest font-semibold">Mã PIN</p>
+                <div className="flex justify-center gap-2.5">
                   {pin.map((digit, i) => (
-                    <div key={i} className="relative w-11 h-11 group">
-                      {/* invisible input captures keyboard */}
+                    <div key={i} className="relative w-10 h-10 sm:w-11 sm:h-11 group">
+                      {/* invisible input captures keyboard — fontSize 16px ngăn iOS auto-zoom */}
                       <input
                         ref={(el) => { pinRefs.current[i] = el; }}
                         type="password"
                         inputMode="numeric"
+                        autoComplete="one-time-code"
                         maxLength={1}
                         value={digit}
                         onChange={(e) => handlePinChange(i, e.target.value)}
                         onKeyDown={(e) => handlePinKeyDown(i, e)}
+                        style={{ fontSize: '16px' }}
                         className="absolute inset-0 opacity-0 cursor-default w-full h-full"
                       />
                       {/* visual circle */}
@@ -372,7 +374,7 @@ const Transfer: React.FC = () => {
                           : 'bg-white border-slate-200 group-focus-within:border-primary-400 group-focus-within:bg-primary-50'
                         }`}
                       >
-                        {digit && <div className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />}
+                        {digit && <div className="w-2 h-2 rounded-full bg-white shadow-sm" />}
                       </div>
                     </div>
                   ))}
@@ -380,18 +382,18 @@ const Transfer: React.FC = () => {
               </div>
 
               {/* Buttons */}
-              <div className="flex gap-3 pt-1">
+              <div className="flex gap-2.5 pt-1">
                 <button
                   onClick={() => { setStep('details'); setPin(['', '', '', '', '', '']); }}
                   disabled={submitting}
-                  className="flex-1 py-3 rounded-2xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting || pin.join('').length < 6}
-                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-semibold text-sm shadow-md shadow-primary-500/30 disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-semibold text-sm shadow-md shadow-primary-500/30 disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>

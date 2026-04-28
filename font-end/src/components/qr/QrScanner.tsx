@@ -107,14 +107,20 @@ const QrScanner: React.FC<Props> = ({ active, onScan }) => {
         </div>
       )}
 
-      {/* Viewfinder corners (decorative) */}
+      {/* Viewfinder corners + scan line (decorative) */}
       {!starting && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="relative w-[60%] h-[60%]">
+          <div className="relative w-[60%] h-[60%] overflow-hidden">
+            {/* corners */}
             <span className="absolute -top-1 -left-1 w-7 h-7 border-t-4 border-l-4 border-white rounded-tl-xl" />
             <span className="absolute -top-1 -right-1 w-7 h-7 border-t-4 border-r-4 border-white rounded-tr-xl" />
             <span className="absolute -bottom-1 -left-1 w-7 h-7 border-b-4 border-l-4 border-white rounded-bl-xl" />
             <span className="absolute -bottom-1 -right-1 w-7 h-7 border-b-4 border-r-4 border-white rounded-br-xl" />
+            {/* scan line */}
+            <div className="absolute inset-x-2 top-0 animate-qr-scan-line">
+              <div className="h-0.5 bg-primary-400 rounded-full shadow-[0_0_14px_rgba(129,140,248,0.9)]" />
+              <div className="h-12 -mt-12 bg-gradient-to-b from-primary-400/40 to-transparent" />
+            </div>
           </div>
         </div>
       )}
