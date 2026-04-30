@@ -4,6 +4,7 @@ import userApi from '../api/userApi';
 import transactionApi from '../api/transactionApi';
 import type { QrVerifyResponse, RecipientResponse } from '../types';
 import QrTransferScreen from '../components/qr/QrTransferScreen';
+import { getErrorMessage } from '../utils/errorMessage';
 
 type Step = 'method' | 'phone' | 'details' | 'pin';
 
@@ -62,10 +63,7 @@ const Transfer: React.FC = () => {
       setRecipient(data);
       setStep('details');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Không tìm thấy tài khoản';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Không tìm thấy tài khoản'));
     } finally {
       setSearching(false);
     }
@@ -116,10 +114,7 @@ const Transfer: React.FC = () => {
       toast.success('Chuyển tiền thành công!');
       reset();
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Chuyển tiền thất bại';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Chuyển tiền thất bại'));
       setPin(['', '', '', '', '', '']);
       setTimeout(() => pinRefs.current[0]?.focus(), 100);
     } finally {
