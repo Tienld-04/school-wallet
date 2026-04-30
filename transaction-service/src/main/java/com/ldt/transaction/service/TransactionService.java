@@ -16,7 +16,7 @@ import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
 //import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
-//import com.ldt.transaction.model.TransactionStatus;
+import com.ldt.transaction.model.TransactionStatus;
 //import com.ldt.transaction.model.TransactionType;
 //import com.ldt.transaction.producer.TransactionEventProducer;
 import com.ldt.transaction.repository.TransactionRepository;
@@ -396,11 +396,11 @@ public class TransactionService {
         return statusHistoryService.getByTransactionId(transactionId);
     }
 
-    // Lấy 5 giao dịch gần nhất của user
+    // Lấy 5 giao dịch thành công gần nhất của user
     public List<RecentTransactionResponse> getRecentTransactions(String userId) {
         UUID userUUID = UUID.fromString(userId);
         List<Transaction> transactions = transactionRepository
-                .findTop5ByFromUserIdOrToUserIdOrderByCreatedAtDesc(userUUID, userUUID);
+                .findTop5ByUserIdAndStatus(userUUID, TransactionStatus.SUCCESS, PageRequest.of(0, 5));
 
         return transactions.stream()
                 .map(tx -> {
