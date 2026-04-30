@@ -11,6 +11,7 @@ import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.service.TransactionService;
+import com.ldt.transaction.service.TransactionService2;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,39 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionController {
     private final TransactionService transactionService;
+    private final TransactionService2 transactionService2;
 
+    // V2: dùng TransactionService2 
+    @PostMapping("/transfer")
+    public ResponseEntity<TransactionResponse> transfer(
+            @Valid @RequestBody TransferRequest transferRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService2.transfer(transferRequest, fromPhone, TransactionType.TRANSFER));
+    }
+
+    @PostMapping("/payment")
+    public ResponseEntity<TransactionResponse> payment(
+            @Valid @RequestBody TransferRequest transferRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService2.transfer(transferRequest, fromPhone, TransactionType.PAYMENT));
+    }
+
+    @PostMapping("/topup")
+    public ResponseEntity<TransactionResponse> topup(
+            @Valid @RequestBody TransferRequest transferRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService2.transfer(transferRequest, fromPhone, TransactionType.TOPUP));
+    }
+
+    @PostMapping("/merchant/payment")
+    public ResponseEntity<TransactionResponse> merchantPayment(
+            @Valid @RequestBody PaymentRequest paymentRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService2.merchantPayment(paymentRequest, fromPhone));
+    }
+
+    // V1 code cũ - bỏ comment để revert
+    /*
     @PostMapping("/transfer")
     public ResponseEntity<TransactionResponse> transfer(
             @Valid @RequestBody TransferRequest transferRequest,
@@ -52,6 +85,7 @@ public class TransactionController {
             @RequestHeader("X-User-Phone") String fromPhone) {
         return ResponseEntity.ok(transactionService.merchantPayment(paymentRequest, fromPhone));
     }
+    */
 
     @GetMapping("/recent")
     public ResponseEntity<List<RecentTransactionResponse>> getRecentTransactions() {
