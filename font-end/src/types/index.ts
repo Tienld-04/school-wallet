@@ -129,6 +129,16 @@ export interface TransferRequest {
   pin: string;
 }
 
+export interface MerchantPaymentRequest {
+  requestId: string;
+  merchantId: string;
+  merchantName: string;
+  merchantPhone: string;
+  amount: number;
+  description?: string;
+  pin: string;
+}
+
 export interface TransferResponse {
   transactionId: string;
   fromUserId: string;
