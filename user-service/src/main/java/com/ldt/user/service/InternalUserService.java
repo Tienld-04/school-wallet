@@ -4,6 +4,7 @@ import com.ldt.user.dto.response.UserInternalResponse;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.model.User;
+import com.ldt.user.model.UserRole;
 import com.ldt.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,16 @@ public class InternalUserService {
         return users.stream()
                 .map(user -> new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone(), user.getEmail()))
                 .toList();
+    }
+
+    /**
+     * Lấy admin đầu tiên (theo createdAt) để dùng làm "ví hệ thống" thu phí platform.
+     * Gọi nội bộ bởi transaction-service trong flow merchant payment.
+     */
+    public UserInternalResponse getFirstAdmin() {
+        User admin = userRepository.findFirstByRoleOrderByCreatedAtAsc(UserRole.ADMIN)
+                .orElseThrow(() -> new AppException(ErrorCode.ADMIN_NOT_CONFIGURED));
+        return new UserInternalResponse(admin.getUserId(), admin.getStatus(), admin.getFullName(), admin.getPhone(), admin.getEmail());
     }
 
     /**

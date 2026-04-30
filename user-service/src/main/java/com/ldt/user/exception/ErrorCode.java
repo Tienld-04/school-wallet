@@ -38,7 +38,8 @@ public enum ErrorCode {
     KYC_PENDING(1029, "Hồ sơ KYC đang chờ duyệt", HttpStatus.BAD_REQUEST),
     KYC_NOT_FOUND(1030, "Không tìm thấy hồ sơ KYC", HttpStatus.NOT_FOUND),
     KYC_STUDENT_CODE_EXISTS(1031, "Mã sinh viên đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST),
-    KYC_ID_NUMBER_EXISTS(1032, "Số CCCD đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST);
+    KYC_ID_NUMBER_EXISTS(1032, "Số CCCD đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST),
+    ADMIN_NOT_CONFIGURED(1033, "Hệ thống chưa cấu hình tài khoản admin", HttpStatus.INTERNAL_SERVER_ERROR);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;

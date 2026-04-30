@@ -29,6 +29,11 @@ public class InternalUserController {
         return ResponseEntity.ok(internalUserService.getUsersByPhones(phones));
     }
 
+    @GetMapping("/first-admin")
+    public ResponseEntity<UserInternalResponse> getFirstAdmin() {
+        return ResponseEntity.ok(internalUserService.getFirstAdmin());
+    }
+
     @GetMapping("/validate")
     public ResponseEntity<Void> validateToken(@RequestParam String jti) {
         if (authService.isTokenBlacklisted(jti)) {
