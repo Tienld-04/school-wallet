@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import userApi from '../api/userApi';
 import transactionApi from '../api/transactionApi';
+import walletApi from '../api/walletApi';
 import type { QrVerifyResponse, RecipientResponse } from '../types';
 import QrTransferScreen from '../components/qr/QrTransferScreen';
 import { getErrorMessage } from '../utils/errorMessage';
@@ -21,8 +22,17 @@ const Transfer: React.FC = () => {
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
 
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    walletApi.getMyBalance()
+      .then((data) => setBalance(data.balance))
+      .catch(() => {
+        // Fail mở: không chặn user, BE vẫn check số dư khi submit
+      });
+  }, []);
 
   const reset = () => {
     setStep('method');
@@ -41,6 +51,11 @@ const Transfer: React.FC = () => {
       // Dynamic QR — số tiền đã được set bởi người nhận
       setAmount(String(data.amount));
       setDescription(data.description ?? '');
+      if (balance != null && data.amount > balance) {
+        toast.error('Số dư không đủ');
+        setStep('details');
+        return;
+      }
       setPin(['', '', '', '', '', '']);
       setStep('pin');
       setTimeout(() => pinRefs.current[0]?.focus(), 100);
@@ -73,6 +88,10 @@ const Transfer: React.FC = () => {
     const amt = parseInt(amount);
     if (!amt || amt < 1000) {
       toast.error('Số tiền tối thiểu là 1.000đ');
+      return;
+    }
+    if (balance != null && amt > balance) {
+      toast.error('Số dư không đủ');
       return;
     }
     setPin(['', '', '', '', '', '']);
