@@ -140,7 +140,7 @@ export interface MerchantPaymentRequest {
   pin: string;
 }
 
-/** Trùng schema với TransactionHistoryResponse ở transaction-service. */
+/** TransactionHistoryResponse */
 export interface TransactionHistoryItem {
   transactionId: string;
   fromFullName?: string;
@@ -157,7 +157,7 @@ export interface TransactionHistoryItem {
   createdAt: string;
 }
 
-/** Trùng schema với PageResponse<T> ở transaction-service (flat fields). */
+/** PageResponse<T> ở transaction-service . */
 export interface TransactionHistoryPage {
   content: TransactionHistoryItem[];
   page: number;
@@ -166,7 +166,7 @@ export interface TransactionHistoryPage {
   totalPages: number;
 }
 
-/** Trùng schema với StatsOverviewResponse ở transaction-service. */
+/** StatsOverviewResponse ở transaction-service. */
 export interface StatsOverview {
   totalTransactions: number;
   totalVolume: number;
@@ -178,7 +178,7 @@ export interface StatsOverview {
   byStatus: Record<string, number>;
 }
 
-/** Trùng schema với TimeSeriesPoint ở transaction-service. */
+/** TimeSeriesPoint ở transaction-service. */
 export interface TimeSeriesPoint {
   period: string;  // ISO yyyy-MM-dd
   count: number;

@@ -126,7 +126,17 @@ const TransactionHistory: React.FC = () => {
                       {tx.description || typeLabel[tx.transactionType] || tx.transactionType}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-1">
-                      {formatDateTime(tx.createdAt)}
+                      <span
+                        className="font-mono text-slate-500 cursor-pointer hover:text-primary-600"
+                        title={`Mã giao dịch: ${tx.transactionId} (click để sao chép)`}
+                        onClick={() => {
+                          navigator.clipboard.writeText(tx.transactionId);
+                          toast.success('Đã sao chép mã giao dịch');
+                        }}
+                      >
+                        #{tx.transactionId.slice(0, 8)}
+                      </span>
+                      <span className="ml-2">· {formatDateTime(tx.createdAt)}</span>
                       {tx.fee > 0 && isCredit && (
                         <span className="ml-2">
                           · Phí: <span className="text-slate-500 font-medium">{formatVND(tx.fee)}đ</span>
