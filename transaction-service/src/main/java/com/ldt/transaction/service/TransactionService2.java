@@ -101,13 +101,14 @@ public class TransactionService2 {
     /**
      * Map TransactionType → reason string khớp với LedgerReason ở wallet-service.
      */
-    private static String walletReasonOf(TransactionType type) {
-        return switch (type) {
-            case TOPUP -> "TOP_UP";
-            case PAYMENT -> "PAYMENT";
-            default -> "TRANSFER_OUT";
-        };
-    }
+    // private static String walletReasonOf(TransactionType type) {
+    //     return switch (type) {
+    //         TODO: 2 case dưới chỉ dùng khi /payment, /topup endpoint
+    //         case TOPUP -> "TOP_UP";
+    //         case PAYMENT -> "PAYMENT";
+    //         default -> "TRANSFER_OUT";
+    //     };
+    // }
 
     /**
      * Entry cho /transfer, /payment, /topup — không tính fee, delegate xuống engine.
@@ -116,9 +117,11 @@ public class TransactionService2 {
         if (fromPhone.equals(request.getToPhoneNumber())) {
             throw new AppException(ErrorCode.SELF_TRANSFER);
         }
-        String successMsg = type == TransactionType.PAYMENT
-                ? "Thanh toán thành công"
-                : (type == TransactionType.TOPUP ? "Nạp tiền thành công" : "Chuyển tiền thành công");
+        // TODO: nhánh PAYMENT/TOPUP chỉ áp dụng khi /payment, /topup endpoint
+        // String successMsg = type == TransactionType.PAYMENT
+        //         ? "Thanh toán thành công"
+        //         : (type == TransactionType.TOPUP ? "Nạp tiền thành công" : "Chuyển tiền thành công");
+        String successMsg = "Chuyển tiền thành công";
 
         return executeTransaction(new TransactionContext(
                 request.getRequestId(),
@@ -129,7 +132,7 @@ public class TransactionService2 {
                 request.getDescription(),
                 type,
                 null,
-                walletReasonOf(type),
+                "TRANSFER_OUT",
                 successMsg,
                 false));
     }

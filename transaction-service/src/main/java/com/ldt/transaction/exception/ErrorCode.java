@@ -15,6 +15,7 @@ public enum ErrorCode {
     RECIPIENT_LOCKED(2008, "Tài khoản người nhận đã bị khóa", HttpStatus.BAD_REQUEST),
     TRANSFER_FAILED(2005, "Chuyển tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
     TRANSACTION_NOT_FOUND(2006, "Không tìm thấy giao dịch", HttpStatus.NOT_FOUND),
+    ACCESS_DENIED(2009, "Bạn không có quyền truy cập tài nguyên này", HttpStatus.FORBIDDEN),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
