@@ -46,3 +46,6 @@ user-service:
   url: "${USER_SERVICE_URL:http://localhost:8081}"
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
+
+platform:
+  fee-rate: "${PLATFORM_FEE_RATE:0.10}"

@@ -15,7 +15,10 @@ public class TransactionHistoryResponse {
     private String fromPhone;
     private String toFullName;
     private String toPhone;
+    /** Tổng customer trả (gross). */
     private BigDecimal amount;
+    /** Phí nền tảng admin thu (0 nếu không phải merchant payment có fee). */
+    private BigDecimal fee;
     private BigDecimal displayAmount; // +amount (nhận) hoặc -amount (gửi)
     private String description;
     private String transactionType;

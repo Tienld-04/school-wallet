@@ -4,6 +4,7 @@ import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
 import com.ldt.transaction.dto.transfer.WalletTransferRequest;
+import com.ldt.transaction.dto.transfer.WalletTransferWithFeeRequest;
 import com.ldt.transaction.dto.user.InternalVerifyPinRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.event.TransactionNotificationEvent;
@@ -24,7 +25,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -32,6 +32,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,10 +40,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Service xử lý transfer + merchant payment, tối ưu connection pool bằng cách
- * tách HTTP call ra ngoài DB transaction và gộp logic chung của 2 luồng.
- */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -61,9 +59,58 @@ public class TransactionService2 {
     @Value("${user-service.url}")
     private String userServiceUrl;
 
+    @Value("${platform.fee-rate:0.10}")
+    private BigDecimal feeRate;
+
     /**
-     * Xử lý chuyển tiền cho 3 endpoint /transfer, /payment, /topup.
-     * Validate self-transfer rồi delegate xuống engine chính.
+     * Snapshot toàn bộ input của 1 giao dịch để engine xử lý đồng nhất.
+     */
+    private record TransactionContext(
+            String requestId,
+            String pin,
+            String fromPhone,
+            String toPhone,
+            BigDecimal amount,
+            String description,
+            TransactionType transactionType,
+            UUID merchantId,
+            String walletReason,
+            String successMessage,
+            boolean applyPlatformFee) {
+    }
+
+    /**
+     * Gom info sender + receiver thành 1 đơn vị trả về từ batch call.
+     */
+    private record UserPair(UserInternalResponse from, UserInternalResponse to) {
+    }
+
+    /**
+     * Kết quả gọi wallet-service: success + error message (nếu fail).
+     */
+    private record WalletCallResult(boolean success, String errorMessage) {
+        static WalletCallResult ok() {
+            return new WalletCallResult(true, null);
+        }
+
+        static WalletCallResult fail(String msg) {
+            return new WalletCallResult(false, msg);
+        }
+    }
+
+    /**
+     * Map TransactionType → reason string khớp với LedgerReason ở wallet-service.
+     */
+    private static String walletReasonOf(TransactionType type) {
+        return switch (type) {
+            case TOPUP -> "TOP_UP";
+            case PAYMENT -> "PAYMENT";
+            default -> "TRANSFER_OUT";
+        };
+    }
+
+    /**
+     * Entry cho /transfer, /payment, /topup — không tính fee, delegate xuống engine.
      */
     public TransactionResponse transfer(TransferRequest request, String fromPhone, TransactionType type) {
         if (fromPhone.equals(request.getToPhoneNumber())) {
@@ -83,12 +130,12 @@ public class TransactionService2 {
                 type,
                 null,
                 walletReasonOf(type),
-                successMsg));
+                successMsg,
+                false));
     }
 
     /**
-     * Xử lý thanh toán cho merchant: tự sinh description nếu thiếu,
-     * lưu kèm merchantId rồi delegate xuống engine chính.
+     * Entry cho /merchant/payment — bật cờ applyPlatformFee để engine tách phí cho admin.
      */
     public TransactionResponse merchantPayment(PaymentRequest request, String fromPhone) {
         if (fromPhone.equals(request.getMerchantPhone())) {
@@ -108,15 +155,16 @@ public class TransactionService2 {
                 TransactionType.PAYMENT,
                 request.getMerchantId(),
                 "PAYMENT",
-                "Thanh toán merchant thành công"));
+                "Thanh toán merchant thành công",
+                true));
     }
 
     /**
-     * Engine chạy 4 pha: pre-check (idempotency, PIN, user, LOCKED) → lưu PENDING
-     * → gọi wallet-service (ngoài transaction) → finalize SUCCESS/FAILED.
-     * Dù wallet fail vẫn commit FAILED rồi mới throw để trạng thái được persist.
+     * Engine 4 pha: pre-check → lưu PENDING → gọi wallet → finalize SUCCESS/FAILED.
+     * Wallet fail vẫn commit FAILED rồi mới throw để status được persist.
      */
     private TransactionResponse executeTransaction(TransactionContext ctx) {
+        // 1. Idempotency check
         Optional<Transaction> existingOpt = transactionRepository.findByRequestId(ctx.requestId());
         if (existingOpt.isPresent()) {
             Transaction existing = existingOpt.get();
@@ -126,25 +174,44 @@ public class TransactionService2 {
             }
             throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
         }
-
+        // 2. Verify PIN 
         verifyPin(ctx.fromPhone(), ctx.pin());
-
+        // 3. Fetch user info + check LOCKED status
         UserPair users = fetchUserPair(ctx.fromPhone(), ctx.toPhone());
-
         if ("LOCKED".equals(users.from().getStatus())) {
             throw new AppException(ErrorCode.SENDER_LOCKED);
         }
         if ("LOCKED".equals(users.to().getStatus())) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
-
-        Optional<Transaction> pendingOpt = savePendingTransaction(ctx, users);
+        // 4. Nếu là merchant payment có áp dụng fee platform, ctx.applyPlatformFee() = true -> fetch admin.
+        UserInternalResponse admin = ctx.applyPlatformFee() ? fetchFirstAdmin() : null;
+        boolean adminIsCustomer = admin != null
+                && admin.getUserId().equals(users.from().getUserId());
+        // 5. Tính toán txAmount gửi wallet-service, tách riêng fee để lưu vào Transaction.fee.
+        BigDecimal txAmount;
+        BigDecimal fee;
+        if (ctx.applyPlatformFee() && !adminIsCustomer) {
+            fee = ctx.amount().multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
+            txAmount = ctx.amount();
+        } else if (ctx.applyPlatformFee() && adminIsCustomer) {
+            BigDecimal waivedFee = ctx.amount().multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
+            txAmount = ctx.amount().subtract(waivedFee);
+            fee = BigDecimal.ZERO;
+        } else {
+            fee = BigDecimal.ZERO;
+            txAmount = ctx.amount();
+        }
+        // 6. Lưu transaction với status PENDING, dùng saveAndFlush để bắt race condition cùng requestId ngay tại flush
+        Optional<Transaction> pendingOpt = savePendingTransaction(ctx, users, txAmount, fee);
         if (pendingOpt.isEmpty()) {
             return handleRaceCondition(ctx.requestId());
         }
         Transaction pendingTx = pendingOpt.get();
-
-        WalletCallResult walletResult = callWalletTransfer(ctx, users, pendingTx.getTransactionId());
+        // 7. Gọi wallet-service để trừ/cộng tiền, nhận kết quả mà không throw exception để còn finalize transaction.
+        WalletCallResult walletResult = (ctx.applyPlatformFee() && !adminIsCustomer)
+                ? callWalletTransferWithFee(ctx, users, admin, pendingTx.getTransactionId(), txAmount, fee)
+                : callWalletTransfer(ctx, users, pendingTx.getTransactionId(), txAmount);
 
         Transaction finalTx = finalizeTransaction(pendingTx, walletResult, users, ctx.successMessage());
 
@@ -155,8 +222,7 @@ public class TransactionService2 {
     }
 
     /**
-     * Gọi user-service xác thực PIN giao dịch.
-     * Mọi lỗi (4xx, network, timeout) đều ánh xạ về PIN_VERIFICATION_FAILED.
+     * Verify PIN qua user-service; mọi lỗi map về PIN_VERIFICATION_FAILED.
      */
     private void verifyPin(String phone, String pin) {
         try {
@@ -173,8 +239,7 @@ public class TransactionService2 {
     }
 
     /**
-     * Lấy thông tin cả 2 user (sender + receiver/merchant) qua endpoint batch
-     * trong 1 round-trip duy nhất, match theo phone rồi trả về dạng UserPair.
+     * Lấy info sender + receiver trong 1 batch call, match theo phone.
      */
     private UserPair fetchUserPair(String fromPhone, String toPhone) {
         ResponseEntity<List<UserInternalResponse>> response;
@@ -204,11 +269,11 @@ public class TransactionService2 {
     }
 
     /**
-     * Insert Transaction trạng thái PENDING trong 1 small transaction, dùng
-     * saveAndFlush để bắt được DataIntegrityViolation race condition ngay tại flush.
-     * Trả về Optional.empty() khi gặp race (2 request cùng requestId).
+     * Insert Transaction PENDING; saveAndFlush để bắt race condition cùng requestId tại flush.
+     * Trả Optional.empty() khi 2 request cùng requestId chạy đua.
      */
-    private Optional<Transaction> savePendingTransaction(TransactionContext ctx, UserPair users) {
+    private Optional<Transaction> savePendingTransaction(TransactionContext ctx, UserPair users,
+                                                         BigDecimal txAmount, BigDecimal fee) {
         return transactionTemplate.execute(status -> {
             Transaction tx = new Transaction();
             tx.setRequestId(ctx.requestId());
@@ -218,7 +283,8 @@ public class TransactionService2 {
             tx.setToUserId(users.to().getUserId());
             tx.setToPhone(users.to().getPhone());
             tx.setToFullName(users.to().getFullName());
-            tx.setAmount(ctx.amount());
+            tx.setAmount(txAmount);
+            tx.setFee(fee);
             tx.setDescription(ctx.description());
             tx.setTransactionType(ctx.transactionType());
             tx.setMerchantId(ctx.merchantId());
@@ -236,8 +302,7 @@ public class TransactionService2 {
     }
 
     /**
-     * Xử lý khi 2 request cùng requestId chạy đua: tìm transaction của bên thắng,
-     * trả về kết quả cuối nếu đã SUCCESS/FAILED, không thì throw DUPLICATE.
+     * Trả kết quả của tx đã thắng race nếu đã SUCCESS/FAILED, không thì throw DUPLICATE.
      */
     private TransactionResponse handleRaceCondition(String requestId) {
         Transaction existing = transactionRepository.findByRequestId(requestId)
@@ -250,14 +315,36 @@ public class TransactionService2 {
     }
 
     /**
-     * Gọi wallet-service trừ/cộng tiền, chạy ngoài DB transaction.
-     * Bọc try/catch để Phase 4 còn cập nhật được status, không throw thẳng lên caller.
+     * Lấy admin đầu tiên làm ví thu phí; mọi lỗi map về TRANSFER_FAILED để fail-fast.
      */
-    private WalletCallResult callWalletTransfer(TransactionContext ctx, UserPair users, UUID transactionId) {
+    private UserInternalResponse fetchFirstAdmin() {
+        try {
+            ResponseEntity<UserInternalResponse> resp = restTemplate.getForEntity(
+                    userServiceUrl + "/internal/users/first-admin",
+                    UserInternalResponse.class);
+            UserInternalResponse admin = resp.getBody();
+            if (admin == null || admin.getUserId() == null) {
+                throw new AppException(ErrorCode.TRANSFER_FAILED, "Hệ thống chưa cấu hình tài khoản admin");
+            }
+            return admin;
+        } catch (HttpClientErrorException e) {
+            throw new AppException(ErrorCode.TRANSFER_FAILED, e.getResponseBodyAsString());
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.TRANSFER_FAILED,
+                    "Không thể lấy thông tin admin: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gọi wallet /transfer (plain 2-party). amount truyền riêng để case admin-trả-merchant
+     * dùng txAmount đã trừ fee; lỗi gói vào WalletCallResult để engine còn finalize FAILED.
+     */
+    private WalletCallResult callWalletTransfer(TransactionContext ctx, UserPair users,
+                                                UUID transactionId, BigDecimal amount) {
         WalletTransferRequest req = new WalletTransferRequest();
         req.setFromUserId(users.from().getUserId());
         req.setToUserId(users.to().getUserId());
-        req.setAmount(ctx.amount());
+        req.setAmount(amount);
         req.setTransactionId(transactionId);
         req.setReason(ctx.walletReason());
         req.setNote(ctx.description());
@@ -274,8 +361,35 @@ public class TransactionService2 {
     }
 
     /**
-     * Cập nhật status SUCCESS/FAILED + ghi status history trong 1 small transaction.
-     * Đăng ký gửi notification ở afterCommit chỉ khi giao dịch thành công.
+     * Gọi wallet /transfer-with-fee — wallet ghi 3 ledger entries atomic
+     * (customer DEBIT amount, merchant CREDIT amount-fee, admin CREDIT fee).
+     */
+    private WalletCallResult callWalletTransferWithFee(TransactionContext ctx, UserPair users,
+                                                       UserInternalResponse admin, UUID transactionId,
+                                                       BigDecimal amount, BigDecimal fee) {
+        WalletTransferWithFeeRequest req = new WalletTransferWithFeeRequest();
+        req.setFromUserId(users.from().getUserId());
+        req.setToUserId(users.to().getUserId());
+        req.setPlatformUserId(admin.getUserId());
+        req.setAmount(amount);
+        req.setFee(fee);
+        req.setTransactionId(transactionId);
+        req.setNote(ctx.description());
+        try {
+            restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer-with-fee",
+                    req, Void.class);
+            return WalletCallResult.ok();
+        } catch (HttpClientErrorException ex) {
+            log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
+            return WalletCallResult.fail(ex.getResponseBodyAsString());
+        } catch (Exception ex) {
+            log.error("Wallet transfer-with-fee error for tx {}: {}", transactionId, ex.getMessage(), ex);
+            return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Cập nhật status SUCCESS/FAILED + ghi history; đăng ký notification afterCommit khi thành công.
      */
     private Transaction finalizeTransaction(
             Transaction pendingTx, WalletCallResult walletResult, UserPair users, String successMessage) {
@@ -290,7 +404,6 @@ public class TransactionService2 {
 
             statusHistoryService.record(saved.getTransactionId(),
                     TransactionStatus.PENDING, newStatus, reason);
-
             if (walletResult.success()) {
                 final TransactionNotificationEvent event = TransactionNotificationEvent.builder()
                         .transactionId(saved.getTransactionId())
@@ -325,41 +438,4 @@ public class TransactionService2 {
         });
     }
 
-    /**
-     * Map TransactionType sang string reason mà wallet-service yêu cầu
-     * theo enum LedgerReason bên wallet-service.
-     */
-    private static String walletReasonOf(TransactionType type) {
-        return switch (type) {
-            case TOPUP -> "TOP_UP";
-            case PAYMENT -> "PAYMENT";
-            default -> "TRANSFER_OUT";
-        };
-    }
-
-    private record TransactionContext(
-            String requestId,
-            String pin,
-            String fromPhone,
-            String toPhone,
-            BigDecimal amount,
-            String description,
-            TransactionType transactionType,
-            UUID merchantId,
-            String walletReason,
-            String successMessage) {
-    }
-
-    private record UserPair(UserInternalResponse from, UserInternalResponse to) {
-    }
-
-    private record WalletCallResult(boolean success, String errorMessage) {
-        static WalletCallResult ok() {
-            return new WalletCallResult(true, null);
-        }
-
-        static WalletCallResult fail(String msg) {
-            return new WalletCallResult(false, msg);
-        }
-    }
 }
