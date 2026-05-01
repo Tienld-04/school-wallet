@@ -1,6 +1,7 @@
 package com.ldt.user.repository;
 
 import com.ldt.user.model.User;
+import com.ldt.user.model.UserRole;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -21,4 +22,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     boolean existsByEmail(String email);
 
     Optional<User> findByEmail(String email);
+
+    Optional<User> findFirstByRoleOrderByCreatedAtAsc(UserRole role);
 }

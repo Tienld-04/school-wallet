@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .pathMatchers("/api/v1/merchants/my-user").authenticated()
                         .pathMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/topup").hasAuthority("ADMIN")
+                        .pathMatchers("/api/v1/transactions/dashboard/**").hasAuthority("ADMIN")
+                        .pathMatchers("/api/v1/transactions/detail/**").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/*/status-history").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/merchants/**", "/api/v1/merchants").hasAuthority("ADMIN")
                         .anyExchange().authenticated()

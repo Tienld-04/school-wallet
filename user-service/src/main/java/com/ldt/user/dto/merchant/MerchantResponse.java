@@ -14,5 +14,6 @@ public class MerchantResponse {
     private String type;
     private Boolean active;
     private UUID userId;
+    private String userPhone;
     private LocalDateTime createdAt;
 }

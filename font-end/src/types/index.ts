@@ -81,13 +81,14 @@ export interface MerchantResponse {
   type: string;
   active: boolean;
   userId: string;
+  userPhone: string;
   createdAt: string;
 }
 
 export interface MerchantRequest {
   name: string;
   type: string;
-  userId: string;
+  userPhone: string;
 }
 
 export interface PageResponse<T> {
@@ -127,6 +128,91 @@ export interface TransferRequest {
   amount: number;
   description: string;
   pin: string;
+}
+
+export interface MerchantPaymentRequest {
+  requestId: string;
+  merchantId: string;
+  merchantName: string;
+  merchantPhone: string;
+  amount: number;
+  description?: string;
+  pin: string;
+}
+
+/** TransactionHistoryResponse */
+export interface TransactionHistoryItem {
+  transactionId: string;
+  fromFullName?: string;
+  fromPhone?: string;
+  toFullName?: string;
+  toPhone?: string;
+  amount: number;
+  fee: number;
+  displayAmount: number; // dương = nhận, âm = gửi
+  description?: string;
+  transactionType: string;
+  status: string;
+  merchantId?: string;
+  createdAt: string;
+}
+
+/** PageResponse<T> ở transaction-service . */
+export interface TransactionHistoryPage {
+  content: TransactionHistoryItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+/** StatsOverviewResponse ở transaction-service. */
+export interface StatsOverview {
+  totalTransactions: number;
+  totalVolume: number;
+  totalFee: number;
+  successCount: number;
+  failedCount: number;
+  successRate: number; // 0.0 - 1.0
+  byType: Record<string, number>;
+  byStatus: Record<string, number>;
+}
+
+/** TimeSeriesPoint ở transaction-service. */
+export interface TimeSeriesPoint {
+  period: string;  // ISO yyyy-MM-dd
+  count: number;
+  volume: number;
+}
+
+export type StatsGranularity = 'day' | 'week' | 'month';
+
+/** Trùng schema với TransactionStatusHistoryResponse ở transaction-service. */
+export interface TransactionStatusHistoryItem {
+  historyId: string;
+  transactionId: string;
+  fromStatus: string | null;
+  toStatus: string;
+  reason: string | null;
+  changedAt: string;
+}
+
+/** Trùng schema với TransactionDetailResponse ở transaction-service. */
+export interface TransactionDetail {
+  transactionId: string;
+  fromFullName?: string;
+  fromPhone?: string;
+  toFullName?: string;
+  toPhone?: string;
+  amount: number;
+  fee: number;
+  displayAmount?: number;
+  description?: string;
+  transactionType: string;
+  status: string;
+  merchantId?: string;
+  createdAt: string;
+  statusHistory: TransactionStatusHistoryItem[];
 }
 
 export interface TransferResponse {

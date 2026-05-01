@@ -2,6 +2,7 @@ package com.ldt.wallet.controller;
 
 import com.ldt.wallet.dto.request.WalletCreateRequest;
 import com.ldt.wallet.dto.request.WalletTransferRequest;
+import com.ldt.wallet.dto.request.WalletTransferWithFeeRequest;
 import com.ldt.wallet.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,13 @@ public class InternalWalletController {
     public ResponseEntity<Map<String, String>> transfer(@Valid @RequestBody WalletTransferRequest walletTransferRequest) {
         Map<String, String> map = new HashMap<>();
         map.put("status", walletService.transfer(walletTransferRequest));
+        return ResponseEntity.ok(map);
+    }
+
+    @PostMapping("/transfer-with-fee")
+    public ResponseEntity<Map<String, String>> transferWithFee(@Valid @RequestBody WalletTransferWithFeeRequest req) {
+        Map<String, String> map = new HashMap<>();
+        map.put("status", walletService.transferWithFee(req));
         return ResponseEntity.ok(map);
     }
 

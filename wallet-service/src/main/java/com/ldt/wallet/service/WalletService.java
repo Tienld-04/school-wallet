@@ -2,6 +2,7 @@ package com.ldt.wallet.service;
 
 import com.ldt.wallet.dto.request.WalletCreateRequest;
 import com.ldt.wallet.dto.request.WalletTransferRequest;
+import com.ldt.wallet.dto.request.WalletTransferWithFeeRequest;
 import com.ldt.wallet.dto.response.BalanceResponse;
 import com.ldt.wallet.dto.response.LedgerEntryResponse;
 import com.ldt.wallet.dto.response.PageResponse;
@@ -23,9 +24,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -115,6 +118,116 @@ public class WalletService {
         return "Chuyển tiền thành công";
     }
 
+    /**
+     * Atomic 3-party split: customer DEBIT amount, merchant CREDIT (amount - fee),
+     * platform CREDIT fee. Tất cả ghi cùng transactionId trong 1 DB transaction.
+     * Edge: nếu platform trùng customer hoặc merchant → skip fee, đi luồng transfer thường.
+     */
+    @Transactional
+    public String transferWithFee(WalletTransferWithFeeRequest req) {
+        BigDecimal amount = req.getAmount();
+        BigDecimal fee = req.getFee();
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.INVALID_AMOUNT);
+        }
+        if (fee.compareTo(BigDecimal.ZERO) < 0 || fee.compareTo(amount) >= 0) {
+            throw new AppException(ErrorCode.INVALID_AMOUNT);
+        }
+
+        UUID transactionId = req.getTransactionId();
+        // Idempotency: nếu transactionId đã có ledger thì coi như xong
+        if (transactionId != null && !walletLedgerRepository.findByTransactionId(transactionId).isEmpty()) {
+            return "Thanh toán thành công";
+        }
+
+        UUID fromId = req.getFromUserId();
+        UUID toId = req.getToUserId();
+        UUID platformId = req.getPlatformUserId();
+
+        // Edge: platform == merchant hoặc platform == customer → skip fee, đi 2-party transfer thường
+        if (platformId.equals(toId) || platformId.equals(fromId) || fee.compareTo(BigDecimal.ZERO) == 0) {
+            WalletTransferRequest plain = new WalletTransferRequest();
+            plain.setFromUserId(fromId);
+            plain.setToUserId(toId);
+            plain.setAmount(amount);
+            plain.setTransactionId(transactionId);
+            plain.setReason(LedgerReason.PAYMENT);
+            plain.setNote(req.getNote());
+            return transfer(plain);
+        }
+
+        // 3 ví distinct → lock theo thứ tự UUID ascending
+        List<UUID> sortedIds = Stream.of(fromId, toId, platformId).sorted().toList();
+        Map<UUID, Wallet> walletMap = new HashMap<>();
+        for (UUID id : sortedIds) {
+            Wallet w = walletRepository.findByUserIdForUpdate(id)
+                    .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
+            walletMap.put(id, w);
+        }
+        Wallet fromWallet = walletMap.get(fromId);
+        Wallet toWallet = walletMap.get(toId);
+        Wallet platformWallet = walletMap.get(platformId);
+
+        if (fromWallet.getStatus() == WalletStatus.LOCKED
+                || toWallet.getStatus() == WalletStatus.LOCKED
+                || platformWallet.getStatus() == WalletStatus.LOCKED) {
+            throw new AppException(ErrorCode.WALLET_LOCKED);
+        }
+
+        // Reset daily/monthly cho fromWallet nếu sang ngày/tháng mới
+        LocalDate today = LocalDate.now();
+        if (fromWallet.getLastDailyReset() == null || !fromWallet.getLastDailyReset().equals(today)) {
+            fromWallet.setDailySpent(BigDecimal.ZERO);
+            fromWallet.setLastDailyReset(today);
+        }
+        if (fromWallet.getLastMonthlyReset() == null
+                || fromWallet.getLastMonthlyReset().getMonth() != today.getMonth()
+                || fromWallet.getLastMonthlyReset().getYear() != today.getYear()) {
+            fromWallet.setMonthlySpent(BigDecimal.ZERO);
+            fromWallet.setLastMonthlyReset(today);
+        }
+
+        // Hạn mức + balance dùng FULL amount (customer chi 100, không phải 90)
+        if (fromWallet.getDailySpent().add(amount).compareTo(fromWallet.getDailyLimit()) > 0) {
+            throw new AppException(ErrorCode.DAILY_LIMIT_EXCEEDED);
+        }
+        if (fromWallet.getMonthlySpent().add(amount).compareTo(fromWallet.getMonthlyLimit()) > 0) {
+            throw new AppException(ErrorCode.MONTHLY_LIMIT_EXCEEDED);
+        }
+        if (fromWallet.getBalance().compareTo(amount) < 0) {
+            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
+        }
+
+        BigDecimal merchantAmount = amount.subtract(fee);
+
+        BigDecimal fromBefore = fromWallet.getBalance();
+        BigDecimal toBefore = toWallet.getBalance();
+        BigDecimal platformBefore = platformWallet.getBalance();
+        BigDecimal fromAfter = fromBefore.subtract(amount);
+        BigDecimal toAfter = toBefore.add(merchantAmount);
+        BigDecimal platformAfter = platformBefore.add(fee);
+
+        fromWallet.setBalance(fromAfter);
+        fromWallet.setDailySpent(fromWallet.getDailySpent().add(amount));
+        fromWallet.setMonthlySpent(fromWallet.getMonthlySpent().add(amount));
+        toWallet.setBalance(toAfter);
+        platformWallet.setBalance(platformAfter);
+        walletRepository.save(fromWallet);
+        walletRepository.save(toWallet);
+        walletRepository.save(platformWallet);
+
+        // 3 ledger entries cùng transactionId
+        writeLedger(fromWallet, transactionId, LedgerDirection.DEBIT,
+                amount, fromBefore, fromAfter, LedgerReason.PAYMENT, req.getNote());
+        writeLedger(toWallet, transactionId, LedgerDirection.CREDIT,
+                merchantAmount, toBefore, toAfter, LedgerReason.PAYMENT, req.getNote());
+        writeLedger(platformWallet, transactionId, LedgerDirection.CREDIT,
+                fee, platformBefore, platformAfter, LedgerReason.PLATFORM_FEE,
+                "Phí nền tảng giao dịch " + transactionId);
+
+        return "Thanh toán thành công";
+    }
+
     public PageResponse<LedgerEntryResponse> getMyLedger(String userId, int page, int size) {
         Wallet wallet = walletRepository.findByUserId(UUID.fromString(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
@@ -151,7 +264,8 @@ public class WalletService {
             LedgerReason.TRANSFER_IN,   "Nhận tiền chuyển khoản",
             LedgerReason.TRANSFER_OUT,  "Chuyển tiền đi",
             LedgerReason.TOP_UP,        "Nạp tiền",
-            LedgerReason.REFUND,        "Hoàn tiền"
+            LedgerReason.REFUND,        "Hoàn tiền",
+            LedgerReason.PLATFORM_FEE,  "Phí nền tảng"
     );
 
     private LedgerEntryResponse toLedgerEntryResponse(WalletLedger entry, String currency) {

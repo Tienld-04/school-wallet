@@ -22,7 +22,7 @@ const quickActions = [
       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
     </svg>
   )},
-  { label: 'Lịch sử',    path: null,        bg: 'bg-slate-100',    text: 'text-slate-500', icon: (
+  { label: 'Lịch sử',    path: '/transactions', bg: 'bg-slate-100',    text: 'text-slate-500', icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
     </svg>

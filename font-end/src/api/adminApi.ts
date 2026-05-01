@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { UsersResponse, PageResponse, MerchantResponse, MerchantRequest, KycAdminListResponse } from '../types';
+import type { UsersResponse, PageResponse, MerchantResponse, MerchantRequest, KycAdminListResponse, TransactionDetail } from '../types';
 
 const adminApi = {
   // Users
@@ -37,6 +37,10 @@ const adminApi = {
 
   deleteMerchant: (merchantId: string): Promise<{ message: string }> =>
     axiosClient.delete<{ message: string }>(`/merchants/${merchantId}`),
+
+  // Tra cứu chi tiết giao dịch 
+  getTransactionDetail: (transactionId: string): Promise<TransactionDetail> =>
+    axiosClient.get<TransactionDetail>(`/transactions/detail/${transactionId}`),
 };
 
 export default adminApi;

@@ -8,7 +8,8 @@ public enum LedgerReason {
     TRANSFER_IN("TRANSFER_IN", "Nhận tiền chuyển khoản"),
     TRANSFER_OUT("TRANSFER_OUT", "Chuyển tiền đi"),
     TOP_UP("TOP_UP", "Nạp tiền vào ví"),
-    REFUND("REFUND", "Hoàn tiền");
+    REFUND("REFUND", "Hoàn tiền"),
+    PLATFORM_FEE("PLATFORM_FEE", "Phí nền tảng");
 
     private final String code;
     private final String description;

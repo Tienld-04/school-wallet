@@ -1,7 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import merchantApi from '../api/merchantApi';
+import transactionApi from '../api/transactionApi';
+import walletApi from '../api/walletApi';
+import { getErrorMessage } from '../utils/errorMessage';
 import type { MerchantType, MerchantListResponse } from '../types';
+
+type PaymentStep = 'details' | 'pin';
+
+const formatVND = (raw: string) =>
+  raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+
+interface ParkingBracket {
+  fee: number;
+  label: string;
+}
+
+/**
+ * Phí bãi gửi xe theo giờ: ban ngày (6-18h) 3k, tối (18-22h) 5k, đêm (22-6h) 10k.
+ * Tính ở FE để giữ scope nhỏ — đây là project học tập, BE không cần policy pricing.
+ */
+const computeParkingFee = (date: Date = new Date()): ParkingBracket => {
+  const h = date.getHours();
+  if (h >= 6 && h < 18) return { fee: 3000, label: 'Ban ngày (06:00 – 18:00)' };
+  if (h >= 18 && h < 22) return { fee: 5000, label: 'Buổi tối (18:00 – 22:00)' };
+  return { fee: 10000, label: 'Đêm khuya (22:00 – 06:00)' };
+};
 
 const typeIcons: Record<string, React.ReactNode> = {
   CANTEEN: (
@@ -65,6 +89,18 @@ const Payment: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
+  // Payment modal state
+  const [activeMerchant, setActiveMerchant] = useState<MerchantListResponse | null>(null);
+  const [paymentStep, setPaymentStep] = useState<PaymentStep>('details');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [pin, setPin] = useState(['', '', '', '', '', '']);
+  const [submitting, setSubmitting] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [parkingBracket, setParkingBracket] = useState<ParkingBracket | null>(null);
+
+  const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const fetchMerchants = useCallback(async (type?: string) => {
     setLoading(true);
     try {
@@ -75,6 +111,14 @@ const Payment: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchBalance = useCallback(() => {
+    walletApi.getMyBalance()
+      .then((data) => setBalance(data.balance))
+      .catch(() => {
+        // Fail mở: BE vẫn check khi submit
+      });
   }, []);
 
   useEffect(() => {
@@ -88,12 +132,97 @@ const Payment: React.FC = () => {
       fetchMerchants();
     };
     init();
-  }, [fetchMerchants]);
+    fetchBalance();
+  }, [fetchMerchants, fetchBalance]);
 
   const handleFilterType = (code: string) => {
     const newType = selectedType === code ? '' : code;
     setSelectedType(newType);
     fetchMerchants(newType);
+  };
+
+  const closeModal = () => {
+    setActiveMerchant(null);
+    setPaymentStep('details');
+    setAmount('');
+    setDescription('');
+    setPin(['', '', '', '', '', '']);
+    setParkingBracket(null);
+  };
+
+  const handleMerchantClick = (m: MerchantListResponse) => {
+    setActiveMerchant(m);
+    setPaymentStep('details');
+    setPin(['', '', '', '', '', '']);
+    if (m.type === 'PARKING') {
+      const bracket = computeParkingFee();
+      setParkingBracket(bracket);
+      setAmount(String(bracket.fee));
+      setDescription(`Phí gửi xe ${bracket.label}`);
+    } else {
+      setParkingBracket(null);
+      setAmount('');
+      setDescription('');
+    }
+  };
+
+  const handleConfirm = () => {
+    const amt = parseInt(amount);
+    if (!amt || amt < 1000) {
+      toast.error('Số tiền tối thiểu là 1.000đ');
+      return;
+    }
+    if (balance != null && amt > balance) {
+      toast.error('Số dư không đủ');
+      return;
+    }
+    setPin(['', '', '', '', '', '']);
+    setPaymentStep('pin');
+    setTimeout(() => pinRefs.current[0]?.focus(), 100);
+  };
+
+  const handlePinChange = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return;
+    const next = [...pin];
+    next[index] = value;
+    setPin(next);
+    if (value && index < 5) pinRefs.current[index + 1]?.focus();
+  };
+
+  const handlePinKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !pin[index] && index > 0) {
+      pinRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!activeMerchant) return;
+    const pinStr = pin.join('');
+    if (pinStr.length < 6) {
+      toast.error('Vui lòng nhập đủ 6 số PIN');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await transactionApi.merchantPayment({
+        requestId: crypto.randomUUID(),
+        merchantId: activeMerchant.merchantId,
+        merchantName: activeMerchant.name,
+        merchantPhone: activeMerchant.userPhone,
+        amount: parseInt(amount),
+        description: description.trim() || undefined,
+        pin: pinStr,
+      });
+      toast.success('Thanh toán thành công!');
+      closeModal();
+      fetchBalance();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Thanh toán thất bại'));
+      setPin(['', '', '', '', '', '']);
+      setTimeout(() => pinRefs.current[0]?.focus(), 100);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getTypeDesc = (code: string) =>
@@ -164,6 +293,7 @@ const Payment: React.FC = () => {
             return (
               <div
                 key={m.merchantId}
+                onClick={() => handleMerchantClick(m)}
                 className="group bg-white rounded-2xl border border-slate-100 p-5 hover:border-primary-200 hover:shadow-md hover:shadow-primary-500/5 transition-all duration-200 cursor-pointer"
               >
                 <div className="flex items-start gap-4">
@@ -200,6 +330,216 @@ const Payment: React.FC = () => {
         <p className="text-xs text-slate-400 mt-4 text-center">
           Hiển thị {filtered.length} dịch vụ{selectedType && ` trong "${getTypeDesc(selectedType)}"`}
         </p>
+      )}
+
+      {/* ── Payment modal — step: details ── */}
+      {activeMerchant && paymentStep === 'details' && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white w-full max-w-md shadow-2xl overflow-hidden rounded-t-3xl sm:rounded-3xl pb-[env(safe-area-inset-bottom)]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <p className="font-semibold text-slate-900">Thanh toán dịch vụ</p>
+              <button
+                onClick={closeModal}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500"
+                aria-label="Đóng"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-5 pb-5 space-y-4">
+              {/* Merchant info */}
+              {(() => {
+                const color = typeColors[activeMerchant.type] || defaultColor;
+                return (
+                  <div className="bg-slate-50 rounded-xl p-4 flex items-center gap-3">
+                    <div className={`w-12 h-12 ${color.bg} ${color.text} rounded-xl flex items-center justify-center shrink-0`}>
+                      {typeIcons[activeMerchant.type] || typeIcons.OTHER}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800 truncate">{activeMerchant.name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{getTypeDesc(activeMerchant.type)}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Số tiền — auto cho PARKING, free input cho loại khác */}
+              {activeMerchant.type === 'PARKING' && parkingBracket ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Phí gửi xe</label>
+                  <div className="bg-primary-50 border border-primary-100 rounded-xl px-4 py-3.5">
+                    <p className="text-2xl font-bold text-primary-700">
+                      {formatVND(String(parkingBracket.fee))}
+                      <span className="text-sm font-medium ml-1.5 text-primary-500">VND</span>
+                    </p>
+                    <p className="text-xs text-primary-600 mt-1">
+                      <svg className="inline" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                      </svg>{' '}
+                      {parkingBracket.label}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Số tiền thanh toán</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoFocus
+                      value={formatVND(amount)}
+                      onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+                      placeholder="0"
+                      className="w-full px-4 py-3 pr-14 rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition text-base font-medium"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">VND</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1.5 pl-1">Số tiền tối thiểu là 1.000đ</p>
+                </div>
+              )}
+
+              {/* Nội dung */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nội dung</label>
+                <input
+                  type="text"
+                  maxLength={255}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ghi chú (không bắt buộc)"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition text-sm"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  onClick={closeModal}
+                  className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={!amount || parseInt(amount) < 1000}
+                  className="flex-1 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm transition-all duration-200"
+                >
+                  Tiếp tục
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Payment modal — step: pin ── */}
+      {activeMerchant && paymentStep === 'pin' && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden rounded-t-3xl sm:rounded-3xl pb-[env(safe-area-inset-bottom)]">
+            {/* Header gradient */}
+            <div className="bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 px-5 pt-6 pb-8 text-center relative">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mx-auto mb-2 shadow-inner">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <h3 className="text-white font-bold text-lg tracking-tight">Xác nhận thanh toán</h3>
+              <p className="text-primary-200 text-xs mt-0.5">Nhập mã PIN 6 số của bạn</p>
+              <div className="absolute bottom-0 left-0 right-0 h-5 bg-white rounded-t-[1.75rem]" />
+            </div>
+
+            <div className="px-5 pb-5 space-y-4">
+              {/* Tóm tắt */}
+              <div className="bg-slate-50 rounded-2xl p-3.5 space-y-2 text-sm">
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-slate-400 shrink-0">Dịch vụ</span>
+                  <span className="font-semibold text-slate-800 truncate">{activeMerchant.name}</span>
+                </div>
+                <div className="h-px bg-slate-100" />
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-slate-400 shrink-0">Số tiền</span>
+                  <span className="font-bold text-primary-600 text-base">
+                    {formatVND(amount)}
+                    <span className="text-xs font-medium ml-1">VND</span>
+                  </span>
+                </div>
+                {description && (
+                  <>
+                    <div className="h-px bg-slate-100" />
+                    <div className="flex justify-between items-center gap-3">
+                      <span className="text-slate-400 shrink-0">Nội dung</span>
+                      <span className="font-medium text-slate-700 text-right truncate">{description}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* PIN */}
+              <div>
+                <p className="text-[11px] text-slate-400 text-center mb-3 uppercase tracking-widest font-semibold">Mã PIN</p>
+                <div className="flex justify-center gap-2.5">
+                  {pin.map((digit, i) => (
+                    <div key={i} className="relative w-10 h-10 sm:w-11 sm:h-11 group">
+                      <input
+                        ref={(el) => { pinRefs.current[i] = el; }}
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handlePinChange(i, e.target.value)}
+                        onKeyDown={(e) => handlePinKeyDown(i, e)}
+                        style={{ fontSize: '16px' }}
+                        className="absolute inset-0 opacity-0 cursor-default w-full h-full"
+                      />
+                      <div className={`w-full h-full rounded-full border-2 flex items-center justify-center pointer-events-none
+                        transition-all duration-200
+                        group-focus-within:ring-4 group-focus-within:ring-primary-200 group-focus-within:scale-110
+                        ${digit
+                          ? 'bg-primary-600 border-primary-600 shadow-lg shadow-primary-500/40 scale-105'
+                          : 'bg-white border-slate-200 group-focus-within:border-primary-400 group-focus-within:bg-primary-50'
+                        }`}
+                      >
+                        {digit && <div className="w-2 h-2 rounded-full bg-white shadow-sm" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  onClick={() => { setPaymentStep('details'); setPin(['', '', '', '', '', '']); }}
+                  disabled={submitting}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Quay lại
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || pin.join('').length < 6}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-semibold text-sm shadow-md shadow-primary-500/30 disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Xác nhận'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

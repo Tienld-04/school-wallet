@@ -1,12 +1,10 @@
 package com.ldt.user.dto.merchant;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -18,6 +16,7 @@ public class MerchantRequest {
     @NotBlank(message = "Loại merchant không được trống")
     private String type;
 
-    @NotNull(message = "User ID không được trống")
-    private UUID userId;
+    @NotBlank(message = "Số điện thoại không được trống")
+    @Pattern(regexp = "^\\d{10}$", message = "Số điện thoại phải có đúng 10 chữ số")
+    private String userPhone;
 }

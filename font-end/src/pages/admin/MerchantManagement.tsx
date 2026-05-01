@@ -20,7 +20,7 @@ const MerchantManagement: React.FC = () => {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<MerchantRequest>({ name: '', type: '', userId: '' });
+  const [form, setForm] = useState<MerchantRequest>({ name: '', type: '', userPhone: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -49,14 +49,14 @@ const MerchantManagement: React.FC = () => {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ name: '', type: '', userId: '' });
+    setForm({ name: '', type: '', userPhone: '' });
     setFormErrors({});
     setShowModal(true);
   };
 
   const openEdit = (m: MerchantResponse) => {
     setEditingId(m.merchantId);
-    setForm({ name: m.name, type: m.type, userId: m.userId });
+    setForm({ name: m.name, type: m.type, userPhone: m.userPhone });
     setFormErrors({});
     setShowModal(true);
   };
@@ -65,7 +65,8 @@ const MerchantManagement: React.FC = () => {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = 'Tên không được trống';
     if (!form.type) errors.type = 'Vui lòng chọn loại';
-    if (!form.userId.trim()) errors.userId = 'User ID không được trống';
+    if (!form.userPhone.trim()) errors.userPhone = 'Số điện thoại không được trống';
+    else if (!/^\d{10}$/.test(form.userPhone)) errors.userPhone = 'Số điện thoại phải có đúng 10 chữ số';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -261,15 +262,21 @@ const MerchantManagement: React.FC = () => {
                 {formErrors.type && <span className="text-xs text-red-500">{formErrors.type}</span>}
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">User ID (chủ merchant)</label>
+                <label className="text-sm font-medium text-slate-700">Số điện thoại (chủ merchant)</label>
                 <input
-                  type="text"
-                  value={form.userId}
-                  onChange={(e) => { setForm((f) => ({ ...f, userId: e.target.value })); setFormErrors((fe) => ({ ...fe, userId: '' })); }}
-                  placeholder="Nhập UUID của user"
-                  className={inputClass(!!formErrors.userId)}
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={form.userPhone}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '');
+                    setForm((f) => ({ ...f, userPhone: digits }));
+                    setFormErrors((fe) => ({ ...fe, userPhone: '' }));
+                  }}
+                  placeholder="Nhập số điện thoại (10 chữ số)"
+                  className={inputClass(!!formErrors.userPhone)}
                 />
-                {formErrors.userId && <span className="text-xs text-red-500">{formErrors.userId}</span>}
+                {formErrors.userPhone && <span className="text-xs text-red-500">{formErrors.userPhone}</span>}
               </div>
               <div className="flex gap-3 pt-2">
                 <button
