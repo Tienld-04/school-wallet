@@ -9,6 +9,7 @@ import Dashboard from '../pages/Dashboard';
 import Transfer from '../pages/Transfer';
 import Payment from '../pages/Payment';
 import TopUp from '../pages/TopUp';
+import TransactionHistory from '../pages/TransactionHistory';
 import Profile from '../pages/Profile';
 import UserManagement from '../pages/admin/UserManagement';
 import MerchantManagement from '../pages/admin/MerchantManagement';
@@ -43,6 +44,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/transfer" element={<Transfer />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/top-up" element={<TopUp />} />
+        <Route path="/transactions" element={<TransactionHistory />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
         <Route path="/admin/merchants" element={<AdminRoute><MerchantManagement /></AdminRoute>} />

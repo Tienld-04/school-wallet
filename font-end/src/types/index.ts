@@ -139,6 +139,32 @@ export interface MerchantPaymentRequest {
   pin: string;
 }
 
+/** Trùng schema với TransactionHistoryResponse ở transaction-service. */
+export interface TransactionHistoryItem {
+  transactionId: string;
+  fromFullName?: string;
+  fromPhone?: string;
+  toFullName?: string;
+  toPhone?: string;
+  amount: number;
+  fee: number;
+  displayAmount: number; // dương = nhận, âm = gửi
+  description?: string;
+  transactionType: string;
+  status: string;
+  merchantId?: string;
+  createdAt: string;
+}
+
+/** Trùng schema với PageResponse<T> ở transaction-service (flat fields). */
+export interface TransactionHistoryPage {
+  content: TransactionHistoryItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface TransferResponse {
   transactionId: string;
   fromUserId: string;

@@ -346,6 +346,7 @@ public class TransactionService {
                             .toPhone(tx.getToPhone())
                             .amount(tx.getAmount())
                             .fee(tx.getFee())
+                            .displayAmount(displayAmount)
                             .description(tx.getDescription())
                             .transactionType(tx.getTransactionType().name())
                             .status(tx.getStatus().name())
@@ -374,6 +375,14 @@ public class TransactionService {
             throw new AppException(ErrorCode.TRANSACTION_NOT_FOUND);
         }
 
+        // Admin xem detail của giao dịch người khác → không có displayAmount theo perspective riêng
+        BigDecimal displayAmount = null;
+        if (callerId.equals(tx.getFromUserId())) {
+            displayAmount = tx.getAmount().negate();
+        } else if (callerId.equals(tx.getToUserId())) {
+            displayAmount = tx.getAmount();
+        }
+
         return TransactionHistoryResponse.builder()
                 .transactionId(tx.getTransactionId())
                 .fromFullName(tx.getFromFullName())
@@ -382,6 +391,7 @@ public class TransactionService {
                 .toPhone(tx.getToPhone())
                 .amount(tx.getAmount())
                 .fee(tx.getFee())
+                .displayAmount(displayAmount)
                 .description(tx.getDescription())
                 .transactionType(tx.getTransactionType().name())
                 .status(tx.getStatus().name())
