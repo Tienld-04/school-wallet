@@ -6,6 +6,7 @@ import com.ldt.transaction.dto.request.TransactionHistoryRequest;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
 import com.ldt.transaction.dto.response.StatsOverviewResponse;
 import com.ldt.transaction.dto.response.TimeSeriesPoint;
+import com.ldt.transaction.dto.response.TransactionDetailResponse;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.response.TransactionStatusHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
@@ -112,8 +113,8 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService.getTransactionHistory(userId, request.getPage(), request.getSize()));
     }
 
-    @GetMapping("/{transactionId}")
-    public ResponseEntity<TransactionHistoryResponse> getTransactionDetail(
+    @GetMapping("/detail/{transactionId}")
+    public ResponseEntity<TransactionDetailResponse> getTransactionDetail(
             @PathVariable UUID transactionId) {
         return ResponseEntity.ok(transactionService.getTransactionDetail(transactionId));
     }

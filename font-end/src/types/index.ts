@@ -187,6 +187,34 @@ export interface TimeSeriesPoint {
 
 export type StatsGranularity = 'day' | 'week' | 'month';
 
+/** Trùng schema với TransactionStatusHistoryResponse ở transaction-service. */
+export interface TransactionStatusHistoryItem {
+  historyId: string;
+  transactionId: string;
+  fromStatus: string | null;
+  toStatus: string;
+  reason: string | null;
+  changedAt: string;
+}
+
+/** Trùng schema với TransactionDetailResponse ở transaction-service. */
+export interface TransactionDetail {
+  transactionId: string;
+  fromFullName?: string;
+  fromPhone?: string;
+  toFullName?: string;
+  toPhone?: string;
+  amount: number;
+  fee: number;
+  displayAmount?: number;
+  description?: string;
+  transactionType: string;
+  status: string;
+  merchantId?: string;
+  createdAt: string;
+  statusHistory: TransactionStatusHistoryItem[];
+}
+
 export interface TransferResponse {
   transactionId: string;
   fromUserId: string;

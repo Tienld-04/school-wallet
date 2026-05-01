@@ -3,6 +3,7 @@ package com.ldt.transaction.service;
 import com.ldt.transaction.context.UserContext;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
+import com.ldt.transaction.dto.response.TransactionDetailResponse;
 import com.ldt.transaction.dto.response.TransactionHistoryResponse;
 import com.ldt.transaction.dto.response.TransactionStatusHistoryResponse;
 //import com.ldt.transaction.dto.TransactionResponse;
@@ -364,8 +365,8 @@ public class TransactionService {
                 .totalPages(transactionPage.getTotalPages())
                 .build();
     }
-    // Lấy chi tiết 1 giao dịch
-    public TransactionHistoryResponse getTransactionDetail(UUID transactionId) {
+    // Lấy chi tiết 1 giao dịch kèm lịch sử trạng thái
+    public TransactionDetailResponse getTransactionDetail(UUID transactionId) {
         Transaction tx = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
 
@@ -383,7 +384,10 @@ public class TransactionService {
             displayAmount = tx.getAmount();
         }
 
-        return TransactionHistoryResponse.builder()
+        List<TransactionStatusHistoryResponse> statusHistory =
+                statusHistoryService.getByTransactionId(transactionId);
+
+        return TransactionDetailResponse.builder()
                 .transactionId(tx.getTransactionId())
                 .fromFullName(tx.getFromFullName())
                 .fromPhone(tx.getFromPhone())
@@ -397,6 +401,7 @@ public class TransactionService {
                 .status(tx.getStatus().name())
                 .merchantId(tx.getMerchantId())
                 .createdAt(tx.getCreatedAt())
+                .statusHistory(statusHistory)
                 .build();
     }
     // Lấy lịch sử trạng thái của 1 giao dịch
