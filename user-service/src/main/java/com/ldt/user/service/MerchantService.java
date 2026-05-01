@@ -35,7 +35,7 @@ public class MerchantService {
             throw new AppException(ErrorCode.MERCHANT_NAME_ALREADY_EXISTS);
         }
         MerchantType type = parseMerchantType(request.getType());
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByPhone(request.getUserPhone())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         Merchant merchant = Merchant.builder()
@@ -57,7 +57,7 @@ public class MerchantService {
             throw new AppException(ErrorCode.MERCHANT_NAME_ALREADY_EXISTS);
         }
         MerchantType type = parseMerchantType(request.getType());
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByPhone(request.getUserPhone())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         merchant.setName(request.getName());
@@ -147,6 +147,7 @@ public class MerchantService {
                 .type(merchant.getType().name())
                 .active(merchant.getActive())
                 .userId(merchant.getUser().getUserId())
+                .userPhone(merchant.getUser().getPhone())
                 .createdAt(merchant.getCreatedAt())
                 .build();
     }

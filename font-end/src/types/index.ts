@@ -81,13 +81,14 @@ export interface MerchantResponse {
   type: string;
   active: boolean;
   userId: string;
+  userPhone: string;
   createdAt: string;
 }
 
 export interface MerchantRequest {
   name: string;
   type: string;
-  userId: string;
+  userPhone: string;
 }
 
 export interface PageResponse<T> {
