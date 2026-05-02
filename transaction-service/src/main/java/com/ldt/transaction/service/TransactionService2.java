@@ -334,7 +334,7 @@ public class TransactionService2 {
             throw new AppException(ErrorCode.TRANSFER_FAILED, e.getResponseBodyAsString());
         } catch (Exception e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED,
-                    "Không thể lấy thông tin admin: " + e.getMessage());
+                    "Lỗi hệ thống: " + e.getMessage());
         }
     }
 
