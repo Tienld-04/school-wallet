@@ -307,8 +307,6 @@ public class WalletService {
 
     /**
      * Từ reason của ví trừ tiền → suy ra reason cho ví nhận tiền.
-     * TRANSFER_OUT → TRANSFER_IN (P2P).
-     * PAYMENT → PAYMENT (merchant nhận tiền thanh toán).
      */
     private LedgerReason resolveCounterpartReason(LedgerReason fromReason) {
         return switch (fromReason) {
