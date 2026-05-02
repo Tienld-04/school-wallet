@@ -1,9 +1,11 @@
 package com.ldt.wallet.controller;
 
 import com.ldt.wallet.dto.request.WalletCreateRequest;
+import com.ldt.wallet.dto.request.WalletTopupRequest;
 import com.ldt.wallet.dto.request.WalletTransferRequest;
 import com.ldt.wallet.dto.request.WalletTransferWithFeeRequest;
 import com.ldt.wallet.service.WalletService;
+import com.ldt.wallet.service.WalletTopupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class InternalWalletController {
     private final WalletService walletService;
+    private final WalletTopupService walletTopupService;
 
     @PostMapping
     public ResponseEntity<Void> createWallet(@Valid @RequestBody WalletCreateRequest walletCreateRequest) {
@@ -38,6 +41,13 @@ public class InternalWalletController {
     public ResponseEntity<Map<String, String>> transferWithFee(@Valid @RequestBody WalletTransferWithFeeRequest req) {
         Map<String, String> map = new HashMap<>();
         map.put("status", walletService.transferWithFee(req));
+        return ResponseEntity.ok(map);
+    }
+
+    @PostMapping("/topup")
+    public ResponseEntity<Map<String, String>> topup(@Valid @RequestBody WalletTopupRequest req) {
+        Map<String, String> map = new HashMap<>();
+        map.put("status", walletTopupService.topup(req));
         return ResponseEntity.ok(map);
     }
 
