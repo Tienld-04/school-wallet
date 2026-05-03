@@ -57,11 +57,6 @@ public class Transaction {
     @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
 
-    /**
-     * Phí nền tảng (platform fee) admin thu về với merchant payment thông thường.
-     * = 0 nếu giao dịch không tính fee (transfer/topup, hoặc admin thanh toán merchant — admin được miễn phí).
-     * Số tiền merchant thực sự nhận được = amount - fee.
-     */
     @Builder.Default
     @ColumnDefault("0")
     @Column(name = "fee", nullable = false, precision = 18, scale = 2)
