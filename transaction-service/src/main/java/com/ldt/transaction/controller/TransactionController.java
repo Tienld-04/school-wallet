@@ -201,9 +201,11 @@ public class TransactionController {
         String xff = req.getHeader("X-Forwarded-For");
         String ip;
         if (xff != null && !xff.isBlank()) {
+            // production - behind proxy
             int comma = xff.indexOf(',');
             ip = comma > 0 ? xff.substring(0, comma).trim() : xff.trim();
         } else {
+            // Test local
             String remote = req.getRemoteAddr();
             ip = remote != null ? remote : "127.0.0.1";
         }

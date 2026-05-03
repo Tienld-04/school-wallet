@@ -94,7 +94,7 @@ public class VnPayService {
             String value = params.get(key);
             if (value == null || value.isEmpty()) continue;
             sb.append(key).append('=')
-                    .append(URLEncoder.encode(value, StandardCharsets.US_ASCII));
+                    .append(URLEncoder.encode(value, StandardCharsets.UTF_8));
             if (it.hasNext()) {
                 sb.append('&');
             }

@@ -23,9 +23,9 @@ public class RestTemplateConfig {
         connectionManager.setMaxTotal(100);
         connectionManager.setDefaultMaxPerRoute(50);
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectionRequestTimeout(Timeout.ofSeconds(3))
-                .setResponseTimeout(Timeout.ofSeconds(5))
-                .setConnectTimeout(Timeout.ofSeconds(2))
+                .setConnectionRequestTimeout(Timeout.ofSeconds(5))
+                .setResponseTimeout(Timeout.ofSeconds(10))
+                .setConnectTimeout(Timeout.ofSeconds(3))
                 .build();
         CloseableHttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
