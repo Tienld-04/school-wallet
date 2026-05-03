@@ -273,6 +273,27 @@ export interface KycResponse {
   rejectionReason?: string;
 }
 
+export interface InitiateTopupRequest {
+  amount: number;
+  bankCode?: string;
+  language?: string;
+}
+
+export interface InitiateTopupResponse {
+  paymentUrl: string;
+  requestId: string;
+}
+
+export interface TopupStatusResponse {
+  requestId: string;
+  transactionId: string;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  amount: number;
+  description?: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
