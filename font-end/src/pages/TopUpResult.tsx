@@ -110,11 +110,10 @@ const TopUpResult: React.FC = () => {
             </div>
             <p className="font-semibold text-slate-800">Nạp tiền thất bại</p>
             <p className="text-sm text-slate-500">
-              {status?.message ?? 'Giao dịch bị từ chối.'}
+              {vnpResponseCode === '00'
+                ? 'Lỗi hệ thống, Vui lòng thử lại sau ít phút hoặc liên hệ bộ phận hỗ trợ.'
+                : (status?.message ?? 'Giao dịch bị từ chối.')}
             </p>
-            {vnpResponseCode && (
-              <p className="text-xs text-slate-400">VNPay code: {vnpResponseCode}</p>
-            )}
           </div>
         ) : (
           <div className="text-center space-y-3">
