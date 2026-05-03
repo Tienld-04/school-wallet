@@ -186,6 +186,7 @@ public class TopupService {
             log.debug("Topup {} requestId={} responseCode={} txnStatus={}",
                     newStatus, txnRef, responseCode, txnStatus);
         }
+        // TODO: Using ActiveMQ push notification to user about topup result.
         return VnPayIpnCode.SUCCESS.toResponse();
     }
 
