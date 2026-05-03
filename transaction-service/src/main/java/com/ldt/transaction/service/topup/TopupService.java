@@ -6,6 +6,8 @@ import com.ldt.transaction.dto.topup.TopupStatusResponse;
 import com.ldt.transaction.dto.topup.VnPayIpnResponse;
 import com.ldt.transaction.dto.topup.WalletTopupRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
+import com.ldt.transaction.enums.VnPayIpnCode;
+import com.ldt.transaction.enums.VnPayTransactionCode;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
 import com.ldt.transaction.model.Transaction;

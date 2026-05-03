@@ -1,4 +1,4 @@
-package com.ldt.transaction.service.topup;
+package com.ldt.transaction.enums;
 
 import com.ldt.transaction.dto.topup.VnPayIpnResponse;
 

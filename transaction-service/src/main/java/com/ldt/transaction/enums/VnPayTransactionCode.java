@@ -1,4 +1,4 @@
-package com.ldt.transaction.service.topup;
+package com.ldt.transaction.enums;
 
 public enum VnPayTransactionCode {
     SUCCESS("00"),
