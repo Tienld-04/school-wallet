@@ -17,6 +17,13 @@ public class ApiSecurityFilter extends OncePerRequestFilter {
     @Value("${internal.secret}")
     private String internalSecret;
 
+    // api/transactions/topup/ipn -> endpoint public để VNPay callback.
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path != null && path.startsWith("/api/transactions/topup/ipn");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,

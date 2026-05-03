@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/otp/**",
+                                "/api/v1/transactions/topup/ipn",
                                 "/ws/**",
                                 "/actuator/**",
                                 "/public/**"
@@ -50,7 +51,6 @@ public class SecurityConfig {
                         .pathMatchers("/api/v1/merchants/list", "/api/v1/merchants/types").permitAll()
                         .pathMatchers("/api/v1/merchants/my-user").authenticated()
                         .pathMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
-                        .pathMatchers("/api/v1/transactions/topup").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/dashboard/**").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/detail/**").hasAuthority("ADMIN")
                         .pathMatchers("/api/v1/transactions/*/status-history").hasAuthority("ADMIN")

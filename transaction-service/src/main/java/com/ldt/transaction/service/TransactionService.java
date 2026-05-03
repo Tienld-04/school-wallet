@@ -335,7 +335,8 @@ public class TransactionService {
         Page<Transaction> transactionPage = transactionRepository.findByFromUserIdOrToUserId(userUUID, userUUID, pageable);
         List<TransactionHistoryResponse> content = transactionPage.getContent().stream()
                 .map(tx -> {
-                    boolean isOutgoing = tx.getFromUserId().equals(userUUID);
+                    // 
+                    boolean isOutgoing = userUUID.equals(tx.getFromUserId());
                     BigDecimal displayAmount = isOutgoing
                             ? tx.getAmount().negate()
                             : tx.getAmount();
@@ -375,8 +376,7 @@ public class TransactionService {
         if (!isAdmin && !callerId.equals(tx.getFromUserId()) && !callerId.equals(tx.getToUserId())) {
             throw new AppException(ErrorCode.TRANSACTION_NOT_FOUND);
         }
-
-        // Admin xem detail của giao dịch người khác → không có displayAmount theo perspective riêng
+        //
         BigDecimal displayAmount = null;
         if (callerId.equals(tx.getFromUserId())) {
             displayAmount = tx.getAmount().negate();
@@ -420,7 +420,7 @@ public class TransactionService {
 
         return transactions.stream()
                 .map(tx -> {
-                    boolean isOutgoing = tx.getFromUserId().equals(userUUID);
+                    boolean isOutgoing = userUUID.equals(tx.getFromUserId());
                     String formattedAmount = (isOutgoing ? "-" : "+") + tx.getAmount().toBigInteger();
                     return RecentTransactionResponse.builder()
                             .transactionId(tx.getTransactionId())

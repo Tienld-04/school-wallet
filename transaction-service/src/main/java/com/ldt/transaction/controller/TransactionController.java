@@ -12,15 +12,22 @@ import com.ldt.transaction.dto.response.TransactionStatusHistoryResponse;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
+import com.ldt.transaction.dto.topup.InitiateTopupRequest;
+import com.ldt.transaction.dto.topup.InitiateTopupResponse;
+import com.ldt.transaction.dto.topup.TopupStatusResponse;
+import com.ldt.transaction.dto.topup.VnPayIpnResponse;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
 import com.ldt.transaction.model.TransactionType;
+import com.ldt.transaction.service.topup.TopupService;
 import com.ldt.transaction.service.TransactionService;
 import com.ldt.transaction.service.TransactionService2;
 import com.ldt.transaction.service.TransactionStatsService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -37,6 +45,7 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final TransactionService2 transactionService2;
     private final TransactionStatsService transactionStatsService;
+    private final TopupService topupService;
 
     // V2: dùng TransactionService2 
     @PostMapping("/transfer")
@@ -46,6 +55,12 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService2.transfer(transferRequest, fromPhone, TransactionType.TRANSFER));
     }
 
+    @PostMapping("/merchant/payment")
+    public ResponseEntity<TransactionResponse> merchantPayment(
+            @Valid @RequestBody PaymentRequest paymentRequest,
+            @RequestHeader("X-User-Phone") String fromPhone) {
+        return ResponseEntity.ok(transactionService2.merchantPayment(paymentRequest, fromPhone));
+    }
     // TODO: FE chưa dùng — bỏ comment khi cần
     // @PostMapping("/payment")
     // public ResponseEntity<TransactionResponse> payment(
@@ -61,13 +76,6 @@ public class TransactionController {
     //         @RequestHeader("X-User-Phone") String fromPhone) {
     //     return ResponseEntity.ok(transactionService2.transfer(transferRequest, fromPhone, TransactionType.TOPUP));
     // }
-
-    @PostMapping("/merchant/payment")
-    public ResponseEntity<TransactionResponse> merchantPayment(
-            @Valid @RequestBody PaymentRequest paymentRequest,
-            @RequestHeader("X-User-Phone") String fromPhone) {
-        return ResponseEntity.ok(transactionService2.merchantPayment(paymentRequest, fromPhone));
-    }
 
     // V1 code cũ - bỏ comment để revert
     /*
@@ -167,4 +175,43 @@ public class TransactionController {
         return ResponseEntity.ok(transactionStatsService.getTimeSeries(fromDt, toDt, granularity));
     }
 
+    // VNPay TopUp endpoints
+    @PostMapping("/topup/initiate")
+    public ResponseEntity<InitiateTopupResponse> initiateTopup(
+            @Valid @RequestBody InitiateTopupRequest request,
+            HttpServletRequest httpRequest) {
+        String userId = UserContext.getUserId();
+        String userPhone = UserContext.getUserPhone();
+        String ipAddr = resolveClientIp(httpRequest);
+        return ResponseEntity.ok(topupService.initiateTopup(request, userId, userPhone, ipAddr));
+    }
+
+    @GetMapping("/topup/status")
+    public ResponseEntity<TopupStatusResponse> getTopupStatus(@RequestParam String requestId) {
+        String userId = UserContext.getUserId();
+        return ResponseEntity.ok(topupService.getStatus(requestId, userId));
+    }
+
+    @GetMapping(value = "/topup/ipn", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<VnPayIpnResponse> handleVnpayIpn(@RequestParam Map<String, String> params) {
+        return ResponseEntity.ok(topupService.handleIpn(params));
+    }
+
+    private String resolveClientIp(HttpServletRequest req) {
+        String xff = req.getHeader("X-Forwarded-For");
+        String ip;
+        if (xff != null && !xff.isBlank()) {
+            // production - behind proxy
+            int comma = xff.indexOf(',');
+            ip = comma > 0 ? xff.substring(0, comma).trim() : xff.trim();
+        } else {
+            // Test local
+            String remote = req.getRemoteAddr();
+            ip = remote != null ? remote : "127.0.0.1";
+        }
+        if (ip.contains(":")) {
+            return "127.0.0.1";
+        }
+        return ip;
+    }
 }

@@ -1,7 +1,10 @@
 import axiosClient from './axiosClient';
 import type {
+  InitiateTopupRequest,
+  InitiateTopupResponse,
   MerchantPaymentRequest,
   RecentTransactionResponse,
+  TopupStatusResponse,
   TransactionHistoryPage,
   TransferRequest,
   TransferResponse,
@@ -19,6 +22,12 @@ const transactionApi = {
 
   getHistory: (page: number, size: number): Promise<TransactionHistoryPage> =>
     axiosClient.post<TransactionHistoryPage>('/transactions/history', { page, size }),
+
+  initiateTopup: (request: InitiateTopupRequest): Promise<InitiateTopupResponse> =>
+    axiosClient.post<InitiateTopupResponse>('/transactions/topup/initiate', request),
+
+  getTopupStatus: (requestId: string): Promise<TopupStatusResponse> =>
+    axiosClient.get<TopupStatusResponse>(`/transactions/topup/status?requestId=${requestId}`),
 };
 
 export default transactionApi;

@@ -198,7 +198,7 @@ const ResultCard: React.FC<{ data: TransactionDetail }> = ({ data }) => {
         <p className="text-sm font-semibold text-slate-700 mb-3">Số tiền</p>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-500">Người gửi trả</span>
+            <span className="text-slate-500">Số tiền giao dịch</span>
             <span className="font-semibold text-slate-800">{formatVND(data.amount)}đ</span>
           </div>
           {data.fee > 0 && (
