@@ -274,6 +274,7 @@ export interface KycResponse {
 }
 
 export interface InitiateTopupRequest {
+  requestId: string;
   amount: number;
   bankCode?: string;
   language?: string;

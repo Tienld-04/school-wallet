@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import transactionApi from '../api/transactionApi';
 import { getErrorMessage } from '../utils/errorMessage';
@@ -9,16 +9,19 @@ const formatVND = (raw: string) =>
 const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000, 2000000];
 
 const BANK_OPTIONS = [
-  { code: '', label: 'Để VNPay tự hiển thị' },
-  { code: 'NCB', label: 'NCB (test sandbox)' },
+  { code: '', label: 'VNPay Options' },
+  { code: 'NCB', label: 'Ngân hàng NCB' },
   { code: 'VNBANK', label: 'Thẻ ATM nội địa' },
   { code: 'INTCARD', label: 'Thẻ Visa/Master/JCB' },
 ];
+
+const newRequestId = () => crypto.randomUUID().replace(/-/g, '');
 
 const TopUp: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [bankCode, setBankCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const requestIdRef = useRef<string>(newRequestId());
 
   const handleSubmit = async () => {
     const amt = parseInt(amount);
@@ -33,6 +36,7 @@ const TopUp: React.FC = () => {
     setSubmitting(true);
     try {
       const data = await transactionApi.initiateTopup({
+        requestId: requestIdRef.current,
         amount: amt,
         bankCode: bankCode || undefined,
         language: 'vn',
@@ -107,11 +111,11 @@ const TopUp: React.FC = () => {
         </div>
 
         {/* Sandbox test info */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+        {/* <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
           <p className="font-semibold mb-1">Tài khoản test VNPay (sandbox NCB)</p>
           <p>Số thẻ: <span className="font-mono">9704 1985 2619 1432 198</span></p>
           <p>Tên: NGUYEN VAN A · Phát hành: 07/15 · OTP: <span className="font-mono">123456</span></p>
-        </div>
+        </div> */}
 
         <button
           onClick={handleSubmit}

@@ -2,6 +2,7 @@ package com.ldt.transaction.repository;
 
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
+import com.ldt.transaction.model.TransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     boolean existsByRequestId(String requestId);
 
     Optional<Transaction> findByRequestId(String requestId);
+
+    List<Transaction> findByToUserIdAndTransactionTypeAndStatus(
+            UUID toUserId, TransactionType transactionType, TransactionStatus status);
+
+    List<Transaction> findByTransactionTypeAndStatusAndCreatedAtBefore(
+            TransactionType transactionType, TransactionStatus status, LocalDateTime createdAt);
 
     Page<Transaction> findByFromUserIdOrToUserId(UUID fromUserId, UUID toUserId, Pageable pageable);
 

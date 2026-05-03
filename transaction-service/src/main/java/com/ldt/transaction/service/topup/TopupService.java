@@ -22,6 +22,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,10 +49,45 @@ public class TopupService {
     @Transactional
     public InitiateTopupResponse initiateTopup(InitiateTopupRequest request, String userId,
                                                String userPhone, String ipAddr) {
-        String requestId = UUID.randomUUID().toString().replace("-", "");
+        String requestId = request.getRequestId();
         UUID toUserId = UUID.fromString(userId);
-        String toFullName = fetchUserFullName(userPhone);
 
+        // FE generates requestId — nếu đã tồn tại là FE đang retry (network lỗi, response chưa về)
+        Optional<Transaction> existing = transactionRepository.findByRequestId(requestId);
+        if (existing.isPresent()) {
+            Transaction tx = existing.get();
+            if (!tx.getToUserId().equals(toUserId)) {
+                throw new AppException(ErrorCode.ACCESS_DENIED);
+            }
+            if (tx.getStatus() != TransactionStatus.PENDING) {
+                // Giao dịch này đã được xử lý xong — FE không nên tái sử dụng requestId
+                throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
+            }
+            // Còn PENDING → rebuild paymentUrl với date mới (cùng vnp_TxnRef)
+            String orderInfo = "Nap tien vao vi " + userPhone;
+            String paymentUrl = vnPayService.buildPaymentUrl(
+                    requestId, tx.getAmount(), orderInfo, ipAddr,
+                    request.getBankCode(), request.getLanguage());
+            log.info("Retry topup PENDING requestId={} userId={}", requestId, userId);
+            return InitiateTopupResponse.builder()
+                    .paymentUrl(paymentUrl)
+                    .requestId(requestId)
+                    .build();
+        }
+
+        // Cancel tất cả PENDING topup cũ của user — user đang bắt đầu phiên nạp tiền mới
+        List<Transaction> stalePending = transactionRepository
+                .findByToUserIdAndTransactionTypeAndStatus(toUserId, TransactionType.TOPUP, TransactionStatus.PENDING);
+        for (Transaction stale : stalePending) {
+            stale.setStatus(TransactionStatus.CANCELLED);
+            transactionRepository.save(stale);
+            statusHistoryService.record(stale.getTransactionId(),
+                    TransactionStatus.PENDING, TransactionStatus.CANCELLED,
+                    "Người dùng khởi tạo giao dịch nạp tiền mới");
+            log.info("Cancelled stale PENDING topup requestId={} for userId={}", stale.getRequestId(), userId);
+        }
+
+        String toFullName = fetchUserFullName(userPhone);
         Transaction tx = new Transaction();
         tx.setRequestId(requestId);
         tx.setFromUserId(VNPAY_USER_ID);
@@ -71,13 +107,8 @@ public class TopupService {
 
         String orderInfo = "Nap tien vao vi " + userPhone;
         String paymentUrl = vnPayService.buildPaymentUrl(
-                requestId,
-                request.getAmount(),
-                orderInfo,
-                ipAddr,
-                request.getBankCode(),
-                request.getLanguage()
-        );
+                requestId, request.getAmount(), orderInfo, ipAddr,
+                request.getBankCode(), request.getLanguage());
         log.info("Initiated topup PENDING requestId={} userId={} amount={}",
                 requestId, userId, request.getAmount());
         return InitiateTopupResponse.builder()
@@ -131,7 +162,12 @@ public class TopupService {
                 log.info("Topup SUCCESS requestId={} userId={} amount={}",
                         txnRef, tx.getToUserId(), tx.getAmount());
             } catch (Exception e) {
-                log.error("Topup credit wallet failed requestId={}, keeping PENDING for VNPay retry", txnRef, e);
+                log.error("Topup credit wallet failed requestId={}", txnRef, e);
+                tx.setStatus(TransactionStatus.FAILED);
+                transactionRepository.save(tx);
+                statusHistoryService.record(tx.getTransactionId(),
+                        TransactionStatus.PENDING, TransactionStatus.FAILED,
+                        "Lỗi credit ví: " + e.getMessage());
                 return VnPayIpnResponse.of("99", "Credit wallet failed");
             }
         } else {
