@@ -22,8 +22,11 @@ public class NotificationTransactionService {
     private final NotificationLogService notificationLogService;
 
     public void notifySender(TransactionNotificationEvent event) {
+        boolean isPayment = "PAYMENT".equals(event.getTransactionType());
+        String verb = isPayment ? "thanh toán" : "chuyển";
         String message = String.format(
-                "Bạn đã chuyển %s VND cho %s (%s). Nội dung: %s. Mã GD: %s",
+                "Bạn đã %s %s VND cho %s (%s). Nội dung: %s. Mã GD: %s",
+                verb,
                 formatAmount(event),
                 event.getToFullName(),
                 event.getToPhone(),
@@ -33,7 +36,9 @@ public class NotificationTransactionService {
         log.info("[NOTIFICATION - SENDER] To: {} | {}", event.getFromPhone(), message);
 
         if (event.getFromEmail() != null) {
-            String subject = "School Wallet - Giao dịch chuyển tiền thành công";
+            String subject = isPayment
+                    ? "School Wallet - Thanh toán thành công"
+                    : "School Wallet - Chuyển tiền thành công";
             String html = buildTransactionEmailHtml(
                     event.getFromFullName(),
                     event.getTransactionType(),
@@ -60,18 +65,28 @@ public class NotificationTransactionService {
     }
 
     public void notifyReceiver(TransactionNotificationEvent event) {
-        String message = String.format(
-                "Bạn nhận được %s VND từ %s (%s). Nội dung: %s. Mã GD: %s",
-                formatAmount(event),
-                event.getFromFullName(),
-                event.getFromPhone(),
-                event.getDescription(),
-                event.getTransactionId()
-        );
+        boolean isPayment = "PAYMENT".equals(event.getTransactionType());
+        String message = isPayment
+                ? String.format(
+                        "Bạn nhận được thanh toán %s VND từ %s (%s). Nội dung: %s. Mã GD: %s",
+                        formatAmount(event),
+                        event.getFromFullName(),
+                        event.getFromPhone(),
+                        event.getDescription(),
+                        event.getTransactionId())
+                : String.format(
+                        "Bạn nhận được %s VND từ %s (%s). Nội dung: %s. Mã GD: %s",
+                        formatAmount(event),
+                        event.getFromFullName(),
+                        event.getFromPhone(),
+                        event.getDescription(),
+                        event.getTransactionId());
         log.info("[NOTIFICATION - RECEIVER] To: {} | {}", event.getToPhone(), message);
 
         if (event.getToEmail() != null) {
-            String subject = "School Wallet - Bạn nhận được tiền";
+            String subject = isPayment
+                    ? "School Wallet - Bạn nhận được thanh toán"
+                    : "School Wallet - Bạn nhận được tiền";
             String html = buildTransactionEmailHtml(
                     event.getToFullName(),
                     event.getTransactionType(),

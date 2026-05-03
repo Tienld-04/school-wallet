@@ -50,7 +50,6 @@ public class NotificationService {
             case "TRANSFER" -> isDebit ? "Chuyển tiền thành công" : "Bạn nhận được tiền";
             case "TOPUP" -> "Nạp tiền thành công";
             case "PAYMENT" -> isDebit ? "Thanh toán thành công" : "Bạn nhận được thanh toán";
-            case "MERCHANT_PAYMENT" -> isDebit ? "Thanh toán merchant thành công" : "Merchant nhận được thanh toán";
             default -> isDebit ? "Giao dịch thành công" : "Bạn nhận được tiền";
         };
     }
