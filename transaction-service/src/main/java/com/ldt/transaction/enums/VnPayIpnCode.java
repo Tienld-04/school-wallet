@@ -3,6 +3,7 @@ package com.ldt.transaction.enums;
 import com.ldt.transaction.dto.topup.VnPayIpnResponse;
 
 public enum VnPayIpnCode {
+    // Instant Payment Notification response codes
     SUCCESS("00", "Confirm Success"),
     ORDER_NOT_FOUND("01", "Order not found"),
     ALREADY_CONFIRMED("02", "Order already confirmed"),

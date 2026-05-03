@@ -116,7 +116,8 @@ public class TopupService {
                 .requestId(requestId)
                 .build();
     }
-
+    
+    // Function to handle VNPay IPN callback to confirm payment result, update transaction status, and credit wallet if successful
     @Transactional
     public VnPayIpnResponse handleIpn(Map<String, String> params) {
         // 1. Verify signature
