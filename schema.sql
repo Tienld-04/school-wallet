@@ -143,7 +143,7 @@ CREATE TABLE wallets (
     user_id            UUID          NOT NULL,                           -- Tham chiếu tới users.user_id (không FK cross-service)
     balance            NUMERIC(18,2) NOT NULL DEFAULT 0.00,              -- Số dư hiện tại (VND), không âm
     status             VARCHAR(20)   NOT NULL DEFAULT 'ACTIVE',          -- Trạng thái ví: ACTIVE | LOCKED
-    wallet_type        VARCHAR(20)   NOT NULL DEFAULT 'USER_WALLET',     -- Loại ví: USER_WALLET | ADMIN_WALLET | MERCHANT_WALLET
+    wallet_type        VARCHAR(20)   NOT NULL DEFAULT 'USER_WALLET',     -- Loại ví: USER_WALLET | ADMIN_WALLET
 
     -- Giới hạn chi tiêu
     daily_limit        NUMERIC(18,2) DEFAULT 5000000.00,                 -- Hạn mức chi tiêu trong ngày (VND)
@@ -164,7 +164,7 @@ CREATE TABLE wallets (
     CONSTRAINT pk_wallets PRIMARY KEY (wallet_id),
     CONSTRAINT uq_wallets_user_id UNIQUE (user_id),
     CONSTRAINT chk_wallets_status CHECK (status IN ('ACTIVE', 'LOCKED')),
-    CONSTRAINT chk_wallets_type CHECK (wallet_type IN ('USER_WALLET', 'ADMIN_WALLET', 'MERCHANT_WALLET')),
+    CONSTRAINT chk_wallets_type CHECK (wallet_type IN ('USER_WALLET', 'ADMIN_WALLET')),
     CONSTRAINT chk_wallets_balance CHECK (balance >= 0)
 );
 
@@ -183,14 +183,14 @@ CREATE TABLE wallet_ledger (
     amount         NUMERIC(18,2) NOT NULL,                           -- Số tiền biến động (luôn dương)
     balance_before NUMERIC(18,2) NOT NULL,                           -- Số dư ví trước khi thực hiện
     balance_after  NUMERIC(18,2) NOT NULL,                           -- Số dư ví sau khi thực hiện
-    reason         VARCHAR(20)   NOT NULL,                           -- Lý do: PAYMENT | TRANSFER_IN | TRANSFER_OUT | TOP_UP | REFUND
+    reason         VARCHAR(20)   NOT NULL,                           -- Lý do: PAYMENT | TRANSFER_IN | TRANSFER_OUT | TOP_UP | REFUND | PLATFORM_FEE
     note           VARCHAR(255),                                     -- Ghi chú tự do (tuỳ chọn)
     created_at     TIMESTAMP     NOT NULL,                           -- Thời điểm ghi sổ (tự động, không sửa được)
 
     CONSTRAINT pk_wallet_ledger PRIMARY KEY (entry_id),
     CONSTRAINT fk_ledger_wallet FOREIGN KEY (wallet_id) REFERENCES wallets (wallet_id),
     CONSTRAINT chk_ledger_direction CHECK (direction IN ('DEBIT', 'CREDIT')),
-    CONSTRAINT chk_ledger_reason CHECK (reason IN ('PAYMENT','TRANSFER_IN','TRANSFER_OUT','TOP_UP','REFUND')),
+    CONSTRAINT chk_ledger_reason CHECK (reason IN ('PAYMENT','TRANSFER_IN','TRANSFER_OUT','TOP_UP','REFUND','PLATFORM_FEE')),
     CONSTRAINT chk_ledger_amount CHECK (amount > 0)
 );
 
@@ -224,6 +224,7 @@ CREATE TABLE transactions (
     to_full_name     VARCHAR(100),                                     -- Họ tên người nhận (snapshot)
 
     amount           NUMERIC(18,2) NOT NULL,                           -- Số tiền giao dịch (VND)
+    fee              NUMERIC(18,2) NOT NULL DEFAULT 0.00,              -- Phí nền tảng (VND), >= 0; chỉ > 0 khi merchant payment có thu phí
     transaction_type VARCHAR(30)   NOT NULL,                           -- Loại giao dịch: TOPUP | TRANSFER | PAYMENT
     status           VARCHAR(20)   NOT NULL DEFAULT 'PENDING',         -- Trạng thái: PENDING | SUCCESS | FAILED | CANCELLED
 
@@ -242,7 +243,8 @@ CREATE TABLE transactions (
     CONSTRAINT uq_transactions_request_id UNIQUE (request_id),
     CONSTRAINT chk_transactions_type CHECK (transaction_type IN ('TOPUP', 'TRANSFER', 'PAYMENT')),
     CONSTRAINT chk_transactions_status CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED')),
-    CONSTRAINT chk_transactions_amount CHECK (amount > 0)
+    CONSTRAINT chk_transactions_amount CHECK (amount > 0),
+    CONSTRAINT chk_transactions_fee CHECK (fee >= 0)
 );
 
 COMMENT ON TABLE transactions IS 'Bảng chính lưu toàn bộ giao dịch tài chính trong hệ thống';
