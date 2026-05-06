@@ -8,6 +8,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 import adminStatsApi from '../../api/adminStatsApi';
 import { getErrorMessage } from '../../utils/errorMessage';
@@ -51,6 +54,44 @@ const statusStyle: Record<string, { bg: string; text: string; label: string }> =
   PENDING: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Đang xử lý' },
   FAILED: { bg: 'bg-red-50', text: 'text-red-700', label: 'Thất bại' },
   CANCELLED: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Đã hủy' },
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  TRANSFER: '#4F46E5',
+  PAYMENT: '#06b6d4',
+  TOPUP: '#f59e0b',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  SUCCESS: '#10b981',
+  PENDING: '#f59e0b',
+  FAILED: '#ef4444',
+  CANCELLED: '#b7c4da',
+};
+
+interface PieDatum {
+  key: string;
+  name: string;
+  value: number;
+  percent: number;
+  color: string;
+}
+
+const buildPieData = (
+  data: Record<string, number> | undefined,
+  labelMap: Record<string, string> | ((k: string) => string),
+  colorMap: Record<string, string>,
+): PieDatum[] => {
+  if (!data) return [];
+  const entries = Object.entries(data).filter(([, v]) => v > 0);
+  const total = entries.reduce((sum, [, v]) => sum + v, 0);
+  return entries.map(([k, v]) => ({
+    key: k,
+    name: typeof labelMap === 'function' ? labelMap(k) : labelMap[k] || k,
+    value: v,
+    percent: total > 0 ? (v / total) * 100 : 0,
+    color: colorMap[k] || '#94a3b8',
+  }));
 };
 
 const StatsDashboard: React.FC = () => {
@@ -289,14 +330,17 @@ const StatsDashboard: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-100 p-5">
           <h3 className="font-semibold text-slate-900 mb-3">Phân loại theo loại</h3>
           {overview ? (
-            <ul className="space-y-2.5">
-              {Object.entries(overview.byType).map(([type, count]) => (
-                <li key={type} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">{typeLabel[type] || type}</span>
-                  <span className="font-semibold text-slate-800">{count.toLocaleString('vi-VN')}</span>
-                </li>
-              ))}
-            </ul>
+            <BreakdownContent
+              pieData={buildPieData(overview.byType, typeLabel, TYPE_COLORS)}
+              entries={Object.entries(overview.byType).map(([k, v]) => ({
+                key: k,
+                count: v,
+                color: TYPE_COLORS[k] || '#94a3b8',
+                renderLabel: () => (
+                  <span className="text-slate-600">{typeLabel[k] || k}</span>
+                ),
+              }))}
+            />
           ) : (
             <div className="text-sm text-slate-400">—</div>
           )}
@@ -306,19 +350,26 @@ const StatsDashboard: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-100 p-5">
           <h3 className="font-semibold text-slate-900 mb-3">Phân loại theo trạng thái</h3>
           {overview ? (
-            <ul className="space-y-2.5">
-              {Object.entries(overview.byStatus).map(([status, count]) => {
-                const s = statusStyle[status];
-                return (
-                  <li key={status} className="flex items-center justify-between text-sm">
+            <BreakdownContent
+              pieData={buildPieData(
+                overview.byStatus,
+                (k) => statusStyle[k]?.label || k,
+                STATUS_COLORS,
+              )}
+              entries={Object.entries(overview.byStatus).map(([k, v]) => {
+                const s = statusStyle[k];
+                return {
+                  key: k,
+                  count: v,
+                  color: STATUS_COLORS[k] || '#94a3b8',
+                  renderLabel: () => (
                     <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-medium ${s?.bg || 'bg-slate-100'} ${s?.text || 'text-slate-600'}`}>
-                      {s?.label || status}
+                      {s?.label || k}
                     </span>
-                    <span className="font-semibold text-slate-800">{count.toLocaleString('vi-VN')}</span>
-                  </li>
-                );
+                  ),
+                };
               })}
-            </ul>
+            />
           ) : (
             <div className="text-sm text-slate-400">—</div>
           )}
@@ -380,6 +431,92 @@ const ChartTooltip: React.FC<{ active?: boolean; payload?: TooltipPayload[] }> =
         Volume: {formatVND(p.volume)}đ
       </p>
       <p className="text-slate-600">Số GD: {p.count}</p>
+    </div>
+  );
+};
+
+interface BreakdownEntry {
+  key: string;
+  count: number;
+  color: string;
+  renderLabel: () => React.ReactNode;
+}
+
+interface BreakdownContentProps {
+  pieData: PieDatum[];
+  entries: BreakdownEntry[];
+}
+
+const BreakdownContent: React.FC<BreakdownContentProps> = ({ pieData, entries }) => {
+  const total = entries.reduce((sum, e) => sum + e.count, 0);
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="w-full sm:w-40 h-40 shrink-0">
+        {pieData.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-xs text-slate-400">
+            Không có dữ liệu
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={36}
+                outerRadius={62}
+                paddingAngle={2}
+                stroke="#fff"
+                strokeWidth={2}
+              >
+                {pieData.map((entry) => (
+                  <Cell key={entry.key} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<PieSliceTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+      <ul className="flex-1 space-y-2.5 w-full">
+        {entries.map((e) => {
+          const pct = total > 0 ? (e.count / total) * 100 : 0;
+          return (
+            <li key={e.key} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: e.color }} />
+                {e.renderLabel()}
+              </div>
+              <div className="text-right">
+                <span className="font-semibold text-slate-800">{e.count.toLocaleString('vi-VN')}</span>
+                <span className="text-xs text-slate-400 ml-1.5">({pct.toFixed(1)}%)</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
+
+interface PieSlicePayload {
+  name: string;
+  value: number;
+  payload: PieDatum;
+}
+
+const PieSliceTooltip: React.FC<{ active?: boolean; payload?: PieSlicePayload[] }> = ({ active, payload }) => {
+  if (!active || !payload || payload.length === 0) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="bg-white rounded-lg shadow-lg border border-slate-100 px-3 py-2 text-xs">
+      <p className="font-semibold mb-0.5" style={{ color: p.color }}>{p.name}</p>
+      <p className="text-slate-600">
+        {p.value.toLocaleString('vi-VN')} GD
+        <span className="text-slate-400 ml-1">({p.percent.toFixed(1)}%)</span>
+      </p>
     </div>
   );
 };
