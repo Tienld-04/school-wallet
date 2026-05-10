@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -151,16 +152,20 @@ public class AdminService {
         r.setIdNumber(kyc.getIdNumber());
         r.setIdIssueDate(kyc.getIdIssueDate());
         r.setIdIssuePlace(kyc.getIdIssuePlace());
-        r.setStudentCode(kyc.getStudentCode());
         r.setIdFrontUrl(kyc.getIdFrontUrl());
         r.setIdBackUrl(kyc.getIdBackUrl());
-        r.setStudentCardUrl(kyc.getStudentCardUrl());
+        r.setIdFrontImage(encodeBase64(kyc.getIdFrontImage()));
+        r.setIdBackImage(encodeBase64(kyc.getIdBackImage()));
         r.setStatus(kyc.getStatus().name());
         r.setSubmittedAt(kyc.getSubmittedAt());
         r.setVerifiedBy(kyc.getVerifiedBy());
         r.setVerifiedAt(kyc.getVerifiedAt());
         r.setRejectionReason(kyc.getRejectionReason());
         return r;
+    }
+
+    private String encodeBase64(byte[] bytes) {
+        return bytes != null ? Base64.getEncoder().encodeToString(bytes) : null;
     }
 
 }

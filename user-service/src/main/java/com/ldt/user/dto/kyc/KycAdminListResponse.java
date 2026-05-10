@@ -22,10 +22,11 @@ public class KycAdminListResponse {
     private LocalDate idIssueDate;
 
     private String idIssuePlace;
-    private String studentCode;
     private String idFrontUrl;
     private String idBackUrl;
-    private String studentCardUrl;
+    // Base64 encoded từ BYTEA
+    private String idFrontImage;
+    private String idBackImage;
     private String status;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

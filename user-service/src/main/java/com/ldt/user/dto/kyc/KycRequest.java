@@ -30,12 +30,14 @@ public class KycRequest {
     @Size(max = 255, message = "Nơi cấp tối đa 255 ký tự")
     private String idIssuePlace;
 
-    @NotBlank(message = "Mã sinh viên không được để trống")
-    @Size(max = 20, message = "Mã sinh viên tối đa 20 ký tự")
-    private String studentCode;
-
-    // Ảnh giấy tờ (tuỳ chọn)
+    // Ảnh giấy tờ — URL (cũ, không bắt buộc)
     private String idFrontUrl;
     private String idBackUrl;
-    private String studentCardUrl;
+
+    // Ảnh CCCD dạng base64 string (mới, bắt buộc cho mặt trước + sau)
+    @NotBlank(message = "Vui lòng tải lên ảnh mặt trước CCCD")
+    private String idFrontImage;
+
+    @NotBlank(message = "Vui lòng tải lên ảnh mặt sau CCCD")
+    private String idBackImage;
 }

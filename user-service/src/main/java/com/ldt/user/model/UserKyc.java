@@ -44,10 +44,8 @@ public class UserKyc {
     @Column(name = "id_issue_place", nullable = false, length = 255)
     private String idIssuePlace;
 
-    // student code
-    @Column(name = "student_code", nullable = false, length = 20)
-    private String studentCode;
-
+    // @Column(name = "school_code", nullable = false, length = 20)
+    // private String schoolCode;
     // image cccd
     @Column(name = "id_front_url", length = 500)
     private String idFrontUrl;
@@ -55,9 +53,12 @@ public class UserKyc {
     @Column(name = "id_back_url", length = 500)
     private String idBackUrl;
 
-    // image student card
-    @Column(name = "student_card_url", length = 500)
-    private String studentCardUrl;
+    // image cccd dạng binary (BYTEA).
+    @Column(name = "id_front_image", columnDefinition = "BYTEA")
+    private byte[] idFrontImage;
+
+    @Column(name = "id_back_image", columnDefinition = "BYTEA")
+    private byte[] idBackImage;
 
     // submit kyc by admin
     @Column(name = "status", nullable = false, length = 20)
