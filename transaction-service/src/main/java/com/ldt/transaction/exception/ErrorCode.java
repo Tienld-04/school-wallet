@@ -19,6 +19,7 @@ public enum ErrorCode {
     TOPUP_INVALID_SIGNATURE(2010, "Chữ ký VNPay không hợp lệ", HttpStatus.BAD_REQUEST),
     TOPUP_AMOUNT_MISMATCH(2011, "Số tiền nạp không khớp", HttpStatus.BAD_REQUEST),
     TOPUP_FAILED(2012, "Nạp tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
+    KYC_NOT_VERIFIED(2013, "Vui lòng hoàn thành xác minh KYC để thực hiện giao dịch", HttpStatus.FORBIDDEN),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import adminApi from '../../api/adminApi';
-import { getErrorMessage } from '../../utils/errorMessage';
-import type { TransactionDetail } from '../../types';
+import transactionApi from '../api/transactionApi';
+import { getErrorMessage } from '../utils/errorMessage';
+import type { TransactionDetail } from '../types';
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
@@ -49,7 +49,7 @@ const TransactionLookup: React.FC = () => {
     setLoading(true);
     setSearched(true);
     try {
-      const data = await adminApi.getTransactionDetail(id);
+      const data = await transactionApi.getTransactionDetail(id);
       setResult(data);
     } catch (err: unknown) {
       setResult(null);

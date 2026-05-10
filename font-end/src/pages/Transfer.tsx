@@ -5,6 +5,7 @@ import transactionApi from '../api/transactionApi';
 import walletApi from '../api/walletApi';
 import type { QrVerifyResponse, RecipientResponse } from '../types';
 import QrTransferScreen from '../components/qr/QrTransferScreen';
+import KycGuard from '../components/common/KycGuard';
 import { getErrorMessage } from '../utils/errorMessage';
 
 type Step = 'method' | 'phone' | 'details' | 'pin';
@@ -146,6 +147,7 @@ const Transfer: React.FC = () => {
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Chuyển khoản</h1>
       <p className="text-sm text-slate-500 mb-8">Chuyển tiền đến tài khoản khác trong hệ thống</p>
 
+      <KycGuard>
       {/* ── STEP: chọn phương thức ── */}
       {step === 'method' && (
         <div className="bg-white rounded-2xl border border-slate-100 p-6">
@@ -423,6 +425,8 @@ const Transfer: React.FC = () => {
           </div>
         </div>
       )}
+
+      </KycGuard>
 
       {/* QR scan / show overlay */}
       <QrTransferScreen

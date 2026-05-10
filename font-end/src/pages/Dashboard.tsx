@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import transactionApi from '../api/transactionApi';
-import userApi from '../api/userApi';
 import walletApi from '../api/walletApi';
-import type { RecentTransactionResponse, UserResponse, BalanceResponse } from '../types';
+import useAuth from '../hooks/useAuth';
+import type { RecentTransactionResponse, BalanceResponse } from '../types';
 
 const quickActions = [
   { label: 'Nạp tiền',    path: '/top-up',   bg: 'bg-secondary-50', text: 'text-secondary-600', icon: (
@@ -56,7 +56,7 @@ const formatDate = (dateStr: string) => {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserResponse | null>(null);
+  const { user } = useAuth();
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [transactions, setTransactions] = useState<RecentTransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,12 +65,10 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userData, balanceData, txData] = await Promise.all([
-          userApi.getInfo(),
+        const [balanceData, txData] = await Promise.all([
           walletApi.getMyBalance(),
           transactionApi.getRecent(),
         ]);
-        setUser(userData);
         setBalance(balanceData);
         setTransactions(txData);
       } catch {

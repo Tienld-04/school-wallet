@@ -4,6 +4,7 @@ import merchantApi from '../api/merchantApi';
 import transactionApi from '../api/transactionApi';
 import walletApi from '../api/walletApi';
 import { getErrorMessage } from '../utils/errorMessage';
+import KycGuard from '../components/common/KycGuard';
 import type { MerchantType, MerchantListResponse } from '../types';
 
 type PaymentStep = 'details' | 'pin';
@@ -235,6 +236,7 @@ const Payment: React.FC = () => {
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Thanh toán dịch vụ</h1>
       <p className="text-sm text-slate-500 mb-8">Chọn dịch vụ bạn muốn thanh toán</p>
 
+      <KycGuard>
       {/* Filter by type */}
       <div className="mb-6">
         <p className="text-sm font-medium text-slate-700 mb-3">Danh mục dịch vụ</p>
@@ -541,6 +543,7 @@ const Payment: React.FC = () => {
           </div>
         </div>
       )}
+      </KycGuard>
     </div>
   );
 };

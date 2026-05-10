@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import userApi from '../api/userApi';
 import authApi from '../api/authApi';
+import useAuth from '../hooks/useAuth';
 import Input from '../components/common/Input/Input';
-import type { UserResponse, KycResponse } from '../types';
+import type { KycResponse } from '../types';
 
 const kycStatusConfig: Record<string, { label: string; className: string }> = {
   UNVERIFIED: { label: 'Chưa xác minh', className: 'bg-slate-100 text-slate-500' },
@@ -23,9 +25,11 @@ const emptyKycForm = {
 };
 
 const Profile: React.FC = () => {
-  const [tab, setTab] = useState<'info' | 'password' | 'kyc'>('info');
-  const [user, setUser] = useState<UserResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'kyc' ? 'kyc' : 'info';
+  const [tab, setTab] = useState<'info' | 'password' | 'kyc'>(initialTab);
+  const loading = !user;
 
   // Password form
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -39,20 +43,6 @@ const Profile: React.FC = () => {
   const [kycErrors, setKycErrors] = useState<Record<string, string>>({});
   const [submittingKyc, setSubmittingKyc] = useState(false);
   const [kycLoading, setKycLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const data = await userApi.getInfo();
-        setUser(data);
-      } catch {
-        toast.error('Không thể tải thông tin người dùng');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
 
   // Load KYC data khi vào tab kyc
   useEffect(() => {
@@ -150,7 +140,7 @@ const Profile: React.FC = () => {
     try {
       const result = await userApi.submitKyc(kycForm);
       setKycData(result);
-      setUser((prev) => prev ? { ...prev, kycStatus: 'PENDING' } : prev);
+      await refreshUser();
       toast.success('Nộp hồ sơ KYC thành công, vui lòng chờ admin duyệt');
     } catch (err) {
       if (axios.isAxiosError(err)) {

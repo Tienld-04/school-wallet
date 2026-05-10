@@ -5,6 +5,7 @@ import type {
   MerchantPaymentRequest,
   RecentTransactionResponse,
   TopupStatusResponse,
+  TransactionDetail,
   TransactionHistoryPage,
   TransferRequest,
   TransferResponse,
@@ -28,6 +29,9 @@ const transactionApi = {
 
   getTopupStatus: (requestId: string): Promise<TopupStatusResponse> =>
     axiosClient.get<TopupStatusResponse>(`/transactions/topup/status?requestId=${requestId}`),
+
+  getTransactionDetail: (transactionId: string): Promise<TransactionDetail> =>
+    axiosClient.get<TransactionDetail>(`/transactions/detail/${transactionId}`),
 };
 
 export default transactionApi;

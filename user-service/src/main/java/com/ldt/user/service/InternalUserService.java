@@ -24,13 +24,13 @@ public class InternalUserService {
     @Cacheable(value = "users", key = "#phone_number")
     public UserInternalResponse getUserByPhone(String phone_number) {
         User user = userRepository.findByPhone(phone_number).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone(), user.getEmail());
+        return toInternalResponse(user);
     }
 
     public List<UserInternalResponse> getUsersByPhones(List<String> phones) {
         List<User> users = userRepository.findByPhoneIn(phones);
         return users.stream()
-                .map(user -> new UserInternalResponse(user.getUserId(), user.getStatus(), user.getFullName(), user.getPhone(), user.getEmail()))
+                .map(this::toInternalResponse)
                 .toList();
     }
 
@@ -41,7 +41,18 @@ public class InternalUserService {
     public UserInternalResponse getFirstAdmin() {
         User admin = userRepository.findFirstByRoleOrderByCreatedAtAsc(UserRole.ADMIN)
                 .orElseThrow(() -> new AppException(ErrorCode.ADMIN_NOT_CONFIGURED));
-        return new UserInternalResponse(admin.getUserId(), admin.getStatus(), admin.getFullName(), admin.getPhone(), admin.getEmail());
+        return toInternalResponse(admin);
+    }
+
+    private UserInternalResponse toInternalResponse(User user) {
+        String kyc = user.getKycStatus() != null ? user.getKycStatus().name() : null;
+        return new UserInternalResponse(
+                user.getUserId(),
+                user.getStatus(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getEmail(),
+                kyc);
     }
 
     /**

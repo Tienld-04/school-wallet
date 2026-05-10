@@ -74,7 +74,13 @@ public class TopupService {
                     .requestId(requestId)
                     .build();
         }
-        // 2. Cancel any stale PENDING transactions for this user (optional, depends on business rules)
+        // 2. Fetch user + KYC check trước khi tạo giao dịch
+        UserInternalResponse user = fetchUser(userPhone);
+        if (!"VERIFIED".equals(user.getKycStatus())) {
+            throw new AppException(ErrorCode.KYC_NOT_VERIFIED);
+        }
+        String toFullName = user.getFullName();
+        // 3. Cancel any stale PENDING transactions for this user
         List<Transaction> stalePending = transactionRepository
                 .findByToUserIdAndTransactionTypeAndStatus(toUserId, TransactionType.TOPUP, TransactionStatus.PENDING);
         for (Transaction stale : stalePending) {
@@ -85,8 +91,7 @@ public class TopupService {
                     "Người dùng khởi tạo giao dịch nạp tiền mới");
             log.debug("Cancelled stale PENDING topup requestId={} for userId={}", stale.getRequestId(), userId);
         }
-        String toFullName = fetchUserFullName(userPhone);
-        // 3. Create new Transaction record with PENDING status
+        // 4. Create new Transaction record with PENDING status
         Transaction tx = new Transaction();
         tx.setRequestId(requestId);
         tx.setFromUserId(VNPAY_USER_ID);
@@ -101,10 +106,10 @@ public class TopupService {
         tx.setStatus(TransactionStatus.PENDING);
         tx.setDescription("Nạp tiền vào ví qua VNPay");
         Transaction saved = transactionRepository.saveAndFlush(tx);
-        // 4. Record initial status history
+        // 5. Record initial status history
         statusHistoryService.record(saved.getTransactionId(), null,
                 TransactionStatus.PENDING, "Khởi tạo yêu cầu nạp tiền VNPay");
-        // 5. Build VNPay payment URL and return to client
+        // 6. Build VNPay payment URL and return to client
         String orderInfo = "Nạp tiền vào ví " + userPhone;
         String paymentUrl = vnPayService.buildPaymentUrl(
                 requestId, request.getAmount(), orderInfo, ipAddr,
@@ -234,15 +239,20 @@ public class TopupService {
                 .build();
     }
 
-    private String fetchUserFullName(String phone) {
+    private UserInternalResponse fetchUser(String phone) {
         try {
             UserInternalResponse user = restTemplate.getForObject(
                     userServiceUrl + "/internal/users/" + phone,
                     UserInternalResponse.class);
-            return user != null ? user.getFullName() : null;
+            if (user == null) {
+                throw new AppException(ErrorCode.TOPUP_FAILED, "Không tìm thấy thông tin người dùng");
+            }
+            return user;
         } catch (HttpClientErrorException ex) {
             log.warn("User lookup rejected for phone {}: {}", phone, ex.getResponseBodyAsString());
             throw new AppException(ErrorCode.TOPUP_FAILED, ex.getResponseBodyAsString());
+        } catch (AppException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("User lookup error for phone {}: {}", phone, ex.getMessage(), ex);
             throw new AppException(ErrorCode.TOPUP_FAILED, "Lỗi hệ thống: " + ex.getMessage());

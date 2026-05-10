@@ -187,6 +187,9 @@ public class TransactionService2 {
         if ("LOCKED".equals(users.to().getStatus())) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
+        if (!"VERIFIED".equals(users.from().getKycStatus())) {
+            throw new AppException(ErrorCode.KYC_NOT_VERIFIED);
+        }
         // 4. Nếu là merchant payment có áp dụng fee platform, ctx.applyPlatformFee() = true -> fetch admin.
         UserInternalResponse admin = ctx.applyPlatformFee() ? fetchFirstAdmin() : null;
         boolean adminIsCustomer = admin != null
