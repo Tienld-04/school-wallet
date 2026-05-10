@@ -15,6 +15,7 @@ import com.ldt.user.repository.UserRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -106,6 +107,7 @@ public class AdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "users", allEntries = true)
     public void approveKyc(UUID kycId) {
         UserKyc kyc = userKycRepository.findById(kycId)
                 .orElseThrow(() -> new AppException(ErrorCode.KYC_NOT_FOUND));
@@ -123,6 +125,7 @@ public class AdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "users", allEntries = true)
     public void rejectKyc(UUID kycId, String rejectionReason) {
         UserKyc kyc = userKycRepository.findById(kycId)
                 .orElseThrow(() -> new AppException(ErrorCode.KYC_NOT_FOUND));

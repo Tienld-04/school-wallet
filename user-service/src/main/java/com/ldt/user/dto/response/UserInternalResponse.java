@@ -12,12 +12,14 @@ public class UserInternalResponse {
     private String fullName;
     private String phone;
     private String email;
+    private String kycStatus;
 
-    public UserInternalResponse(UUID userId, UserStatus status, String fullName, String phone,  String email) {
+    public UserInternalResponse(UUID userId, UserStatus status, String fullName, String phone, String email, String kycStatus) {
         this.userId = userId;
         this.status = status;
         this.fullName = fullName;
         this.phone = phone;
         this.email = email;
+        this.kycStatus = kycStatus;
     }
 }

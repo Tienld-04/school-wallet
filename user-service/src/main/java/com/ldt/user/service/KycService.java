@@ -12,6 +12,7 @@ import com.ldt.user.repository.UserKycRepository;
 import com.ldt.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ public class KycService {
      * - Nếu đã VERIFIED → báo lỗi đã xác minh
      */
     @Transactional
+    @CacheEvict(value = "users", allEntries = true)
     public KycResponse submitKyc(KycRequest request) {
         UUID userId = UUID.fromString(UserContext.getUserId());
 
