@@ -135,7 +135,7 @@ const KycManagement: React.FC = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-50">
-                  {['Họ và tên', 'Mã sinh viên', 'Số CCCD', 'Ngày nộp', 'Trạng thái', ''].map((h) => (
+                  {['Họ và tên', 'Số CCCD', 'Ngày nộp', 'Trạng thái', ''].map((h) => (
                     <th key={h} className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 sm:px-6 py-3">
                       {h}
                     </th>
@@ -148,7 +148,6 @@ const KycManagement: React.FC = () => {
                   return (
                     <tr key={kyc.kycId} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 sm:px-6 py-4 font-medium text-slate-800">{kyc.fullName}</td>
-                      <td className="px-4 sm:px-6 py-4 text-slate-600">{kyc.studentCode}</td>
                       <td className="px-4 sm:px-6 py-4 text-slate-600">{kyc.idNumber}</td>
                       <td className="px-4 sm:px-6 py-4 text-slate-500">{formatDate(kyc.submittedAt)}</td>
                       <td className="px-4 sm:px-6 py-4">
@@ -203,7 +202,6 @@ const KycManagement: React.FC = () => {
                 { label: 'Số CCCD',       value: selected.idNumber },
                 { label: 'Ngày cấp',      value: formatDate(selected.idIssueDate) },
                 { label: 'Nơi cấp',       value: selected.idIssuePlace },
-                { label: 'Mã sinh viên',  value: selected.studentCode },
                 { label: 'Ngày nộp',      value: formatDate(selected.submittedAt) },
                 ...(selected.verifiedAt ? [{ label: 'Ngày duyệt', value: formatDate(selected.verifiedAt) }] : []),
                 ...(selected.rejectionReason ? [{ label: 'Lý do từ chối', value: selected.rejectionReason }] : []),
@@ -222,6 +220,18 @@ const KycManagement: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* Ảnh CCCD */}
+            {(selected.idFrontImage || selected.idBackImage) && (
+              <div className="px-6 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {selected.idFrontImage && (
+                  <KycImagePreview label="Mặt trước CCCD" base64={selected.idFrontImage} />
+                )}
+                {selected.idBackImage && (
+                  <KycImagePreview label="Mặt sau CCCD" base64={selected.idBackImage} />
+                )}
+              </div>
+            )}
 
             {/* Action buttons — chỉ hiện khi PENDING */}
             {selected.status === 'PENDING' && (
@@ -274,6 +284,22 @@ const KycManagement: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const KycImagePreview: React.FC<{ label: string; base64: string }> = ({ label, base64 }) => {
+  const src = base64.startsWith('data:') ? base64 : `data:image/jpeg;base64,${base64}`;
+  return (
+    <div>
+      <p className="text-xs text-slate-500 mb-1.5">{label}</p>
+      <a href={src} target="_blank" rel="noreferrer" className="block">
+        <img
+          src={src}
+          alt={label}
+          className="w-full aspect-[1.6/1] object-cover rounded-xl border border-slate-200 hover:border-primary-400 transition-colors"
+        />
+      </a>
     </div>
   );
 };

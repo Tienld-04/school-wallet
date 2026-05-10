@@ -62,13 +62,11 @@ CREATE TABLE user_kyc (
     id_issue_date     DATE         NOT NULL,                           -- Ngày cấp CCCD
     id_issue_place    VARCHAR(255) NOT NULL,                           -- Nơi cấp CCCD
 
-    -- Nhóm 2: Thông tin trường
-    student_code      VARCHAR(20)  NOT NULL,                           -- Mã sinh viên / mã nhân viên
-
-    -- Nhóm 3: Ảnh giấy tờ (nullable, bổ sung sau khi có file storage)
-    id_front_url      VARCHAR(500),                                    -- URL ảnh mặt trước CCCD
-    id_back_url       VARCHAR(500),                                    -- URL ảnh mặt sau CCCD
-    student_card_url  VARCHAR(500),                                    -- URL ảnh thẻ sinh viên
+    -- Nhóm 2: Ảnh CCCD (nullable, bổ sung sau khi có file storage). Dùng BYTEA để lưu binary trực tiếp.
+    id_front_url      VARCHAR(500),                                    -- URL ảnh mặt trước (legacy, không dùng nữa)
+    id_back_url       VARCHAR(500),                                    -- URL ảnh mặt sau (legacy, không dùng nữa)
+    id_front_image    BYTEA,                                           -- Ảnh mặt trước CCCD (binary)
+    id_back_image     BYTEA,                                           -- Ảnh mặt sau CCCD (binary)
 
     -- Nhóm 4: Workflow duyệt
     status            VARCHAR(20)  NOT NULL DEFAULT 'PENDING',         -- Trạng thái: PENDING | VERIFIED | REJECTED
