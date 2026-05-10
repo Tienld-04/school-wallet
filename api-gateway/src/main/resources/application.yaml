@@ -14,7 +14,7 @@ spring:
     enabled: false
   http:
     codecs:
-      max-in-memory-size: 2MB
+      max-in-memory-size: 5MB
 service:
   url:
     user-service: "${USER_SERVICE_URL:http://localhost:8081}"

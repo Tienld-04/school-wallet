@@ -12,7 +12,6 @@ import java.util.UUID;
 public interface UserKycRepository extends JpaRepository<UserKyc, UUID> {
     Optional<UserKyc> findByUserId(UUID userId);
 
-    boolean existsByStudentCodeAndUserIdNot(String studentCode, UUID userId);
     boolean existsByIdNumberAndUserIdNot(String idNumber, UUID userId);
 
     Page<UserKyc> findAllByStatus(KycStatus status, Pageable pageable);

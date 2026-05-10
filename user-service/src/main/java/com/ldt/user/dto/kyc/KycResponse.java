@@ -14,10 +14,11 @@ public class KycResponse {
     private String idNumber;
     private LocalDate idIssueDate;
     private String idIssuePlace;
-    private String studentCode;
     private String idFrontUrl;
     private String idBackUrl;
-    private String studentCardUrl;
+    // Base64 encoded từ BYTEA — FE hiển thị qua data URL
+    private String idFrontImage;
+    private String idBackImage;
     private String status;
     private LocalDateTime submittedAt;
     private LocalDateTime verifiedAt;

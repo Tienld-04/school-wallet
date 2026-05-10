@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.UUID;
 
 @Service
@@ -49,9 +50,6 @@ public class KycService {
         if (userKycRepository.existsByIdNumberAndUserIdNot(request.getIdNumber(), userId)) {
             throw new AppException(ErrorCode.KYC_ID_NUMBER_EXISTS);
         }
-        if (userKycRepository.existsByStudentCodeAndUserIdNot(request.getStudentCode(), userId)) {
-            throw new AppException(ErrorCode.KYC_STUDENT_CODE_EXISTS);
-        }
 
 
         UserKyc kyc = userKycRepository.findByUserId(userId)
@@ -62,10 +60,8 @@ public class KycService {
         kyc.setIdNumber(request.getIdNumber());
         kyc.setIdIssueDate(request.getIdIssueDate());
         kyc.setIdIssuePlace(request.getIdIssuePlace());
-        kyc.setStudentCode(request.getStudentCode());
-        kyc.setIdFrontUrl(request.getIdFrontUrl());
-        kyc.setIdBackUrl(request.getIdBackUrl());
-        kyc.setStudentCardUrl(request.getStudentCardUrl());
+        kyc.setIdFrontImage(decodeBase64(request.getIdFrontImage()));
+        kyc.setIdBackImage(decodeBase64(request.getIdBackImage()));
         kyc.setStatus(KycStatus.PENDING);
         kyc.setSubmittedAt(LocalDateTime.now());
         kyc.setVerifiedAt(null);
@@ -97,14 +93,28 @@ public class KycService {
         response.setIdNumber(kyc.getIdNumber());
         response.setIdIssueDate(kyc.getIdIssueDate());
         response.setIdIssuePlace(kyc.getIdIssuePlace());
-        response.setStudentCode(kyc.getStudentCode());
         response.setIdFrontUrl(kyc.getIdFrontUrl());
         response.setIdBackUrl(kyc.getIdBackUrl());
-        response.setStudentCardUrl(kyc.getStudentCardUrl());
+        response.setIdFrontImage(encodeBase64(kyc.getIdFrontImage()));
+        response.setIdBackImage(encodeBase64(kyc.getIdBackImage()));
         response.setStatus(kyc.getStatus().name());
         response.setSubmittedAt(kyc.getSubmittedAt());
         response.setVerifiedAt(kyc.getVerifiedAt());
         response.setRejectionReason(kyc.getRejectionReason());
         return response;
+    }
+
+    /**
+     * Decode base64 string từ FE thành byte[].
+     */
+    private byte[] decodeBase64(String base64) {
+        if (base64 == null || base64.isBlank()) return null;
+        int comma = base64.indexOf(',');
+        String pure = comma > 0 ? base64.substring(comma + 1) : base64;
+        return Base64.getDecoder().decode(pure);
+    }
+
+    private String encodeBase64(byte[] bytes) {
+        return bytes != null ? Base64.getEncoder().encodeToString(bytes) : null;
     }
 }
