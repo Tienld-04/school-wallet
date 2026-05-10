@@ -11,4 +11,5 @@ public class UserInternalResponse {
     private String fullName;
     private String phone;
     private String email;
+    private String kycStatus;
 }
