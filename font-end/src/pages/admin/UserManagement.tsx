@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import adminApi from '../../api/adminApi';
 import Pagination from '../../components/common/Pagination/Pagination';
+import { getErrorMessage } from '../../utils/errorMessage';
 import type { UsersResponse } from '../../types';
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -29,6 +30,12 @@ const UserManagement: React.FC = () => {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [toggling, setToggling] = useState<string | null>(null);
+
+  // Reset PIN modal state
+  const [resetTarget, setResetTarget] = useState<UsersResponse | null>(null);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [submittingPin, setSubmittingPin] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -63,6 +70,43 @@ const UserManagement: React.FC = () => {
     e.preventDefault();
     setPage(0);
     setSearch(searchInput);
+  };
+
+  const openResetPin = (user: UsersResponse) => {
+    setResetTarget(user);
+    setNewPin('');
+    setConfirmPin('');
+  };
+
+  const closeResetPin = () => {
+    if (submittingPin) return;
+    setResetTarget(null);
+    setNewPin('');
+    setConfirmPin('');
+  };
+
+  const handleResetPin = async () => {
+    if (!resetTarget) return;
+    if (!/^\d{6}$/.test(newPin)) {
+      toast.error('Mã OTP phải gồm 6 chữ số');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      toast.error('Mã OTP xác nhận không khớp');
+      return;
+    }
+    setSubmittingPin(true);
+    try {
+      await adminApi.resetPin(resetTarget.phone, newPin);
+      toast.success(`Đã cập nhật OTP cho ${resetTarget.fullName}`);
+      setResetTarget(null);
+      setNewPin('');
+      setConfirmPin('');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Cập nhật OTP thất bại'));
+    } finally {
+      setSubmittingPin(false);
+    }
   };
 
   return (
@@ -135,19 +179,31 @@ const UserManagement: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {u.role !== 'ADMIN' && (
+                        <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => handleToggleStatus(u.userId)}
-                            disabled={toggling === u.userId}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${
-                              u.status === 'ACTIVE'
-                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                            }`}
+                            onClick={() => openResetPin(u)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-50 text-primary-600 hover:bg-primary-100 transition-all"
+                            title="Cập nhật mã OTP giao dịch"
                           >
-                            {toggling === u.userId ? '...' : u.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
+                            Cập nhật OTP
                           </button>
-                        )}
+                          {u.role !== 'ADMIN' ? (
+                            <button
+                              onClick={() => handleToggleStatus(u.userId)}
+                              disabled={toggling === u.userId}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${
+                                u.status === 'ACTIVE'
+                                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                  : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                              }`}
+                            >
+                              {toggling === u.userId ? '...' : u.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
+                            </button>
+                          ) : (
+                            // Placeholder giữ chỗ để cột Hành động thẳng hàng giữa admin row và user row
+                            <span aria-hidden className="invisible px-3 py-1.5 text-xs font-medium">Khóa</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -165,6 +221,90 @@ const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Reset PIN modal */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" onClick={closeResetPin}>
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-900">Cập nhật OTP</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{resetTarget.fullName} · {resetTarget.phone}</p>
+              </div>
+              <button
+                onClick={closeResetPin}
+                disabled={submittingPin}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-400 disabled:opacity-50"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+                <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <p>Sau khi cập nhật, vui lòng thông báo mã OTP mới cho người dùng. Mã OTP mới sẽ thay thế mã cũ.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mã OTP mới (6 số)</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="●●●●●●"
+                  autoFocus
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition tracking-widest text-center text-lg font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Xác nhận mã OTP mới</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="●●●●●●"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition tracking-widest text-center text-lg font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 py-4 border-t border-slate-100 flex gap-2.5">
+              <button
+                onClick={closeResetPin}
+                disabled={submittingPin}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleResetPin}
+                disabled={submittingPin || newPin.length < 6 || confirmPin.length < 6}
+                className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {submittingPin ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Đang xử lý...
+                  </>
+                ) : 'Cập nhật OTP'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

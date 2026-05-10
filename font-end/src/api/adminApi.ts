@@ -11,6 +11,9 @@ const adminApi = {
   toggleUserStatus: (userId: string): Promise<{ message: string }> =>
     axiosClient.put<{ message: string }>(`/admin/users/${userId}/toggle-status`),
 
+  resetPin: (phone: string, newPin: string): Promise<{ message: string }> =>
+    axiosClient.put<{ message: string }>('/admin/reset-pin', { phone, newPin }),
+
   // KYC
   getKycList: (page: number, size: number, status?: string): Promise<PageResponse<KycAdminListResponse>> =>
     axiosClient.get<PageResponse<KycAdminListResponse>>('/admin/kyc', {
