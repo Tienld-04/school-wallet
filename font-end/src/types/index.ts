@@ -299,6 +299,8 @@ export interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   role: string | null;
+  user: UserResponse | null;
+  refreshUser: () => Promise<void>;
   login: (phone: string, password: string) => Promise<LoginResponse>;
   logout: () => Promise<void>;
 }

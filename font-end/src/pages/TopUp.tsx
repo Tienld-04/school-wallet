@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import transactionApi from '../api/transactionApi';
+import KycGuard from '../components/common/KycGuard';
 import { getErrorMessage } from '../utils/errorMessage';
 
 const formatVND = (raw: string) =>
@@ -54,6 +55,7 @@ const TopUp: React.FC = () => {
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Nạp tiền</h1>
       <p className="text-sm text-slate-500 mb-8">Nạp tiền vào ví School Wallet qua VNPay</p>
 
+      <KycGuard>
       <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
         {/* Số tiền */}
         <div>
@@ -132,6 +134,7 @@ const TopUp: React.FC = () => {
           )}
         </button>
       </div>
+      </KycGuard>
     </div>
   );
 };
