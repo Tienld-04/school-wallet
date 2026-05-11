@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { LoginRequest, LoginResponse, RegisterRequest, ChangePasswordRequest } from '../types';
+import type { LoginRequest, LoginResponse, RegisterRequest, ChangePasswordRequest, ChangePinRequest } from '../types';
 
 const authApi = {
   login: (data: LoginRequest): Promise<LoginResponse> =>
@@ -16,6 +16,9 @@ const authApi = {
 
   changePassword: (data: ChangePasswordRequest): Promise<{ message: string }> =>
     axiosClient.put<{ message: string }>('/auth/change-password', data),
+
+  changePin: (data: ChangePinRequest): Promise<{ message: string }> =>
+    axiosClient.put<{ message: string }>('/auth/change-pin', data),
 };
 
 export default authApi;
