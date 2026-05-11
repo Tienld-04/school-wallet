@@ -58,18 +58,24 @@ public class InternalUserService {
     /**
      * Xác thực mã PIN giao dịch theo số điện thoại.
      * Được gọi nội bộ bởi transaction-service trước khi chuyển tiền.
-     * - Kiểm tra tài khoản bị khóa
-     * - Sai PIN: tăng pinFailedAttempts, khóa 15 phút nếu >= 5 lần
-     * - Đúng PIN: reset bộ đếm
+     * - Nếu đang khóa: kiểm tra hết thời gian khóa chưa.
+     *   + Còn khóa → throw PIN_LOCKED.
+     *   + Hết khóa → reset counter + null lockedUntil để user có lại 5 chances mới.
+     * - Sai PIN: tăng pinFailedAttempts, khóa 15 phút nếu >= 5 lần.
+     * - Đúng PIN: reset bộ đếm.
      */
-    @Transactional
+    @Transactional(dontRollbackOn = AppException.class)
     public void verifyPinByPhone(String phone, String rawPin) {
         User user = userRepository.findByPhone(phone)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
-            long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
-            throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+        if (user.getPinLockedUntil() != null) {
+            if (LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
+                long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
+                throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+            }
+            user.setPinFailedAttempts(0);
+            user.setPinLockedUntil(null);
         }
         if (!passwordEncoder.matches(rawPin, user.getTransactionPinHash())) {
             int attempts = (user.getPinFailedAttempts() == null ? 0 : user.getPinFailedAttempts()) + 1;

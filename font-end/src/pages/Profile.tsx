@@ -366,7 +366,7 @@ const Profile: React.FC = () => {
             <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <p>Mã OTP gồm 6 chữ số, dùng để xác nhận giao dịch chuyển/thanh toán. Sai 5 lần liên tiếp sẽ bị khóa 15 phút.</p>
+            <p>Mã OTP gồm 6 chữ số, dùng để xác nhận giao dịch chuyển/thanh toán.</p>
           </div>
           <form className="space-y-5 max-w-sm" onSubmit={handleSubmitPin}>
             <Input label="Mã OTP hiện tại" type="password" name="currentPin" value={pinForm.currentPin} onChange={handlePinChange} placeholder="Nhập 6 số OTP hiện tại" error={pinErrors.currentPin} inputMode="numeric" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
