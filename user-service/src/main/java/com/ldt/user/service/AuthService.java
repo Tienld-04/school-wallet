@@ -1,6 +1,7 @@
 package com.ldt.user.service;
 
 import com.ldt.user.dto.auth.ChangePasswordRequest;
+import com.ldt.user.dto.auth.ChangePinRequest;
 import com.ldt.user.dto.auth.ForgotPasswordRequest;
 import com.ldt.user.dto.auth.LoginRequest;
 import com.ldt.user.dto.auth.LoginResponse;
@@ -26,6 +27,7 @@ import org.springframework.web.client.RestTemplate;
 import com.ldt.user.context.UserContext;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
@@ -161,6 +163,46 @@ public class AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    /**
+     * User tự đổi mã PIN giao dịch (OTP).
+     * - Verify currentPin với attempt counter
+     * - Sai 5 lần → khóa 15 phút
+     * - Đúng → reset counter + lock + lưu PIN mới
+     */
+    public void changeTransactionPin(ChangePinRequest request) {
+        if (!request.getNewPin().equals(request.getConfirmPin())) {
+            throw new AppException(ErrorCode.PIN_MISMATCH);
+        }
+
+        User user = userRepository.findById(UUID.fromString(UserContext.getUserId()))
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
+            long minutesLeft = Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
+            throw new AppException(ErrorCode.PIN_LOCKED,
+                    "Chức năng đổi OTP tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPin(), user.getTransactionPinHash())) {
+            int attempts = (user.getPinFailedAttempts() == null ? 0 : user.getPinFailedAttempts()) + 1;
+            user.setPinFailedAttempts(attempts);
+            if (attempts >= 5) {
+                user.setPinLockedUntil(LocalDateTime.now().plusMinutes(15));
+                userRepository.save(user);
+                throw new AppException(ErrorCode.PIN_LOCKED,
+                        "Sai mã OTP quá 5 lần. Chức năng đổi OTP bị tạm khóa 15 phút");
+            }
+            userRepository.save(user);
+            throw new AppException(ErrorCode.INVALID_PIN,
+                    "Mã OTP hiện tại không đúng. Còn " + (5 - attempts) + " lần thử");
+        }
+
+        user.setTransactionPinHash(passwordEncoder.encode(request.getNewPin()));
+        user.setPinFailedAttempts(0);
+        user.setPinLockedUntil(null);
         userRepository.save(user);
     }
 

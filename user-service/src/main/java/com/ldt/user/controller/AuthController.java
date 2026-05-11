@@ -47,4 +47,10 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
     }
 
+    @PutMapping("/change-pin")
+    public ResponseEntity<Map<String, String>> changePin(@Valid @RequestBody ChangePinRequest request) {
+        authService.changeTransactionPin(request);
+        return ResponseEntity.ok(Map.of("message", "Đổi OTP thành công"));
+    }
+
 }
