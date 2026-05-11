@@ -26,6 +26,12 @@ export interface ChangePasswordRequest {
   confirmPassword: string;
 }
 
+export interface ChangePinRequest {
+  currentPin: string;
+  newPin: string;
+  confirmPin: string;
+}
+
 export interface UserResponse {
   userId: string;
   fullName: string;

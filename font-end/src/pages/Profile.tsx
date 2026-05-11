@@ -36,8 +36,12 @@ const fileToBase64 = (file: File): Promise<string> =>
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'kyc' ? 'kyc' : 'info';
-  const [tab, setTab] = useState<'info' | 'password' | 'kyc'>(initialTab);
+  const initialTab = (() => {
+    const t = searchParams.get('tab');
+    if (t === 'kyc' || t === 'pin' || t === 'password') return t;
+    return 'info';
+  })();
+  const [tab, setTab] = useState<'info' | 'password' | 'pin' | 'kyc'>(initialTab);
   const loading = !user;
 
   // Password form
@@ -45,6 +49,12 @@ const Profile: React.FC = () => {
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   const [submittingPassword, setSubmittingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // PIN (OTP) form
+  const [pinForm, setPinForm] = useState({ currentPin: '', newPin: '', confirmPin: '' });
+  const [pinErrors, setPinErrors] = useState<Record<string, string>>({});
+  const [submittingPin, setSubmittingPin] = useState(false);
+  const [pinSuccess, setPinSuccess] = useState(false);
 
   // KYC form
   const [kycData, setKycData] = useState<KycResponse | null>(null);
@@ -123,6 +133,49 @@ const Profile: React.FC = () => {
       }
     } finally {
       setSubmittingPassword(false);
+    }
+  };
+
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Chỉ nhận số
+    setPinForm((prev) => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 6) }));
+    if (pinErrors[name]) setPinErrors((prev) => ({ ...prev, [name]: '' }));
+    if (pinSuccess) setPinSuccess(false);
+  };
+
+  const validatePin = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!pinForm.currentPin) errors.currentPin = 'Vui lòng nhập mã OTP hiện tại';
+    else if (pinForm.currentPin.length !== 6) errors.currentPin = 'Mã OTP phải đúng 6 số';
+    if (!pinForm.newPin) errors.newPin = 'Vui lòng nhập mã OTP mới';
+    else if (pinForm.newPin.length !== 6) errors.newPin = 'Mã OTP phải đúng 6 số';
+    if (!pinForm.confirmPin) errors.confirmPin = 'Vui lòng xác nhận mã OTP mới';
+    else if (pinForm.newPin !== pinForm.confirmPin) errors.confirmPin = 'Mã OTP xác nhận không khớp';
+    setPinErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmitPin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validatePin()) return;
+    setSubmittingPin(true);
+    try {
+      await authApi.changePin({
+        currentPin: pinForm.currentPin,
+        newPin: pinForm.newPin,
+        confirmPin: pinForm.confirmPin,
+      });
+      setPinForm({ currentPin: '', newPin: '', confirmPin: '' });
+      setPinSuccess(true);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || 'Đổi OTP thất bại');
+      } else {
+        toast.error('Đổi OTP thất bại');
+      }
+    } finally {
+      setSubmittingPin(false);
     }
   };
 
@@ -229,8 +282,8 @@ const Profile: React.FC = () => {
       <p className="text-sm text-slate-500 mb-6 sm:mb-8">Quản lý thông tin tài khoản của bạn</p>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5 sm:mb-6 w-fit">
-        {(['info', 'password', 'kyc'] as const).map((t) => (
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5 sm:mb-6 w-fit flex-wrap">
+        {(['info', 'password', 'pin', 'kyc'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -238,7 +291,7 @@ const Profile: React.FC = () => {
               tab === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            {t === 'info' ? 'Thông tin' : t === 'password' ? 'Đổi mật khẩu' : 'Xác minh KYC'}
+            {t === 'info' ? 'Thông tin' : t === 'password' ? 'Đổi mật khẩu' : t === 'pin' ? 'Đổi OTP' : 'Xác minh KYC'}
           </button>
         ))}
       </div>
@@ -291,6 +344,36 @@ const Profile: React.FC = () => {
             <Input label="Xác nhận mật khẩu mới" type="password" name="confirmPassword" value={passwordForm.confirmPassword} onChange={handlePasswordChange} placeholder="Nhập lại mật khẩu mới" error={passwordErrors.confirmPassword} icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
             <button type="submit" disabled={submittingPassword} className="inline-flex items-center justify-center font-semibold rounded-[10px] cursor-pointer transition-all duration-200 bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-md shadow-primary-600/30 hover:from-primary-500 hover:to-primary-600 px-7 py-3 text-[0.9375rem] disabled:opacity-55 disabled:cursor-not-allowed">
               {submittingPassword ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : 'Cập nhật mật khẩu'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* PIN (OTP) tab */}
+      {tab === 'pin' && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-6">
+          {pinSuccess && (
+            <div className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-emerald-700">Đã đổi mã OTP thành công</p>
+            </div>
+          )}
+          <div className="mb-5 flex gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs max-w-sm">
+            <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p>Mã OTP gồm 6 chữ số, dùng để xác nhận giao dịch chuyển/thanh toán. Sai 5 lần liên tiếp sẽ bị khóa 15 phút.</p>
+          </div>
+          <form className="space-y-5 max-w-sm" onSubmit={handleSubmitPin}>
+            <Input label="Mã OTP hiện tại" type="password" name="currentPin" value={pinForm.currentPin} onChange={handlePinChange} placeholder="Nhập 6 số OTP hiện tại" error={pinErrors.currentPin} inputMode="numeric" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
+            <Input label="Mã OTP mới" type="password" name="newPin" value={pinForm.newPin} onChange={handlePinChange} placeholder="Đúng 6 số" error={pinErrors.newPin} inputMode="numeric" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
+            <Input label="Xác nhận mã OTP mới" type="password" name="confirmPin" value={pinForm.confirmPin} onChange={handlePinChange} placeholder="Nhập lại 6 số OTP mới" error={pinErrors.confirmPin} inputMode="numeric" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
+            <button type="submit" disabled={submittingPin} className="inline-flex items-center justify-center font-semibold rounded-[10px] cursor-pointer transition-all duration-200 bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-md shadow-primary-600/30 hover:from-primary-500 hover:to-primary-600 px-7 py-3 text-[0.9375rem] disabled:opacity-55 disabled:cursor-not-allowed">
+              {submittingPin ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : 'Cập nhật OTP'}
             </button>
           </form>
         </div>
