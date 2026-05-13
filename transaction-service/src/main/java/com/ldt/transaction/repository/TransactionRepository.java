@@ -85,4 +85,60 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             nativeQuery = true)
     List<Object[]> aggregateOverviewKpis(@Param("from") LocalDateTime from,
                                          @Param("to") LocalDateTime to);
+
+    // ── Revenue (platform fee) statistics — chỉ tính tx merchant SUCCESS có fee > 0 ──
+    @Query(value =
+            "SELECT " +
+                    "  COUNT(*) AS tx_count, " +
+                    "  COALESCE(SUM(fee), 0) AS total_revenue, " +
+                    "  COALESCE(AVG(fee), 0) AS avg_revenue " +
+                    "FROM transactions " +
+                    "WHERE merchant_id IS NOT NULL " +
+                    "  AND status = 'SUCCESS' " +
+                    "  AND fee > 0 " +
+                    "  AND created_at BETWEEN :from AND :to",
+            nativeQuery = true)
+    List<Object[]> aggregateRevenueOverview(@Param("from") LocalDateTime from,
+                                            @Param("to") LocalDateTime to);
+
+    @Query(value =
+            "WITH series AS ( " +
+                    "  SELECT generate_series( " +
+                    "    DATE_TRUNC(:granularity, CAST(:from AS timestamp)), " +
+                    "    DATE_TRUNC(:granularity, CAST(:to AS timestamp)), " +
+                    "    CAST('1 ' || :granularity AS interval) " +
+                    "  ) AS period " +
+                    ") " +
+                    "SELECT s.period, " +
+                    "       COUNT(t.transaction_id) AS cnt, " +
+                    "       COALESCE(SUM(t.fee), 0) AS revenue " +
+                    "FROM series s " +
+                    "LEFT JOIN transactions t " +
+                    "  ON DATE_TRUNC(:granularity, t.created_at) = s.period " +
+                    "  AND t.merchant_id IS NOT NULL " +
+                    "  AND t.status = 'SUCCESS' " +
+                    "  AND t.fee > 0 " +
+                    "  AND t.created_at BETWEEN :from AND :to " +
+                    "GROUP BY s.period " +
+                    "ORDER BY s.period ASC",
+            nativeQuery = true)
+    List<Object[]> aggregateRevenueTimeSeries(@Param("granularity") String granularity,
+                                              @Param("from") LocalDateTime from,
+                                              @Param("to") LocalDateTime to);
+
+    @Query(value =
+            "SELECT " +
+                    "  merchant_id, " +
+                    "  COUNT(*) AS tx_count, " +
+                    "  SUM(fee) AS total_revenue " +
+                    "FROM transactions " +
+                    "WHERE merchant_id IS NOT NULL " +
+                    "  AND status = 'SUCCESS' " +
+                    "  AND fee > 0 " +
+                    "  AND created_at BETWEEN :from AND :to " +
+                    "GROUP BY merchant_id " +
+                    "ORDER BY total_revenue DESC",
+            nativeQuery = true)
+    List<Object[]> aggregateRevenueByMerchant(@Param("from") LocalDateTime from,
+                                              @Param("to") LocalDateTime to);
 }
