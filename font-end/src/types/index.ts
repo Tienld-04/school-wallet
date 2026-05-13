@@ -193,6 +193,29 @@ export interface TimeSeriesPoint {
 
 export type StatsGranularity = 'day' | 'week' | 'month';
 
+/** RevenueOverviewResponse ở transaction-service — doanh thu phí nền tảng. */
+export interface RevenueOverview {
+  totalRevenue: number;
+  transactionCount: number;
+  averageRevenuePerTx: number;
+  topMerchantId: string | null;
+  topMerchantRevenue: number;
+}
+
+/** RevenueTimeSeriesPoint — doanh thu theo period. */
+export interface RevenueTimeSeriesPoint {
+  period: string;   // yyyy-MM-dd
+  count: number;
+  revenue: number;
+}
+
+/** MerchantRevenueResponse — doanh thu theo từng merchant. */
+export interface MerchantRevenue {
+  merchantId: string;
+  transactionCount: number;
+  totalRevenue: number;
+}
+
 /** Trùng schema với TransactionStatusHistoryResponse ở transaction-service. */
 export interface TransactionStatusHistoryItem {
   historyId: string;
