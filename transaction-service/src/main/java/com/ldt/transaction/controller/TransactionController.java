@@ -3,7 +3,10 @@ package com.ldt.transaction.controller;
 import com.ldt.transaction.context.UserContext;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.request.TransactionHistoryRequest;
+import com.ldt.transaction.dto.response.MerchantRevenueResponse;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
+import com.ldt.transaction.dto.response.RevenueOverviewResponse;
+import com.ldt.transaction.dto.response.RevenueTimeSeriesPoint;
 import com.ldt.transaction.dto.response.StatsOverviewResponse;
 import com.ldt.transaction.dto.response.TimeSeriesPoint;
 import com.ldt.transaction.dto.response.TransactionDetailResponse;
@@ -20,6 +23,7 @@ import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.service.topup.TopupService;
+import com.ldt.transaction.service.RevenueStatsService;
 import com.ldt.transaction.service.TransactionService;
 import com.ldt.transaction.service.TransactionService2;
 import com.ldt.transaction.service.TransactionStatsService;
@@ -45,6 +49,7 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final TransactionService2 transactionService2;
     private final TransactionStatsService transactionStatsService;
+    private final RevenueStatsService revenueStatsService;
     private final TopupService topupService;
 
     // V2: dùng TransactionService2 
@@ -173,6 +178,64 @@ public class TransactionController {
         LocalDateTime fromDt = fromDate.atStartOfDay();
         LocalDateTime toDt = toDate.atTime(LocalTime.MAX);
         return ResponseEntity.ok(transactionStatsService.getTimeSeries(fromDt, toDt, granularity));
+    }
+
+    /**
+     * Admin dashboard — doanh thu phí nền tảng (KPI tổng quan) trong [from, to].
+     */
+    @GetMapping("/dashboard/revenue/overview")
+    public ResponseEntity<RevenueOverviewResponse> getRevenueOverview(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (!"ADMIN".equals(UserContext.getRole())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = from != null ? from : today.minusDays(29);
+        LocalDate toDate = to != null ? to : today;
+        return ResponseEntity.ok(revenueStatsService.getOverview(
+                fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX)));
+    }
+
+    /**
+     * Admin dashboard — doanh thu theo thời gian (cho biểu đồ bar) trong [from, to] theo granularity.
+     */
+    @GetMapping("/dashboard/revenue/timeseries")
+    public ResponseEntity<List<RevenueTimeSeriesPoint>> getRevenueTimeSeries(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "day") String granularity) {
+        if (!"ADMIN".equals(UserContext.getRole())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = from != null ? from : today.minusDays(29);
+        LocalDate toDate = to != null ? to : today;
+        return ResponseEntity.ok(revenueStatsService.getTimeSeries(
+                fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX), granularity));
+    }
+
+    /**
+     * Admin dashboard — doanh thu theo từng merchant trong [from, to], sort DESC theo doanh thu.
+     */
+    @GetMapping("/dashboard/revenue/by-merchant")
+    public ResponseEntity<List<MerchantRevenueResponse>> getRevenueByMerchant(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (!"ADMIN".equals(UserContext.getRole())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = from != null ? from : today.minusDays(29);
+        LocalDate toDate = to != null ? to : today;
+        return ResponseEntity.ok(revenueStatsService.getByMerchant(
+                fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX)));
     }
 
     // VNPay TopUp endpoints
