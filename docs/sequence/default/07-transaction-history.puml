@@ -1,0 +1,123 @@
+@startuml 07-transaction-history
+title Sơ đồ tuần tự - Lịch sử giao dịch (Transaction History)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C0A030
+
+actor "Người dùng" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "User Service" as US
+participant "Transaction\nService" as TS
+database "user_db" as UDB
+database "transaction_db" as TDB
+
+== 1. Người dùng vào trang Lịch sử giao dịch ==
+User -> FE : Click menu "Lịch sử giao dịch"
+
+note right of FE #FFF3E0
+  **TransactionHistory.tsx:**
+  useEffect mount → tự gọi
+  fetchData(page = 0, size = 10)
+end note
+
+== 2. Gửi request qua API Gateway ==
+FE -> GW : POST /api/v1/transactions/history\nAuthorization: Bearer <JWT>\n{ page: 0, size: 10 }
+
+note right of GW #E3F2FD
+  **AuthGlobalFilter:**
+  1. Decode JWT lấy jti, userId, role, phone
+  2. Gọi user-service check blacklist jti
+  3. Inject X-User-Id / Role / Phone +
+     X-Internal-Secret
+end note
+
+GW -> US : GET /internal/users/validate?jti=...
+US -> UDB : SELECT FROM invalidated_tokens\nWHERE jti = ?
+UDB --> US : (rỗng → còn hiệu lực)
+US --> GW : 200 OK
+
+GW -> TS : POST /api/transactions/history\n+ header X-User-Id\n{ page, size }
+
+== 3. Transaction Service truy vấn ==
+note right of TS #FFEBEE
+  **Chống IDOR:**
+  userId lấy từ UserContext (JWT đã decode),
+  KHÔNG lấy từ body request.
+  → User chỉ xem được lịch sử của chính mình,
+     không thể giả mạo userId trong payload.
+end note
+
+TS -> TS : userId = UserContext.getUserId()\n→ parse UUID
+
+TS -> TDB : SELECT * FROM transactions\nWHERE from_user_id = :userId\n   OR to_user_id = :userId\nORDER BY created_at DESC\nLIMIT :size OFFSET :page * size
+
+note right of TDB #FFF3E0
+  **Một query duy nhất lấy cả 2 chiều:**
+  - giao dịch user GỬI đi (from_user_id)
+  - giao dịch user NHẬN về (to_user_id)
+  Sắp xếp mới nhất → cũ nhất
+end note
+
+TDB --> TS : Page<Transaction>\n(content + totalElements + totalPages)
+
+== 4. Service tính displayAmount theo chiều giao dịch ==
+loop với mỗi transaction trong page
+    note right of TS #FFF3E0
+      **Tính isOutgoing & displayAmount:**
+      - isOutgoing = (userId == tx.fromUserId)
+      - displayAmount = isOutgoing
+            ? −tx.amount  (chi ra → âm)
+            : +tx.amount  (nhận về → dương)
+
+      → 1 user có thể vừa là sender vừa là receiver
+         (gửi/nhận từ user khác); BE tự tính chiều
+         giúp FE không phải compare userId.
+    end note
+
+    TS -> TS : Build TransactionHistoryResponse\n(transactionId, fromFullName, fromPhone,\n toFullName, toPhone, amount, fee,\n displayAmount, description, type,\n status, merchantId, createdAt)
+end
+
+TS --> GW : 200 PageResponse\n{ content[], page, size,\n  totalElements, totalPages }
+GW --> FE : 200 + payload
+
+== 5. Front-end render ==
+note right of FE #FFF3E0
+  **Hiển thị mỗi item theo displayAmount:**
+  - displayAmount > 0 (incoming):
+    · icon ↓, màu xanh, dấu +
+    · counterParty = fromFullName/fromPhone
+  - displayAmount < 0 (outgoing):
+    · icon ↑, màu xám, dấu −
+    · counterParty = toFullName/toPhone
+
+  **Badge trạng thái:**
+  SUCCESS / PENDING / FAILED / CANCELLED
+  → màu sắc khác nhau (xanh/cam/đỏ/xám)
+end note
+
+FE --> User : Hiển thị danh sách 10 giao dịch\n+ thanh phân trang
+
+== 6. Người dùng chuyển trang ==
+User -> FE : Click "Trang sau"\n(hoặc số trang)
+
+FE -> GW : POST /api/v1/transactions/history\n{ page: 1, size: 10 }
+
+note right of FE #E8F5E9
+  Repeat từ Bước 2 với page tăng dần.
+  FE không cache → mỗi lần chuyển trang
+  đều gọi lại API (đảm bảo data tươi).
+end note
+
+GW -> TS : (tương tự bước 3)
+TS -> TDB : (query với OFFSET = 1 × size)
+TDB --> TS : Page<Transaction>
+TS --> FE : 200 PageResponse
+FE --> User : Hiển thị trang mới
+
+@enduml

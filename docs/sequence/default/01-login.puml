@@ -1,0 +1,117 @@
+@startuml 01-login
+title Sơ đồ tuần tự - Đăng nhập (Login)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C0A030
+
+actor "Người dùng" as User
+participant "Front-end\n(React SPA)" as FE
+participant "API Gateway\n(Spring Cloud Gateway)" as GW
+participant "User Service" as US
+database "PostgreSQL\n(user_db)" as DB
+
+== 1. Nhập thông tin đăng nhập ==
+User -> FE : Nhập số điện thoại + mật khẩu\n→ bấm "Đăng nhập"
+
+note right of FE #E8F5E9
+  **FE kiểm tra dữ liệu đầu vào:**
+  - phone: đúng 10 chữ số (regex /^\d{10}$/)
+  - password: tối thiểu 6 ký tự
+  → Nếu sai: hiển thị lỗi ngay,
+     không gọi API
+end note
+
+== 2. Gửi request qua API Gateway ==
+FE -> GW : POST /api/v1/auth/login\nContent-Type: application/json\n{ phone, password }
+
+note right of GW #E3F2FD
+  **API Gateway xử lý:**
+  - Endpoint /auth/login nằm trong **whitelist**
+    (không yêu cầu JWT)
+  - Rewrite path:
+    /api/v1/auth/login → /api/auth/login
+  - Forward sang user-service
+end note
+
+GW -> US : POST /api/auth/login\n{ phone, password }
+
+== 3. User Service xác thực ==
+US -> DB : SELECT * FROM users\nWHERE phone = ?
+DB --> US : user record (hoặc null)
+
+note right of US #FFF3E0
+  **Kiểm tra ở tầng Service:**
+  (1) User tồn tại trong DB?
+  (2) status ≠ LOCKED? (chưa bị khoá)
+  (3) PasswordEncoder.matches(rawPwd, hash)?
+       — so sánh password với BCrypt hash
+end note
+
+alt User không tồn tại HOẶC sai mật khẩu
+    note right of US #FFEBEE
+      **Security best practice:**
+      Trả về CÙNG một mã lỗi
+      cho 2 trường hợp này
+      → không tiết lộ phone có
+         tồn tại trong hệ thống hay không
+    end note
+    note right of US #FFEBEE
+      **Chống brute-force (chỉ khi user tồn tại):**
+      - Tăng failed_login_count += 1
+      - Nếu count ≥ 5 → set status = LOCKED
+        (user phải liên hệ admin mở khoá)
+    end note
+    US -> DB : UPDATE failed_login_count,\n(status = LOCKED nếu ≥ 5)
+    DB --> US : ok
+    US --> GW : 400 INVALID_CREDENTIALS
+    GW --> FE : { code: 400, message }
+    FE --> User : "Số điện thoại hoặc\nmật khẩu không đúng"
+else Tài khoản đã bị khoá (status = LOCKED)
+    US --> GW : 400 ACCOUNT_LOCKED
+    GW --> FE : { code: 400, message }
+    FE --> User : "Tài khoản đã bị khoá"
+end
+
+== 4. Đăng nhập thành công - Sinh JWT ==
+note right of US #E8F5E9
+  **Reset trạng thái đăng nhập:**
+  - failed_login_count = 0
+  - last_login_at = NOW()
+end note
+
+US -> DB : UPDATE users SET\nfailed_login_count = 0,\nlast_login_at = NOW()
+DB --> US : ok
+
+US -> US : JwtService.generateToken(user)
+
+note right of US #FFF3E0
+  **Cấu trúc JWT (HS512):**
+  - alg: HmacSHA512
+  - sub: userId
+  - claim role, phone
+  - jti: UUID (để blacklist khi logout)
+  - iat: thời điểm phát hành
+  - exp: iat + 3 giờ
+end note
+
+US --> GW : 200 OK\n{ token: "<jwt>" }
+GW --> FE : 200 OK\n{ token: "<jwt>" }
+
+note right of FE #E3F2FD
+  **FE lưu phiên đăng nhập:**
+  - localStorage.setItem('token', jwt)
+  - Decode JWT phía FE để lấy
+    userId, role hiển thị UI
+  - axios interceptor sẽ tự gắn
+    Authorization: Bearer <jwt>
+    cho mọi request sau
+end note
+
+FE --> User : Chuyển hướng → /dashboard
+
+@enduml
