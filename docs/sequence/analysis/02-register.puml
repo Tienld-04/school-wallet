@@ -1,0 +1,103 @@
+@startuml 02-register-analysis
+title Sơ đồ tuần tự - Đăng ký tài khoản
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1976D2
+skinparam ActorBackgroundColor #BBDEFB
+
+actor "Người dùng" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "Notification Service" as NS
+database "redis" as RD
+participant "User Service" as US
+database "user_db" as UDB
+participant "Wallet Service" as WS
+database "wallet_db" as WDB
+
+User -> FE : 1: Nhập số điện thoại
+FE -> GW : 1.1: Gửi yêu cầu mã OTP
+GW -> NS : 1.1.1: Chuyển tiếp yêu cầu
+NS -> RD : 1.1.1.1: Kiểm tra thời gian chờ giữa 2 lần gửi
+RD --> NS : 1.1.1.2: Trả về kết quả (chưa hết thời gian chờ → hợp lệ)
+NS -> NS : 1.1.1.3: Sinh mã OTP 6 số
+NS -> RD : 1.1.1.4: Lưu mã OTP (có thời hạn)
+NS -> RD : 1.1.1.5: Đặt cờ thời gian chờ gửi lại
+NS -> NS : 1.1.1.6: Gửi tin nhắn SMS chứa OTP
+NS --> GW : 1.1.2: Xác nhận đã gửi
+GW --> FE : 1.2: Trả về xác nhận
+FE --> User : 1.3: Hiển thị màn nhập mã OTP
+
+User -> FE : 2: Nhập mã OTP nhận được
+FE -> GW : 2.1: Gửi yêu cầu xác thực OTP
+GW -> NS : 2.1.1: Chuyển tiếp yêu cầu
+NS -> RD : 2.1.1.1: Lấy số lần đã thử sai
+RD --> NS : 2.1.1.2: Trả về số lần thử
+NS -> NS : 2.1.1.3: Kiểm tra chưa vượt quá số lần thử cho phép
+NS -> RD : 2.1.1.4: Lấy mã OTP đã lưu
+RD --> NS : 2.1.1.5: Trả về mã OTP (còn hạn)
+NS -> NS : 2.1.1.6: Đối chiếu mã OTP (khớp)
+NS -> RD : 2.1.1.7: Xóa mã OTP, cờ thời gian chờ, số lần thử
+NS -> NS : 2.1.1.8: Sinh mã xác minh
+NS --> GW : 2.1.2: Trả về mã xác minh
+GW --> FE : 2.2: Trả về mã xác minh
+FE --> User : 2.3: Hiển thị màn hoàn tất thông tin
+
+User -> FE : 3: Nhập họ tên, email, mật khẩu, PIN
+FE -> GW : 3.1: Gửi yêu cầu tạo tài khoản
+GW -> US : 3.1.1: Chuyển tiếp yêu cầu
+US -> US : 3.1.1.1: Kiểm tra mã xác minh hợp lệ
+US -> UDB : 3.1.1.2: Kiểm tra SĐT / email trùng
+UDB --> US : 3.1.1.3: Trả về kết quả (chưa tồn tại)
+US -> UDB : 3.1.1.4: Lưu thông tin người dùng
+UDB --> US : 3.1.1.5: Trả về ID người dùng
+US -> WS : 3.1.1.6: Yêu cầu tạo ví
+WS -> WDB : 3.1.1.6.1: Lưu ví (số dư = 0)
+WDB --> WS : 3.1.1.6.2: Trả về ID ví
+WS --> US : 3.1.1.7: Xác nhận tạo ví thành công
+US --> GW : 3.1.2: Trả về kết quả
+GW --> FE : 3.2: Trả về kết quả
+FE --> User : 3.3: Đăng ký thành công, chuyển trang đăng nhập
+
+User -> FE : 4: Gửi lại OTP quá nhanh
+FE -> GW : 4.1: Gửi yêu cầu mã OTP
+GW -> NS : 4.1.1: Chuyển tiếp yêu cầu
+NS -> RD : 4.1.1.1: Kiểm tra thời gian chờ giữa 2 lần gửi
+RD --> NS : 4.1.1.2: Trả về kết quả (còn trong thời gian chờ)
+NS --> GW : 4.1.2: Trả về thông báo lỗi
+GW --> FE : 4.2: Trả về thông báo lỗi
+FE --> User : 4.3: Hiển thị "Vui lòng đợi trước khi gửi lại"
+
+User -> FE : 5: Nhập sai mã OTP
+FE -> GW : 5.1: Gửi yêu cầu xác thực OTP
+GW -> NS : 5.1.1: Chuyển tiếp yêu cầu
+NS -> RD : 5.1.1.1: Lấy mã OTP đã lưu
+RD --> NS : 5.1.1.2: Trả về mã OTP
+NS -> NS : 5.1.1.3: Đối chiếu mã OTP (không khớp)
+NS -> RD : 5.1.1.4: Tăng số lần thử sai
+NS --> GW : 5.1.2: Trả về thông báo lỗi
+GW --> FE : 5.2: Trả về thông báo lỗi
+FE --> User : 5.3: Hiển thị "Mã OTP không đúng"
+
+User -> FE : 6: Mã OTP đã hết hạn
+FE -> GW : 6.1: Gửi yêu cầu xác thực OTP
+GW -> NS : 6.1.1: Chuyển tiếp yêu cầu
+NS -> RD : 6.1.1.1: Lấy mã OTP đã lưu
+RD --> NS : 6.1.1.2: Không còn (đã hết hạn)
+NS --> GW : 6.1.2: Trả về thông báo lỗi
+GW --> FE : 6.2: Trả về thông báo lỗi
+FE --> User : 6.3: Hiển thị "Mã OTP đã hết hạn"
+
+User -> FE : 7: SĐT hoặc email đã đăng ký
+FE -> GW : 7.1: Gửi yêu cầu tạo tài khoản
+GW -> US : 7.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 7.1.1.1: Kiểm tra SĐT / email trùng
+UDB --> US : 7.1.1.2: Trả về kết quả (đã tồn tại)
+US --> GW : 7.1.2: Trả về thông báo lỗi
+GW --> FE : 7.2: Trả về thông báo lỗi
+FE --> User : 7.3: Hiển thị "SĐT hoặc email đã được đăng ký"
+
+@enduml

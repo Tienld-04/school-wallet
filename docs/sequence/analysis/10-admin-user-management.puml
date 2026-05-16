@@ -1,0 +1,88 @@
+@startuml 10-admin-user-management-analysis
+title Sơ đồ tuần tự - Quản lý người dùng (Phân tích & Thiết kế)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1976D2
+skinparam ActorBackgroundColor #BBDEFB
+
+actor "Quản trị viên" as Admin
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "User Service" as US
+database "user_db" as UDB
+
+Admin -> FE : 1: Mở trang Quản lý người dùng
+FE -> GW : 1.1: Yêu cầu danh sách người dùng (trang 1)
+GW -> US : 1.1.1: Chuyển tiếp yêu cầu (kiểm tra quyền quản trị)
+US -> UDB : 1.1.1.1: Truy vấn danh sách người dùng (có phân trang)
+UDB --> US : 1.1.1.2: Trả về danh sách
+US --> GW : 1.1.2: Trả về danh sách
+GW --> FE : 1.2: Trả về danh sách
+FE --> Admin : 1.3: Hiển thị bảng người dùng + phân trang
+
+Admin -> FE : 2: Tìm kiếm theo tên hoặc số điện thoại
+FE -> GW : 2.1: Yêu cầu danh sách (kèm từ khoá)
+GW -> US : 2.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 2.1.1.1: Truy vấn lọc theo từ khoá
+UDB --> US : 2.1.1.2: Trả về danh sách lọc
+US --> GW : 2.1.2: Trả về danh sách
+GW --> FE : 2.2: Trả về danh sách
+FE --> Admin : 2.3: Hiển thị kết quả lọc
+
+Admin -> FE : 3: Lọc theo trạng thái (Hoạt động / Bị khoá)
+FE -> GW : 3.1: Yêu cầu danh sách (kèm trạng thái)
+GW -> US : 3.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 3.1.1.1: Truy vấn lọc theo trạng thái
+UDB --> US : 3.1.1.2: Trả về danh sách lọc
+US --> GW : 3.1.2: Trả về danh sách
+GW --> FE : 3.2: Trả về danh sách
+FE --> Admin : 3.3: Hiển thị kết quả lọc
+
+Admin -> FE : 4: Khoá / Mở khoá tài khoản
+FE -> GW : 4.1: Gửi yêu cầu chuyển đổi trạng thái
+GW -> US : 4.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 4.1.1.1: Tìm người dùng theo ID
+UDB --> US : 4.1.1.2: Trả về thông tin
+US -> US : 4.1.1.3: Đảo trạng thái (ACTIVE ↔ LOCKED)
+US -> US : 4.1.1.4: Nếu mở khoá → đặt lại số lần đăng nhập sai = 0
+US -> UDB : 4.1.1.5: Lưu thay đổi
+UDB --> US : 4.1.1.6: Xác nhận
+US --> GW : 4.1.2: Trả về kết quả
+GW --> FE : 4.2: Trả về kết quả
+FE --> Admin : 4.3: Hiển thị "Cập nhật trạng thái thành công"
+
+Admin -> FE : 5: Cập nhật mã PIN giao dịch cho người dùng
+FE -> GW : 5.1: Gửi yêu cầu đặt lại mã PIN (kèm SĐT, PIN mới)
+GW -> US : 5.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 5.1.1.1: Tìm người dùng theo SĐT
+UDB --> US : 5.1.1.2: Trả về thông tin
+US -> US : 5.1.1.3: Mã hoá PIN mới
+US -> US : 5.1.1.4: Đặt lại số lần thử PIN sai, gỡ trạng thái khoá PIN
+US -> UDB : 5.1.1.5: Lưu thay đổi
+UDB --> US : 5.1.1.6: Xác nhận
+US --> GW : 5.1.2: Trả về kết quả
+GW --> FE : 5.2: Trả về kết quả
+FE --> Admin : 5.3: Hiển thị "Cập nhật PIN thành công"
+
+Admin -> FE : 6: Chuyển sang trang khác
+FE -> GW : 6.1: Yêu cầu danh sách (trang mới)
+GW -> US : 6.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 6.1.1.1: Truy vấn danh sách (offset mới)
+UDB --> US : 6.1.1.2: Trả về danh sách
+US --> GW : 6.1.2: Trả về danh sách
+GW --> FE : 6.2: Trả về danh sách
+FE --> Admin : 6.3: Hiển thị trang mới
+
+Admin -> FE : 7: Không tìm thấy người dùng (tìm theo ID không tồn tại)
+FE -> GW : 7.1: Gửi yêu cầu (vd: khoá / cập nhật PIN cho ID không tồn tại)
+GW -> US : 7.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 7.1.1.1: Tìm người dùng
+UDB --> US : 7.1.1.2: Không tìm thấy
+US --> GW : 7.1.2: Trả về thông báo lỗi
+GW --> FE : 7.2: Trả về thông báo lỗi
+FE --> Admin : 7.3: Hiển thị "Không tìm thấy người dùng"
+
+@enduml

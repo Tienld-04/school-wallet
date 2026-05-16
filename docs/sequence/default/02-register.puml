@@ -1,0 +1,218 @@
+@startuml 02-register
+title Sơ đồ tuần tự - Đăng ký tài khoản (Register)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C0A030
+
+actor "Người dùng" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "Notification\nService" as NS
+database "Redis" as REDIS
+participant "SpeedSMS\n(SMS provider)" as SMS
+participant "User Service" as US
+database "user_db" as UDB
+participant "Wallet Service" as WS
+database "wallet_db" as WDB
+
+== Bước 1: Gửi mã OTP ==
+User -> FE : Nhập số điện thoại\n→ bấm "Gửi OTP"
+
+note right of FE #E8F5E9
+  **FE validate:**
+  phone đúng 10 chữ số
+end note
+
+FE -> GW : POST /api/v1/otp/send\n{ phone }
+
+note right of GW #E3F2FD
+  Endpoint /otp/** nằm trong whitelist
+  → forward thẳng, không cần JWT
+end note
+
+GW -> NS : POST /api/otp/send
+
+NS -> REDIS : EXISTS otp:cooldown:{phone}
+REDIS --> NS : true / false
+
+note right of NS #FFEBEE
+  **Chống spam OTP:**
+  Nếu còn cooldown key
+  → 429 OTP_RESEND_TOO_SOON
+  (cooldown thời lượng theo config:
+   otp.resend-cooldown-seconds)
+end note
+
+alt Còn trong thời gian cooldown
+    NS --> FE : 429 OTP_RESEND_TOO_SOON
+    FE --> User : "Vui lòng đợi trước khi gửi lại"
+end
+
+NS -> NS : Sinh OTP 6 số (SecureRandom)\nhash OTP bằng BCrypt
+
+note right of NS #FFF3E0
+  **Lưu OTP vào Redis (không phải DB):**
+  - SET otp:{phone} = BCrypt(OTP)
+    TTL = otp.expiration-minutes
+  - SET otp:cooldown:{phone}
+    TTL = otp.resend-cooldown-seconds
+  - **Không tạo otp:attempts ở bước này**
+    (chỉ tạo khi verify sai lần đầu)
+  OTP plaintext chỉ tồn tại trong RAM
+  rồi gửi qua SMS, không lưu hệ thống.
+end note
+
+NS -> REDIS : SET otp:{phone}, otp:cooldown:{phone}
+REDIS --> NS : ok
+NS -> SMS : Gửi SMS chứa OTP plaintext
+SMS --> NS : 200 OK
+NS --> FE : 200 { message: "OTP sent" }
+FE --> User : Form nhập OTP\n(có đếm ngược cooldown)
+
+== Bước 2: Xác thực OTP ==
+User -> FE : Nhập mã OTP 6 số
+FE -> GW : POST /api/v1/otp/verify\n{ phone, otp }
+GW -> NS : POST /api/otp/verify
+
+NS -> REDIS : GET otp:attempts:{phone}
+REDIS --> NS : count (hoặc null)
+
+note right of NS #FFEBEE
+  **Chống brute-force OTP:**
+  - Đếm số lần verify sai
+  - ≥ otp.max-attempts → từ chối luôn,
+     bắt user gửi lại OTP mới
+end note
+
+alt Đã thử quá số lần cho phép
+    NS --> FE : 429 OTP_MAX_ATTEMPTS
+end
+
+NS -> REDIS : GET otp:{phone}
+REDIS --> NS : hash (hoặc null nếu hết hạn)
+
+alt OTP đã hết hạn (TTL Redis expired)
+    NS --> FE : 400 OTP_EXPIRED
+    FE --> User : "Mã OTP hết hạn,\nbấm 'Gửi lại'"
+end
+
+NS -> NS : PasswordEncoder.matches(otp, hash)
+
+alt OTP sai
+    NS -> REDIS : INCR otp:attempts:{phone}\nEXPIRE otp:attempts:{phone}
+    NS --> FE : 400 OTP_INVALID\n("còn N lần thử")
+end
+
+NS -> REDIS : DEL otp:{phone},\notp:attempts:{phone},\notp:cooldown:{phone}
+
+note right of NS #FFF3E0
+  **Sinh verificationToken:**
+  data = phone | timestamp
+  sig = HMAC-SHA256(data, INTERNAL_SECRET)
+  token = Base64( data **.** sig )
+
+  → bằng chứng đã verify OTP,
+     user-service sẽ verify lại
+     ở bước /auth/register
+end note
+
+NS -> NS : Sinh verificationToken
+NS --> FE : 200 { verificationToken }
+
+note right of FE #E3F2FD
+  Lưu verificationToken vào React state
+  → chuyển sang bước nhập thông tin
+end note
+
+== Bước 3: Hoàn tất thông tin tài khoản ==
+User -> FE : Nhập họ tên, email,\npassword, PIN giao dịch
+
+note right of FE #E8F5E9
+  **FE validate:**
+  - fullName không rỗng
+  - email đúng định dạng
+  - password ≥ 6 ký tự
+  - PIN giao dịch 6 chữ số
+  - password == confirmPassword
+end note
+
+FE -> GW : POST /api/v1/auth/register\n{ phone, fullName, email,\n  password, transactionPin, verificationToken }
+GW -> US : POST /api/auth/register
+
+US -> US : verifyOTPTokenService\n.verifyOTPToken(token, phone)
+
+note right of US #FFEBEE
+  **Verify token chặt chẽ - 4 lớp kiểm tra:**
+  (1) Base64 decode → tách data + sig
+  (2) Recompute HMAC-SHA256 với INTERNAL_SECRET
+       → so sánh chữ ký
+  (3) tokenPhone (trong token) == phone đăng ký
+       → chống mượn token của số khác
+  (4) Token chưa hết hạn (10 phút)
+end note
+
+US -> REDIS : EXISTS used_token:{sig}
+
+note right of US #FFEBEE
+  **Single-use token:**
+  Mỗi verificationToken chỉ dùng được 1 lần.
+  Nếu đã dùng (key tồn tại) → từ chối.
+  → chống replay attack
+end note
+
+alt Token sai chữ ký / hết hạn / đã dùng
+    US --> FE : 400 INVALID_VERIFICATION_TOKEN\nhoặc PHONE_MISMATCH\nhoặc VERIFICATION_EXPIRED
+end
+
+US -> REDIS : SET used_token:{sig} = "1"\nTTL = otp.token-expiration-minutes
+
+US -> UDB : SELECT 1 FROM users\nWHERE phone = ? (existsByPhone)
+UDB --> US : exists?
+US -> UDB : SELECT 1 FROM users\nWHERE email = ? (existsByEmail)
+UDB --> US : exists?
+
+alt Phone hoặc email đã tồn tại
+    US --> FE : 400 PHONE_ALREADY_EXISTS\nhoặc EMAIL_ALREADY_EXISTS
+    FE --> User : Hiển thị lỗi
+end
+
+note right of US #FFF3E0
+  **Hash mật khẩu & PIN bằng BCrypt**
+  (PasswordEncoder.encode),
+  không bao giờ lưu plaintext.
+end note
+
+US -> UDB : INSERT INTO users\n(phone, email, fullName,\n password (BCrypt),\n transaction_pin_hash (BCrypt),\n role = USER, status = ACTIVE,\n kyc_status = UNVERIFIED)
+UDB --> US : userId
+
+== Bước 4: Tạo ví cho user mới ==
+note right of US #FFF3E0
+  **Mỗi user phải có đúng 1 ví.**
+  RestTemplate đã cấu hình interceptor
+  toàn cục tự thêm X-Internal-Secret
+  → wallet-service xác thực mọi
+     internal call qua header này.
+end note
+
+US -> WS : POST /internal/wallets\nX-Internal-Secret: ***\n{ userId }
+
+WS -> WDB : INSERT INTO wallets\n(user_id, balance = 0,\n daily_limit, monthly_limit,\n status = ACTIVE)
+WDB --> WS : walletId
+WS --> US : 200 OK
+
+note right of US #FFEBEE
+  **Atomicity:**
+  Toàn bộ createUser là @Transactional.
+  Nếu gọi wallet thất bại → rollback INSERT user
+  để tránh user "mồ côi" không có ví.
+end note
+
+US --> FE : 200 OK
+FE --> User : "Đăng ký thành công\n→ Đăng nhập"
+
+@enduml

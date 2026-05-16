@@ -1,0 +1,103 @@
+@startuml 12-admin-merchant-management-analysis
+title Sơ đồ tuần tự - Quản lý dịch vụ (Merchant)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1976D2
+skinparam ActorBackgroundColor #BBDEFB
+
+actor "Quản trị viên" as Admin
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "User Service" as US
+database "user_db" as UDB
+
+Admin -> FE : 1: Mở trang Quản lý dịch vụ
+FE -> GW : 1.1: Yêu cầu danh sách loại dịch vụ
+GW -> US : 1.1.1: Chuyển tiếp yêu cầu
+US --> GW : 1.1.2: Trả về danh sách loại dịch vụ
+GW --> FE : 1.2: Trả về danh sách loại
+FE -> GW : 1.3: Yêu cầu danh sách dịch vụ (trang 1)
+GW -> US : 1.3.1: Chuyển tiếp yêu cầu (kiểm tra quyền quản trị)
+US -> UDB : 1.3.1.1: Truy vấn danh sách dịch vụ (có phân trang)
+UDB --> US : 1.3.1.2: Trả về danh sách
+US --> GW : 1.3.2: Trả về danh sách
+GW --> FE : 1.4: Trả về danh sách
+FE --> Admin : 1.5: Hiển thị bảng dịch vụ + bộ lọc + phân trang
+
+Admin -> FE : 2: Tìm kiếm dịch vụ / lọc theo loại
+FE -> GW : 2.1: Yêu cầu danh sách (kèm từ khoá + loại)
+GW -> US : 2.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 2.1.1.1: Truy vấn theo điều kiện lọc
+UDB --> US : 2.1.1.2: Trả về danh sách lọc
+US --> GW : 2.1.2: Trả về danh sách
+GW --> FE : 2.2: Trả về danh sách
+FE --> Admin : 2.3: Hiển thị kết quả lọc
+
+Admin -> FE : 3: Bấm "Thêm dịch vụ" + nhập tên, loại, SĐT chủ
+FE -> GW : 3.1: Gửi yêu cầu tạo dịch vụ
+GW -> US : 3.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 3.1.1.1: Kiểm tra tên dịch vụ trùng
+UDB --> US : 3.1.1.2: Trả về kết quả (chưa tồn tại)
+US -> UDB : 3.1.1.3: Tìm chủ dịch vụ theo SĐT
+UDB --> US : 3.1.1.4: Trả về thông tin chủ
+US -> UDB : 3.1.1.5: Lưu dịch vụ mới (trạng thái: Hoạt động)
+UDB --> US : 3.1.1.6: Trả về ID dịch vụ
+US --> GW : 3.1.2: Trả về thông tin dịch vụ
+GW --> FE : 3.2: Trả về thông tin
+FE --> Admin : 3.3: Hiển thị "Tạo dịch vụ thành công" + làm mới danh sách
+
+Admin -> FE : 4: Bấm "Sửa" một dịch vụ + chỉnh thông tin
+FE -> GW : 4.1: Gửi yêu cầu cập nhật dịch vụ (kèm ID)
+GW -> US : 4.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 4.1.1.1: Tìm dịch vụ theo ID
+UDB --> US : 4.1.1.2: Trả về thông tin
+US -> UDB : 4.1.1.3: Tìm chủ dịch vụ theo SĐT mới (nếu thay đổi)
+UDB --> US : 4.1.1.4: Trả về thông tin chủ
+US -> UDB : 4.1.1.5: Cập nhật dịch vụ
+UDB --> US : 4.1.1.6: Xác nhận
+US --> GW : 4.1.2: Trả về thông tin dịch vụ
+GW --> FE : 4.2: Trả về thông tin
+FE --> Admin : 4.3: Hiển thị "Cập nhật dịch vụ thành công" + làm mới danh sách
+
+Admin -> FE : 5: Bấm "Xoá" + xác nhận
+FE -> GW : 5.1: Gửi yêu cầu xoá dịch vụ (kèm ID)
+GW -> US : 5.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 5.1.1.1: Tìm dịch vụ theo ID
+UDB --> US : 5.1.1.2: Trả về thông tin
+US -> UDB : 5.1.1.3: Xoá dịch vụ
+UDB --> US : 5.1.1.4: Xác nhận
+US --> GW : 5.1.2: Trả về kết quả
+GW --> FE : 5.2: Trả về kết quả
+FE --> Admin : 5.3: Hiển thị "Xoá dịch vụ thành công" + làm mới danh sách
+
+Admin -> FE : 6: Tên dịch vụ đã tồn tại (khi tạo mới)
+FE -> GW : 6.1: Gửi yêu cầu tạo dịch vụ
+GW -> US : 6.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 6.1.1.1: Kiểm tra tên dịch vụ trùng
+UDB --> US : 6.1.1.2: Đã tồn tại
+US --> GW : 6.1.2: Trả về thông báo lỗi
+GW --> FE : 6.2: Trả về thông báo lỗi
+FE --> Admin : 6.3: Hiển thị "Tên dịch vụ đã tồn tại"
+
+Admin -> FE : 7: SĐT chủ dịch vụ chưa đăng ký
+FE -> GW : 7.1: Gửi yêu cầu tạo / cập nhật dịch vụ
+GW -> US : 7.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 7.1.1.1: Tìm chủ dịch vụ theo SĐT
+UDB --> US : 7.1.1.2: Không tìm thấy
+US --> GW : 7.1.2: Trả về thông báo lỗi
+GW --> FE : 7.2: Trả về thông báo lỗi
+FE --> Admin : 7.3: Hiển thị "Không tìm thấy chủ dịch vụ với SĐT này"
+
+Admin -> FE : 8: Chuyển sang trang khác
+FE -> GW : 8.1: Yêu cầu danh sách (trang mới)
+GW -> US : 8.1.1: Chuyển tiếp yêu cầu
+US -> UDB : 8.1.1.1: Truy vấn danh sách (offset mới)
+UDB --> US : 8.1.1.2: Trả về danh sách
+US --> GW : 8.1.2: Trả về danh sách
+GW --> FE : 8.2: Trả về danh sách
+FE --> Admin : 8.3: Hiển thị trang mới
+
+@enduml

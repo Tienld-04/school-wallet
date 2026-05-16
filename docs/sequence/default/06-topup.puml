@@ -1,0 +1,244 @@
+@startuml 06-topup
+title Sơ đồ tuần tự - Nạp tiền qua VNPay (Top-Up)
+
+show footbox
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C0A030
+
+actor "Người dùng" as User
+participant "Front-end\n(trình duyệt)" as FE
+participant "API Gateway" as GW
+participant "Transaction\nService" as TS
+participant "User Service" as US
+participant "Wallet Service" as WS
+database "transaction_db" as TDB
+database "user_db" as UDB
+database "wallet_db" as WDB
+participant "Cổng VNPay\n(external)" as VP
+
+== 1. Khởi tạo yêu cầu nạp tiền ==
+User -> FE : Vào trang "Nạp tiền"\n→ nhập số tiền + chọn ngân hàng\n→ bấm "Tiếp tục với VNPay"
+
+note right of FE #E8F5E9
+  **FE validate:** 10.000đ ≤ amount ≤ 100.000.000đ;
+  sinh requestId = UUID v4 (bỏ dấu "-").
+end note
+
+FE -> GW : POST /api/v1/transactions/topup/initiate\nAuthorization: Bearer <JWT>\n{ requestId, amount, bankCode?, language: "vn" }
+
+note right of GW #E3F2FD
+  **AuthGlobalFilter:** decode JWT, validate jti,
+  inject X-User-Id/Role/Phone + X-Internal-Secret.
+end note
+
+GW -> TS : POST /api/transactions/topup/initiate\n+ header nội bộ + IP gốc client
+
+note right of TS #FFF3E0
+  Controller lấy userId/userPhone từ UserContext,
+  clientIp từ X-Forwarded-For (hoặc remoteAddr).
+end note
+
+== 1.1 Idempotency / retry check ==
+TS -> TDB : SELECT transactions WHERE request_id = ?
+TDB --> TS : tx (hoặc null)
+
+note right of TS #FFEBEE
+  **3 nhánh:** (a) PENDING + đúng owner → rebuild URL (retry);
+  (b) SUCCESS/FAILED/CANCELLED → 400 DUPLICATE; (c) sai owner → 403.
+end note
+
+alt requestId đã SUCCESS/FAILED/CANCELLED
+    TS --> FE : 400 DUPLICATE_TRANSACTION
+end
+
+== 1.2 Kiểm tra KYC ==
+TS -> US : GET /internal/users/{phone}\nX-Internal-Secret: ***
+US -> UDB : SELECT user BY phone
+UDB --> US : user
+US --> TS : { userId, kycStatus, ... }
+
+alt kycStatus ≠ VERIFIED
+    TS --> FE : 400 KYC_NOT_VERIFIED
+    FE --> User : "Vui lòng hoàn thành KYC"
+end
+
+== 1.3 Hủy giao dịch PENDING cũ ==
+TS -> TDB : SELECT transactions WHERE to_user_id = ?\nAND type = TOPUP AND status = PENDING
+TDB --> TS : danh sách PENDING cũ
+
+note right of TS #FFF3E0
+  **Cleanup:** mỗi user chỉ 1 PENDING TOPUP tại 1 thời điểm;
+  tạo mới → đánh dấu CANCELLED các PENDING cũ.
+end note
+
+loop với mỗi PENDING cũ
+    TS -> TDB : UPDATE status = CANCELLED + status_history
+end
+
+== 1.4 Tạo transaction PENDING & build VNPay URL ==
+TS -> TDB : INSERT transactions\n(status = PENDING, type = TOPUP,\n from_user_id = VNPAY_USER_ID,\n to_user_id = current user,\n amount, fee = 0)
+TDB --> TS : transactionId
+
+note right of TS #FFF3E0
+  **buildPaymentUrl:** params gồm vnp_TmnCode, vnp_TxnRef,
+  vnp_Amount (× 100 = đơn vị "xu"), vnp_OrderInfo, vnp_IpAddr,
+  vnp_ReturnUrl, ExpireDate +10 phút; sort key + URL encode
+  + ký HMAC-SHA512 → gắn vnp_SecureHash.
+end note
+
+TS -> TS : Build VNPay payment URL
+TS --> GW : 200 { paymentUrl, requestId }
+GW --> FE : 200 { paymentUrl, requestId }
+
+== 2. Chuyển hướng sang VNPay ==
+note right of FE #E3F2FD
+  **window.location.href = paymentUrl** —
+  trình duyệt rời SPA, chuyển hẳn sang VNPay.
+end note
+
+FE -> VP : GET <vnp_payUrl>?<params>&vnp_SecureHash=...
+VP --> User : Trang thanh toán VNPay\n(chọn ngân hàng, nhập thẻ, OTP)
+
+User -> VP : Hoàn tất thanh toán (hoặc Hủy)
+
+== 3. VNPay gọi IPN callback (server-to-server) ==
+note right of VP #FFEBEE
+  **IPN = Instant Payment Notification:**
+  VNPay gọi BE bằng HTTP request riêng, không qua browser
+  → kênh xác thực thật của giao dịch.
+end note
+
+VP -> GW : GET /api/v1/transactions/topup/ipn\n?vnp_TxnRef=...&vnp_Amount=...\n&vnp_ResponseCode=...&vnp_TransactionStatus=...\n&vnp_SecureHash=...
+
+note right of GW #E3F2FD
+  Endpoint /topup/ipn nằm trong whitelist
+  (VNPay không có JWT của user).
+end note
+
+GW -> TS : GET /api/transactions/topup/ipn
+
+TS -> TS : VnPayService.verifySignature(params)
+
+note right of TS #FFEBEE
+  **Verify HMAC-SHA512:** bỏ vnp_SecureHash[Type], sort key
+  + build hashData, hash với HASH_SECRET, so sánh signature.
+end note
+
+alt Signature sai
+    TS --> VP : VNPay code 97 INVALID_SIGNATURE
+end
+
+TS -> TDB : SELECT tx BY request_id = vnp_TxnRef
+
+alt Không tìm thấy transaction
+    TS --> VP : VNPay code 01 ORDER_NOT_FOUND
+end
+
+note right of TS #FFEBEE
+  **Verify amount:** vnp_Amount / 100 phải == tx.amount
+  (chống tampering số tiền).
+end note
+
+alt Amount không khớp
+    TS --> VP : VNPay code 04 INVALID_AMOUNT
+end
+
+alt tx.status đã ∈ { SUCCESS, FAILED, CANCELLED }
+    note right of TS #FFEBEE
+      **Idempotency:** VNPay có thể retry IPN nhiều lần
+      → BE chỉ xử lý 1 lần đầu.
+    end note
+    TS --> VP : VNPay code 02 ALREADY_CONFIRMED
+end
+
+== 3.1 Xử lý kết quả từ VNPay ==
+note right of TS #FFF3E0
+  **paid = (vnp_ResponseCode == "00" && vnp_TransactionStatus == "00")**
+end note
+
+alt Thanh toán thành công (paid)
+    TS -> WS : POST /internal/wallets/topup\nX-Internal-Secret: ***\n{ toUserId, amount, transactionId, note }
+
+    note right of WS #FFEBEE
+      **topup:** lock wallet FOR UPDATE, check không LOCKED,
+      idempotency by transactionId, balance += amount,
+      ghi ledger CREDIT (reason = TOP_UP).
+    end note
+
+    alt Credit wallet thành công
+        WS -> WDB : SELECT ... FOR UPDATE + UPDATE balance + INSERT ledger
+        WDB --> WS : ok
+        WS --> TS : 200 OK
+        TS -> TDB : UPDATE tx.status = SUCCESS + status_history\n("VNPay xác nhận thanh toán thành công")
+    else Credit wallet fail (wallet khoá / lỗi hệ thống)
+        WS --> TS : 4xx / 5xx error
+        TS -> TDB : UPDATE tx.status = FAILED + status_history (lý do)
+        TS --> VP : VNPay code 99 CREDIT_WALLET_FAILED
+    end
+else Thanh toán thất bại / bị hủy
+    note right of TS #FFF3E0
+      **Map VNPay code → reason:** "24" → CANCELLED (user hủy);
+      "09" thẻ chưa Internet Banking; "11" hết hạn; "51" không đủ số dư...
+      (xem VnPayTransactionCode enum).
+    end note
+
+    TS -> TDB : UPDATE tx.status = CANCELLED / FAILED + status_history
+end
+
+TS --> VP : VNPay code 00 SUCCESS
+
+note right of TS #FFEBEE
+  **Lưu ý:** Top-up KHÔNG publish JMS notification
+  (TODO trong code — khác với transfer/payment).
+end note
+
+== 4. VNPay redirect user quay về Front-end ==
+note over VP, FE #FFF3E0
+  **Song song với IPN ở mục 3:** trình duyệt nhận HTTP 302
+  redirect về /top-up/result?vnp_TxnRef=...&vnp_ResponseCode=...
+  → kênh hiển thị UX (kết quả thật vẫn từ DB do IPN xác nhận).
+end note
+
+VP --> FE : HTTP 302 Redirect\nLocation: /top-up/result?vnp_TxnRef=...&vnp_ResponseCode=...
+
+note right of FE #FFF3E0
+  **TopUpResult.tsx:** lấy requestId từ query;
+  redirect có thể đến TRƯỚC khi IPN xử lý xong → cần polling
+  (mỗi 2 giây, tối đa 15 lần ≈ 30s).
+end note
+
+FE --> User : Hiển thị "Đang chờ xác nhận từ VNPay..."
+
+== 5. FE poll status để chờ IPN xác nhận ==
+loop poll mỗi 2 giây, dừng khi status final hoặc đủ 15 lần
+    FE -> GW : GET /api/v1/transactions/topup/status?requestId=...\nAuthorization: Bearer <JWT>
+    GW -> TS : GET /api/transactions/topup/status
+
+    TS -> TDB : SELECT tx BY request_id = ?
+    TDB --> TS : tx
+
+    note right of TS #FFEBEE
+      **Authorization:** tx.toUserId phải == userId từ JWT
+      (chống xem trạng thái giao dịch của user khác).
+    end note
+
+    alt tx.toUserId ≠ userId
+        TS --> FE : 403 ACCESS_DENIED
+    end
+
+    TS --> FE : { status, amount, message, ... }
+
+    alt status ∈ { SUCCESS, FAILED, CANCELLED }
+        note right of FE #E8F5E9
+          Dừng polling, hiển thị kết quả cuối.
+        end note
+    end
+end
+
+FE --> User : Hiển thị kết quả (SUCCESS / FAILED / CANCELLED / Timeout)
+
+@enduml

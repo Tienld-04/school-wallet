@@ -1,0 +1,195 @@
+@startuml 09-admin-revenue
+title Sơ đồ tuần tự - Dashboard Doanh thu phí nền tảng (Admin)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C0A030
+
+actor "Admin" as User
+participant "Front-end\n(RevenueDashboard)" as FE
+participant "API Gateway" as GW
+participant "User Service" as US
+participant "Transaction\nService" as TS
+database "user_db" as UDB
+database "transaction_db" as TDB
+
+== 1. Admin vào trang Doanh thu ==
+User -> FE : Click menu "Doanh thu"
+
+note right of FE #FFF3E0
+  **State khởi tạo:**
+  - preset = "30d"
+  - granularity = "day"
+  Có 2 useEffect chạy ngay sau mount:
+  (a) Lấy danh sách merchant (1 lần)
+      → để map merchantId → tên merchant
+  (b) Lấy 3 số liệu doanh thu
+      → tự refetch khi đổi filter
+end note
+
+== 2. Lấy danh sách merchant (chạy 1 lần) ==
+FE -> GW : GET /api/v1/merchants/list/my-admin\n  ?page=0&size=1000\nAuthorization: Bearer <JWT>
+
+note right of GW #FFEBEE
+  **Path này yêu cầu ADMIN role**
+  (SecurityConfig: /merchants/** = ADMIN)
+end note
+
+GW -> US : GET /api/merchants/list/my-admin
+US -> UDB : SELECT FROM merchants\n(pagination)
+UDB --> US : Page<Merchant>
+US --> FE : Page<MerchantResponse>
+
+note right of FE #E8F5E9
+  Build Map<merchantId, merchantName>
+  để render tên merchant ở pie chart + bảng.
+  Nếu API fail → fallback hiển thị
+  8 ký tự đầu merchantId.
+end note
+
+== 3. Gọi 3 endpoint doanh thu song song ==
+note right of FE #FFF3E0
+  **Promise.all([overview, timeSeries, byMerchant]):**
+  3 request đồng thời tăng tốc load page.
+end note
+
+par 3 request song song
+    FE -> GW : GET /dashboard/revenue/overview\n  ?from=...&to=...
+also
+    FE -> GW : GET /dashboard/revenue/timeseries\n  ?granularity=day&from=...&to=...
+also
+    FE -> GW : GET /dashboard/revenue/by-merchant\n  ?from=...&to=...
+end
+
+note right of GW #FFEBEE
+  **AuthGlobalFilter + ADMIN check:**
+  - Decode JWT, validate jti
+  - SecurityConfig:
+    /transactions/dashboard/** → ADMIN only
+end note
+
+GW -> US : GET /internal/users/validate?jti=...
+US --> GW : 200 OK
+
+GW -> TS : Forward cả 3 request kèm header nội bộ
+
+== 3.1 Endpoint /revenue/overview ==
+TS -> TDB : aggregateRevenueOverview(from, to)\n[native SQL]
+
+note right of TDB #FFF3E0
+  **Native SQL — chỉ tính giao dịch
+  merchant SUCCESS có phí:**
+  SELECT COUNT(*), COALESCE(SUM(fee), 0),
+         COALESCE(AVG(fee), 0)
+  FROM transactions
+  WHERE merchant_id IS NOT NULL
+    AND status = 'SUCCESS'
+    AND fee > 0
+    AND created_at BETWEEN :from AND :to
+
+  → Bỏ qua transfer P2P (không có merchant_id)
+     và topup (không có fee).
+end note
+
+TDB --> TS : { tx_count, total_revenue, avg_revenue }
+
+TS -> TDB : aggregateRevenueByMerchant(from, to)\n[lấy thêm để xác định top merchant]
+TDB --> TS : List<[merchantId, count, revenue]>\n(sort DESC, lấy row đầu)
+
+note right of TS #FFF3E0
+  **Build RevenueOverviewResponse:**
+  - totalRevenue, transactionCount
+  - averageRevenuePerTx (làm tròn 2 chữ số)
+  - topMerchantId, topMerchantRevenue
+    (lấy từ row 0 của merchantRows)
+end note
+
+TS --> FE : 200 RevenueOverviewResponse
+
+== 3.2 Endpoint /revenue/timeseries ==
+TS -> TS : Validate granularity ∈ {day, week, month}
+
+TS -> TDB : aggregateRevenueTimeSeries(\n  granularity, from, to)
+
+note right of TDB #FFF3E0
+  **Native SQL với generate_series:**
+  WITH series AS (
+    SELECT generate_series(
+      DATE_TRUNC(:granularity, :from),
+      DATE_TRUNC(:granularity, :to),
+      CAST('1 ' || :granularity AS interval)
+    ) AS period
+  )
+  SELECT s.period, COUNT(t.id),
+         COALESCE(SUM(t.fee), 0)
+  FROM series s
+  LEFT JOIN transactions t
+    ON DATE_TRUNC(:granularity, t.created_at) = s.period
+    AND t.merchant_id IS NOT NULL
+    AND t.status = 'SUCCESS'
+    AND t.fee > 0
+  GROUP BY s.period ORDER BY s.period
+
+  → Fill 0 cho period không có doanh thu
+end note
+
+TDB --> TS : List<[period, count, revenue]>
+TS --> FE : 200 List<RevenueTimeSeriesPoint>
+
+== 3.3 Endpoint /revenue/by-merchant ==
+TS -> TDB : aggregateRevenueByMerchant(from, to)
+
+note right of TDB #FFF3E0
+  **Native SQL group by merchant:**
+  SELECT merchant_id, COUNT(*),
+         SUM(fee) AS total_revenue
+  FROM transactions
+  WHERE merchant_id IS NOT NULL
+    AND status = 'SUCCESS'
+    AND fee > 0
+    AND created_at BETWEEN :from AND :to
+  GROUP BY merchant_id
+  ORDER BY total_revenue DESC
+
+  → BE chỉ trả merchantId, FE map sang tên
+     từ danh sách merchant đã lấy ở bước 2.
+end note
+
+TDB --> TS : List<[merchantId, txCount, totalRevenue]>
+TS --> FE : 200 List<MerchantRevenueResponse>
+
+== 4. Front-end render UI ==
+note right of FE #FFF3E0
+  **Tổng hợp dữ liệu để render:**
+  - 4 KPI cards: totalRevenue, transactionCount,
+    avgPerTx, top merchant name + doanh thu
+  - BarChart: trục X = period, Y = revenue
+  - PieChart top 5 merchant + "Khác" gộp các
+    merchant còn lại (tính ở FE, không gọi API)
+  - Table breakdown đầy đủ merchant
+    với % thị phần (tính ở FE)
+end note
+
+FE --> User : Hiển thị toàn bộ dashboard doanh thu
+
+== 5. Admin đổi filter / granularity ==
+User -> FE : Click "7 ngày" / chọn date range\nhoặc đổi granularity (Ngày/Tuần/Tháng)
+
+note right of FE #E8F5E9
+  State from/to/granularity thay đổi
+  → useCallback dependency thay đổi
+  → useEffect re-run fetchAll()
+  (chỉ gọi lại 3 endpoint revenue,
+   không gọi lại danh sách merchant)
+end note
+
+FE -> GW : Gọi lại 3 endpoint với param mới
+GW -> TS : (lặp lại quy trình 3 → 3.3)
+TS --> FE : 200 (data mới)
+FE --> User : Cập nhật toàn bộ chart + KPI + table
+
+@enduml

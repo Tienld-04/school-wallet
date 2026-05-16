@@ -1,0 +1,75 @@
+@startuml 06-topup-analysis
+title Sơ đồ tuần tự - Nạp tiền qua VNPay
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1976D2
+skinparam ActorBackgroundColor #BBDEFB
+
+actor "Người dùng" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "Transaction Service" as TS
+database "transaction_db" as TDB
+participant "User Service" as US
+database "user_db" as UDB
+participant "Wallet Service" as WS
+database "wallet_db" as WDB
+participant "Cổng VNPay" as VP
+
+User -> FE : 1: Nhập số tiền cần nạp
+FE -> GW : 1.1: Yêu cầu khởi tạo nạp tiền
+GW -> TS : 1.1.1: Chuyển tiếp yêu cầu
+TS -> US : 1.1.1.1: Lấy thông tin người dùng + trạng thái KYC
+US -> UDB : 1.1.1.1.1: Truy vấn người dùng
+UDB --> US : 1.1.1.1.2: Trả về thông tin
+US --> TS : 1.1.1.2: Trả về thông tin người dùng
+TS -> TS : 1.1.1.3: Kiểm tra KYC đã xác thực
+TS -> TDB : 1.1.1.4: Hủy các giao dịch nạp tiền chưa hoàn tất cũ
+TDB --> TS : 1.1.1.5: Xác nhận
+TS -> TDB : 1.1.1.6: Tạo giao dịch nạp tiền mới (Đang xử lý)
+TDB --> TS : 1.1.1.7: Trả về ID giao dịch
+TS -> TS : 1.1.1.8: Sinh đường dẫn thanh toán VNPay
+TS --> GW : 1.1.2: Trả về đường dẫn thanh toán
+GW --> FE : 1.2: Trả về đường dẫn
+FE --> User : 1.3: Chuyển trang sang cổng VNPay
+
+User -> VP : 2: Nhập thông tin thẻ và xác nhận thanh toán thành công
+VP -> GW : 2.1: Gọi callback xác nhận (server-to-server)
+GW -> TS : 2.1.1: Chuyển tiếp callback
+TS -> TS : 2.1.1.1: Xác minh chữ ký từ VNPay
+TS -> TDB : 2.1.1.2: Truy vấn giao dịch theo mã tham chiếu
+TDB --> TS : 2.1.1.3: Trả về giao dịch
+TS -> TS : 2.1.1.4: Đối chiếu số tiền với giao dịch gốc
+TS -> WS : 2.1.1.5: Yêu cầu cộng tiền vào ví người dùng
+WS -> WDB : 2.1.1.5.1: Lấy thông tin ví
+WS -> WDB : 2.1.1.5.2: Cộng số dư + ghi sổ cái
+WDB --> WS : 2.1.1.5.3: Xác nhận
+WS --> TS : 2.1.1.6: Cộng tiền thành công
+TS -> TDB : 2.1.1.7: Cập nhật trạng thái giao dịch: Thành công
+TS --> GW : 2.1.2: Trả về xác nhận đã xử lý
+GW --> VP : 2.2: Trả về xác nhận
+
+User -> VP : 3: Hủy / Thanh toán thất bại trên cổng VNPay
+VP -> GW : 3.1: Gọi callback (kèm mã lỗi hoặc mã hủy)
+GW -> TS : 3.1.1: Chuyển tiếp callback
+TS -> TS : 3.1.1.1: Xác minh chữ ký từ VNPay
+TS -> TDB : 3.1.1.2: Truy vấn giao dịch theo mã tham chiếu
+TDB --> TS : 3.1.1.3: Trả về giao dịch
+TS -> TS : 3.1.1.4: Xác định kết quả từ mã VNPay (Đã hủy / Thất bại)
+TS -> TDB : 3.1.1.5: Cập nhật trạng thái giao dịch: Đã hủy hoặc Thất bại
+TS --> GW : 3.1.2: Trả về xác nhận đã xử lý
+GW --> VP : 3.2: Trả về xác nhận
+
+User -> FE : 4: Quay về trang kết quả nạp tiền
+FE -> GW : 4.1: Yêu cầu kiểm tra trạng thái giao dịch
+GW -> TS : 4.1.1: Chuyển tiếp yêu cầu
+TS -> TDB : 4.1.1.1: Truy vấn trạng thái giao dịch
+TDB --> TS : 4.1.1.2: Trả về trạng thái
+TS --> GW : 4.1.2: Trả về trạng thái
+GW --> FE : 4.2: Trả về trạng thái
+FE --> User : 4.3: Hiển thị kết quả (Thành công / Thất bại / Đã hủy)
+
+@enduml

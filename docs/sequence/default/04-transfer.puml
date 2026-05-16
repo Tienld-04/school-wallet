@@ -1,0 +1,172 @@
+@startuml 04-transfer
+title Sơ đồ tuần tự - Chuyển tiền P2P (Transfer)
+
+show footbox
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C0A030
+
+actor "Người dùng" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "Transaction\nService" as TS
+participant "User Service" as US
+participant "Wallet Service" as WS
+database "transaction_db" as TDB
+database "user_db" as UDB
+database "wallet_db" as WDB
+queue "ActiveMQ\n(transaction-notification)" as MQ
+participant "Notification\nService" as NS
+
+== 1. Nhập thông tin & xác nhận PIN ==
+User -> FE : Nhập SĐT người nhận
+FE -> GW : GET /api/v1/users/by-phone/{phone}
+GW -> US : GET /api/users/by-phone/{phone}
+US -> UDB : SELECT user BY phone
+UDB --> US : recipient
+US --> FE : { fullName, phone }
+FE --> User : Hiện thông tin người nhận
+
+User -> FE : Nhập số tiền, mô tả, PIN
+
+note right of FE #E8F5E9
+  **FE validate:** amount ≥ 1.000đ, PIN 6 số,
+  balance (cached) đủ, sinh requestId = UUID v4.
+end note
+
+== 2. Gateway xác thực JWT ==
+FE -> GW : POST /api/v1/transactions/transfer\nAuthorization: Bearer <JWT>\n{ requestId, toPhone, amount, pin, description }
+
+note right of GW #E3F2FD
+  **AuthGlobalFilter:** decode JWT (jti, userId, role, phone),
+  check blacklist jti, inject X-User-Id/Role/Phone + X-Internal-Secret.
+end note
+
+GW -> US : GET /internal/users/validate?jti=...\nX-Internal-Secret: ***
+US -> UDB : SELECT FROM invalidated_tokens WHERE jti = ?
+UDB --> US : (rỗng → token còn hiệu lực)
+US --> GW : 200 OK
+
+== 3. Transaction Service xử lý ==
+GW -> TS : POST /api/transactions/transfer\n+ header nội bộ
+
+alt fromPhone == toPhone (tự chuyển)
+    TS --> FE : 400 SELF_TRANSFER
+    FE --> User : "Không thể tự chuyển cho mình"
+end
+
+== 3.1 Idempotency check ==
+TS -> TDB : SELECT FROM transactions WHERE request_id = ?
+TDB --> TS : existingTx (hoặc null)
+
+note right of TS #FFEBEE
+  **Idempotency:** SUCCESS/FAILED → trả kết quả cũ;
+  PENDING → 400 DUPLICATE_TRANSACTION (chống double-submit).
+end note
+
+alt existingTx có SUCCESS/FAILED
+    TS --> FE : Trả response của tx cũ
+else existingTx có PENDING
+    TS --> FE : 400 DUPLICATE_TRANSACTION
+end
+
+== 3.2 Xác thực PIN ==
+TS -> US : POST /internal/users/verify-pin\n{ phone, pin }
+
+note right of US #FFEBEE
+  **PIN check + chống brute-force:** BCrypt match;
+  sai 5 lần → khoá PIN 15 phút; đúng → reset attempts.
+end note
+
+US -> UDB : check + update pin_failed_attempts, pin_locked_until
+UDB --> US : ok
+alt PIN sai hoặc bị khoá
+    US --> TS : 400 INVALID_PIN / PIN_LOCKED
+    TS --> FE : 400 PIN_VERIFICATION_FAILED
+    FE --> User : Hiển thị lỗi PIN
+end
+US --> TS : 200 OK
+
+== 3.3 Lấy thông tin & kiểm tra trạng thái ==
+TS -> US : POST /internal/users/batch\n{ phones: [fromPhone, toPhone] }
+US -> UDB : SELECT users WHERE phone IN (...)
+UDB --> US : 2 users
+US --> TS : [fromUser, toUser]
+
+note right of TS #FFF3E0
+  **Kiểm tra:** sender/recipient không LOCKED,
+  sender.kycStatus == VERIFIED.
+end note
+
+alt Một trong hai LOCKED / sender chưa KYC
+    TS --> FE : 400 SENDER_LOCKED / RECIPIENT_LOCKED / KYC_NOT_VERIFIED
+    FE --> User : Hiển thị lỗi
+end
+
+== 3.4 Tạo transaction PENDING ==
+note right of TS #FFEBEE
+  saveAndFlush để bắt race condition khi 2 request
+  cùng requestId song song (UNIQUE constraint).
+end note
+
+alt INSERT thành công
+    TS -> TDB : INSERT transactions\n(status = PENDING, type = TRANSFER,\n amount, fee = 0)
+    TDB --> TS : transactionId
+else DataIntegrityViolation (race condition)
+    TS -> TDB : SELECT tx WHERE request_id = ?
+    TDB --> TS : tx (đã thắng race)
+    TS --> FE : Trả kết quả cũ (nếu đã final)\nhoặc 400 DUPLICATE_TRANSACTION
+end
+
+== 3.5 Gọi wallet-service trừ/cộng tiền ==
+TS -> WS : POST /internal/wallets/transfer\n{ fromUserId, toUserId, amount,\n  transactionId, reason = "TRANSFER_OUT", note }
+
+note right of WS #FFEBEE
+  **WalletService.transfer:** idempotency by transactionId;
+  lock 2 ví theo UUID order ascending (tránh deadlock);
+  reset daily/monthly limit; check daily/monthly limit + balance.
+end note
+
+WS -> WDB : SELECT ... FOR UPDATE 2 wallets (theo UUID order)
+WDB --> WS : fromWallet, toWallet
+
+alt Wallet thành công
+    WS -> WDB : UPDATE fromWallet.balance −= amount\nUPDATE toWallet.balance += amount\nINSERT 2 ledger entries\n(DEBIT TRANSFER_OUT, CREDIT TRANSFER_IN)
+    WDB --> WS : ok
+    WS --> TS : 200 "Chuyển tiền thành công"
+else Wallet fail (số dư/hạn mức/ví khoá)
+    WS --> TS : 400 INSUFFICIENT_BALANCE / LIMIT_EXCEEDED / WALLET_LOCKED
+end
+
+== 3.6 Finalize transaction ==
+alt Wallet trả về SUCCESS
+    TS -> TDB : UPDATE status = SUCCESS + status_history
+
+    note right of TS #E8F5E9
+      **Đảm bảo nhất quán:** publish JMS **sau khi**
+      DB commit (afterCommit) — tránh notification "ma".
+    end note
+
+    TS -> MQ : JmsTemplate.convertAndSend(\n"transaction-notification",\nTransactionNotificationEvent)
+    TS --> FE : 200 { transactionId, status }
+    FE --> User : "Chuyển tiền thành công"
+else Wallet trả về error
+    TS -> TDB : UPDATE status = FAILED + status_history (lý do)
+    TS --> FE : 400 TRANSFER_FAILED + message
+    FE --> User : Hiển thị lỗi
+end
+
+== 4. Thông báo bất đồng bộ (qua ActiveMQ) ==
+MQ -> NS : @JmsListener nhận event
+
+note right of NS #FFF3E0
+  Lưu 2 notification (sender DEBIT + receiver CREDIT),
+  push WebSocket, gửi SMS (SpeedSMS) + Email (SendGrid).
+end note
+
+NS -> NS : Xử lý event
+
+@enduml
