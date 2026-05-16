@@ -1,0 +1,122 @@
+@startuml system-overview
+title Sơ đồ kiến trúc tổng quan hệ thống School Wallet
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #455A64
+skinparam ArrowThickness 1.4
+skinparam ArrowFontColor #37474F
+skinparam ArrowFontSize 11
+skinparam linetype ortho
+skinparam roundCorner 12
+
+skinparam component {
+    BackgroundColor #E8F5E9
+    FontColor #1B5E20
+    BorderColor #43A047
+    BorderThickness 1.5
+}
+skinparam database {
+    BackgroundColor #FFF3E0
+    FontColor #E65100
+    BorderColor #FB8C00
+    BorderThickness 1.5
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    FontColor #6A1B9A
+    BorderColor #9C27B0
+    BorderThickness 1.5
+}
+skinparam rectangle {
+    BackgroundColor<<fe>> #E3F2FD
+    FontColor<<fe>> #0D47A1
+    BorderColor<<fe>> #1976D2
+
+    BackgroundColor<<external>> #FFEBEE
+    FontColor<<external>> #B71C1C
+    BorderColor<<external>> #E53935
+
+    BorderThickness 1.5
+}
+skinparam frame {
+    BackgroundColor #FAFAFA
+    FontColor #263238
+    BorderColor #455A64
+    BorderThickness 1.5
+}
+skinparam actor {
+    BackgroundColor #FFE0B2
+    BorderColor #F57C00
+    FontColor #E65100
+}
+
+actor "Người dùng" as Client
+
+rectangle "Front-end (React SPA)\nport: 3000" as FE <<fe>>
+
+frame "Back-end" {
+    component "API Gateway\n(Spring Cloud Gateway)\nport: 8080" as GW
+
+    together {
+        component "User Service\nport: 8081" as US
+        component "Wallet Service\nport: 8082" as WS
+        component "Transaction Service\nport: 8084" as TS
+        component "Notification Service\nport: 8085" as NS
+    }
+
+    together {
+        database "user_db\nPostgreSQL · 5432" as UDB
+        database "wallet_db\nPostgreSQL · 5432" as WDB
+        database "transaction_db\nPostgreSQL · 5432" as TDB
+        database "notification_db\nPostgreSQL · 5432" as NDB
+        database "Redis\nport: 6379" as RD
+    }
+
+    queue "ActiveMQ (JMS Topic)\nport: 61616" as MQ
+}
+
+rectangle "VNPay Gateway\n(cổng thanh toán)" as VNP <<external>>
+rectangle "SendGrid\n(Email provider)" as SG <<external>>
+rectangle "SpeedSMS\n(SMS provider)" as SMSP <<external>>
+
+' === Client → Front-end → Gateway ===
+Client --> FE : Truy cập
+FE <--> GW : REST / WebSocket
+
+' === API Gateway định tuyến → các Service ===
+GW --> US : REST\n/auth, /users,\n/admin, /merchants
+GW --> WS : REST\n/wallets
+GW --> TS : REST\n/transactions
+GW --> NS : REST + WebSocket\n/otp, /notifications, /ws
+
+' === Service ↔ Database (mỗi service 1 DB riêng) ===
+US <--> UDB
+WS <--> WDB
+TS <--> TDB
+NS <--> NDB
+
+' === Service ↔ Redis ===
+US <--> RD : cache\nverify token
+NS <--> RD : lưu OTP\n+ rate-limit
+
+' === REST nội bộ giữa các Service ===
+GW ..> US : validate JWT\n(blacklist check)
+US ..> WS : tạo ví\nkhi đăng ký
+US ..> NS : gửi email\nquên mật khẩu
+TS ..> US : verify PIN,\nlấy thông tin user
+TS ..> WS : chuyển / cộng tiền
+
+' === Bất đồng bộ qua ActiveMQ ===
+TS --> MQ : publish\ntransaction-notification
+MQ --> NS : consume\n(@JmsListener)
+
+' === Tích hợp với hệ thống ngoài ===
+TS <..> VNP : build URL thanh toán,\nverify IPN callback
+NS --> SG : gửi email\nthông báo giao dịch
+NS --> SMSP : gửi SMS\n(OTP, thông báo)
+
+' === Push real-time về FE qua WebSocket ===
+NS ..> FE : WebSocket push\n(thông báo tức thời)
+
+@enduml
