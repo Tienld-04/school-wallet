@@ -14,6 +14,8 @@ public class KycResponse {
     private String idNumber;
     private LocalDate idIssueDate;
     private String idIssuePlace;
+    private String placeOfOrigin;
+    private String permanentAddress;
     private String idFrontUrl;
     private String idBackUrl;
     // Base64 encoded từ BYTEA — FE hiển thị qua data URL

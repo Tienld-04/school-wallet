@@ -152,6 +152,8 @@ public class AdminService {
         r.setIdNumber(kyc.getIdNumber());
         r.setIdIssueDate(kyc.getIdIssueDate());
         r.setIdIssuePlace(kyc.getIdIssuePlace());
+        r.setPlaceOfOrigin(kyc.getPlaceOfOrigin());
+        r.setPermanentAddress(kyc.getPermanentAddress());
         r.setIdFrontUrl(kyc.getIdFrontUrl());
         r.setIdBackUrl(kyc.getIdBackUrl());
         r.setIdFrontImage(encodeBase64(kyc.getIdFrontImage()));

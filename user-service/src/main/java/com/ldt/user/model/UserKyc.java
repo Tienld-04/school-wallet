@@ -44,6 +44,12 @@ public class UserKyc {
     @Column(name = "id_issue_place", nullable = false, length = 255)
     private String idIssuePlace;
 
+    @Column(name = "place_of_origin", length = 255)
+    private String placeOfOrigin;
+
+    @Column(name = "permanent_address", length = 255)
+    private String permanentAddress;
+
     // @Column(name = "school_code", nullable = false, length = 20)
     // private String schoolCode;
     // image cccd

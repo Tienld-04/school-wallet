@@ -262,6 +262,8 @@ export interface KycAdminListResponse {
   idNumber: string;
   idIssueDate: string;
   idIssuePlace: string;
+  placeOfOrigin?: string;
+  permanentAddress?: string;
   idFrontUrl?: string;
   idBackUrl?: string;
   // Base64 encoded từ BYTEA — hiển thị qua data URL
@@ -280,6 +282,8 @@ export interface KycRequest {
   idNumber: string;
   idIssueDate: string;
   idIssuePlace: string;
+  placeOfOrigin: string;
+  permanentAddress: string;
   idFrontUrl?: string;
   idBackUrl?: string;
   // Base64 string (bao gồm prefix "data:image/...;base64,")
@@ -294,6 +298,8 @@ export interface KycResponse {
   idNumber: string;
   idIssueDate: string;
   idIssuePlace: string;
+  placeOfOrigin?: string;
+  permanentAddress?: string;
   idFrontUrl?: string;
   idBackUrl?: string;
   idFrontImage?: string;
