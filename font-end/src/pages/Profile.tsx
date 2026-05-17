@@ -21,6 +21,8 @@ const emptyKycForm = {
   idNumber: '',
   idIssueDate: '',
   idIssuePlace: '',
+  placeOfOrigin: '',
+  permanentAddress: '',
 };
 
 const MAX_IMAGE_BYTES = 1_500_000; // ~1.5MB raw — base64 ~2MB → tổng 2 ảnh ~ 4MB, an toàn dưới 5MB
@@ -84,6 +86,8 @@ const Profile: React.FC = () => {
             idNumber: data.idNumber ?? '',
             idIssueDate: data.idIssueDate ?? '',
             idIssuePlace: data.idIssuePlace ?? '',
+            placeOfOrigin: data.placeOfOrigin ?? '',
+            permanentAddress: data.permanentAddress ?? '',
           });
         }
       } catch {
@@ -216,6 +220,8 @@ const Profile: React.FC = () => {
     if (!kycForm.idNumber.trim()) errors.idNumber = 'Vui lòng nhập số CCCD';
     if (!kycForm.idIssueDate) errors.idIssueDate = 'Vui lòng nhập ngày cấp';
     if (!kycForm.idIssuePlace.trim()) errors.idIssuePlace = 'Vui lòng nhập nơi cấp';
+    if (!kycForm.placeOfOrigin.trim()) errors.placeOfOrigin = 'Vui lòng nhập quê quán';
+    if (!kycForm.permanentAddress.trim()) errors.permanentAddress = 'Vui lòng nhập địa chỉ thường trú';
     if (!idFrontImage) errors.idFrontImage = 'Vui lòng tải ảnh mặt trước CCCD';
     if (!idBackImage) errors.idBackImage = 'Vui lòng tải ảnh mặt sau CCCD';
     setKycErrors(errors);
@@ -416,6 +422,8 @@ const Profile: React.FC = () => {
                         { label: 'Số CCCD', value: kycData.idNumber },
                         { label: 'Ngày cấp', value: formatDate(kycData.idIssueDate) },
                         { label: 'Nơi cấp', value: kycData.idIssuePlace },
+                        { label: 'Quê quán', value: kycData.placeOfOrigin ?? '—' },
+                        { label: 'Địa chỉ thường trú', value: kycData.permanentAddress ?? '—' },
                         { label: 'Ngày nộp hồ sơ', value: formatDate(kycData.submittedAt) },
                       ].map((row) => (
                         <div key={row.label} className="flex items-center justify-between gap-3 py-3">
@@ -482,6 +490,8 @@ const Profile: React.FC = () => {
                   <Input label="Số CCCD" type="text" name="idNumber" value={kycForm.idNumber} onChange={handleKycChange} placeholder="0xxxxxxxxx" error={kycErrors.idNumber} />
                   <Input label="Ngày cấp CCCD" type="date" name="idIssueDate" value={kycForm.idIssueDate} onChange={handleKycChange} placeholder="" error={kycErrors.idIssueDate} />
                   <Input label="Nơi cấp CCCD" type="text" name="idIssuePlace" value={kycForm.idIssuePlace} onChange={handleKycChange} placeholder="Cục Cảnh sát QLHC về TTXH" error={kycErrors.idIssuePlace} />
+                  <Input label="Quê quán" type="text" name="placeOfOrigin" value={kycForm.placeOfOrigin} onChange={handleKycChange} placeholder="Xã/phường, Huyện/quận, Tỉnh/thành" error={kycErrors.placeOfOrigin} />
+                  <Input label="Địa chỉ thường trú" type="text" name="permanentAddress" value={kycForm.permanentAddress} onChange={handleKycChange} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" error={kycErrors.permanentAddress} />
 
                   {/* Upload 2 mặt CCCD */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

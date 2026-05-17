@@ -202,6 +202,8 @@ const KycManagement: React.FC = () => {
                 { label: 'Số CCCD',       value: selected.idNumber },
                 { label: 'Ngày cấp',      value: formatDate(selected.idIssueDate) },
                 { label: 'Nơi cấp',       value: selected.idIssuePlace },
+                { label: 'Quê quán',      value: selected.placeOfOrigin ?? '—' },
+                { label: 'Địa chỉ thường trú', value: selected.permanentAddress ?? '—' },
                 { label: 'Ngày nộp',      value: formatDate(selected.submittedAt) },
                 ...(selected.verifiedAt ? [{ label: 'Ngày duyệt', value: formatDate(selected.verifiedAt) }] : []),
                 ...(selected.rejectionReason ? [{ label: 'Lý do từ chối', value: selected.rejectionReason }] : []),
