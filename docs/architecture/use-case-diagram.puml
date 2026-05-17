@@ -1,0 +1,86 @@
+@startuml use-case-diagram
+title Biểu đồ Use Case tổng quát - Hệ thống School Wallet
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+skinparam usecase {
+    BackgroundColor #FFFFFF
+    BorderColor #1E40AF
+    BorderThickness 1.4
+    FontColor #1F2937
+    ArrowColor #6B7280
+}
+skinparam actor {
+    BackgroundColor #FFE0B2
+    BorderColor #F57C00
+    FontColor #1F2937
+}
+skinparam ArrowColor #6B7280
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #6B7280
+
+left to right direction
+
+actor "Quản trị viên" as admin
+actor "Người dùng" as user
+
+' ========= USE CASE CHUNG (CENTER) =========
+usecase "Đăng nhập" as UC_Login
+
+' ========= USE CASE CHO ADMIN =========
+usecase "Quản lý\nngười dùng" as UC_AdminUser
+usecase "Quản lý KYC" as UC_AdminKYC
+usecase "Quản lý\ndịch vụ" as UC_AdminMerchant
+usecase "Xem thống kê\ngiao dịch" as UC_AdminStats
+usecase "Xem doanh thu\nnền tảng" as UC_AdminRevenue
+
+' ========= USE CASE CHO USER =========
+usecase "Đăng ký\ntài khoản" as UC_Register
+usecase "Quên mật khẩu" as UC_ForgotPwd
+usecase "Cập nhật KYC" as UC_KYC
+usecase "Quản lý\ntài khoản" as UC_Profile
+usecase "Nạp tiền" as UC_TopUp
+usecase "Chuyển tiền" as UC_Transfer
+usecase "Thanh toán\ndịch vụ" as UC_Payment
+usecase "Xem lịch sử\ngiao dịch" as UC_History
+usecase "Xem thông báo" as UC_Notification
+
+' ========= LIÊN KẾT ADMIN ↔ USE CASE =========
+admin -- UC_AdminUser
+admin -- UC_AdminKYC
+admin -- UC_AdminMerchant
+admin -- UC_AdminStats
+admin -- UC_AdminRevenue
+
+' ========= LIÊN KẾT USER ↔ USE CASE =========
+UC_Register -- user
+UC_ForgotPwd -- user
+UC_KYC -- user
+UC_Profile -- user
+UC_TopUp -- user
+UC_Transfer -- user
+UC_Payment -- user
+UC_History -- user
+UC_Notification -- user
+
+' ========= QUAN HỆ <<include>> =========
+' Mọi chức năng cần xác thực đều phải đăng nhập trước
+UC_AdminUser     ..> UC_Login : <<include>>
+UC_AdminKYC      ..> UC_Login : <<include>>
+UC_AdminMerchant ..> UC_Login : <<include>>
+UC_AdminStats    ..> UC_Login : <<include>>
+UC_AdminRevenue  ..> UC_Login : <<include>>
+
+UC_KYC          ..> UC_Login : <<include>>
+UC_Profile      ..> UC_Login : <<include>>
+UC_TopUp        ..> UC_Login : <<include>>
+UC_Transfer     ..> UC_Login : <<include>>
+UC_Payment      ..> UC_Login : <<include>>
+UC_History      ..> UC_Login : <<include>>
+UC_Notification ..> UC_Login : <<include>>
+
+@enduml
