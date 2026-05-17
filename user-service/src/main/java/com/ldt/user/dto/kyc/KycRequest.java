@@ -30,6 +30,14 @@ public class KycRequest {
     @Size(max = 255, message = "Nơi cấp tối đa 255 ký tự")
     private String idIssuePlace;
 
+    @NotBlank(message = "Quê quán không được để trống")
+    @Size(max = 255, message = "Quê quán tối đa 255 ký tự")
+    private String placeOfOrigin;
+
+    @NotBlank(message = "Địa chỉ thường trú không được để trống")
+    @Size(max = 255, message = "Địa chỉ thường trú tối đa 255 ký tự")
+    private String permanentAddress;
+
     // Ảnh giấy tờ — URL (cũ, không bắt buộc)
     private String idFrontUrl;
     private String idBackUrl;

@@ -22,6 +22,8 @@ public class KycAdminListResponse {
     private LocalDate idIssueDate;
 
     private String idIssuePlace;
+    private String placeOfOrigin;
+    private String permanentAddress;
     private String idFrontUrl;
     private String idBackUrl;
     // Base64 encoded từ BYTEA

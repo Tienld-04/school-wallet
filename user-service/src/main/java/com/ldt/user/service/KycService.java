@@ -60,6 +60,8 @@ public class KycService {
         kyc.setIdNumber(request.getIdNumber());
         kyc.setIdIssueDate(request.getIdIssueDate());
         kyc.setIdIssuePlace(request.getIdIssuePlace());
+        kyc.setPlaceOfOrigin(request.getPlaceOfOrigin());
+        kyc.setPermanentAddress(request.getPermanentAddress());
         kyc.setIdFrontImage(decodeBase64(request.getIdFrontImage()));
         kyc.setIdBackImage(decodeBase64(request.getIdBackImage()));
         kyc.setStatus(KycStatus.PENDING);
@@ -93,6 +95,8 @@ public class KycService {
         response.setIdNumber(kyc.getIdNumber());
         response.setIdIssueDate(kyc.getIdIssueDate());
         response.setIdIssuePlace(kyc.getIdIssuePlace());
+        response.setPlaceOfOrigin(kyc.getPlaceOfOrigin());
+        response.setPermanentAddress(kyc.getPermanentAddress());
         response.setIdFrontUrl(kyc.getIdFrontUrl());
         response.setIdBackUrl(kyc.getIdBackUrl());
         response.setIdFrontImage(encodeBase64(kyc.getIdFrontImage()));
