@@ -61,6 +61,8 @@ CREATE TABLE user_kyc (
     id_number         VARCHAR(20)  NOT NULL,                           -- Số CCCD/CMND
     id_issue_date     DATE         NOT NULL,                           -- Ngày cấp CCCD
     id_issue_place    VARCHAR(255) NOT NULL,                           -- Nơi cấp CCCD
+    place_of_origin   VARCHAR(255),                                    -- Quê quán (nguyên quán) theo CCCD; nullable cho dữ liệu KYC cũ
+    permanent_address VARCHAR(255),                                    -- Địa chỉ thường trú theo CCCD; nullable cho dữ liệu KYC cũ
 
     -- Nhóm 2: Ảnh CCCD (nullable, bổ sung sau khi có file storage). Dùng BYTEA để lưu binary trực tiếp.
     id_front_url      VARCHAR(500),                                    -- URL ảnh mặt trước (legacy, không dùng nữa)

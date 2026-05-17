@@ -1,0 +1,235 @@
+@startuml database-erd
+title Mô hình thực thể liên kết (ERD) - School Wallet
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+skinparam roundCorner 8
+
+skinparam entity {
+    BackgroundColor #FFF8E1
+    BorderColor #F57C00
+    FontColor #1F2937
+    BorderThickness 1.4
+}
+skinparam package {
+    BackgroundColor #F9FAFB
+    BorderColor #6B7280
+    FontColor #111827
+    BorderThickness 1.4
+}
+skinparam ArrowColor #374151
+skinparam ArrowThickness 1.2
+skinparam ArrowFontColor #4B5563
+skinparam ArrowFontSize 11
+
+' =====================================================
+' USER-SERVICE
+' =====================================================
+package "user-service (user_db)" #E8F5E9 {
+
+    entity "users" as users {
+        * **user_id** : UUID <<PK>>
+        --
+        * full_name : VARCHAR(100)
+        * phone : VARCHAR(10) <<UQ>>
+        * email : VARCHAR(100) <<UQ>>
+        * password : VARCHAR(255)
+        * role : VARCHAR(20)
+        * status : VARCHAR(20)
+        * kyc_status : VARCHAR(20)
+        last_login_at : TIMESTAMP
+        * failed_login_count : INT
+        * transaction_pin_hash : VARCHAR(255)
+        * pin_failed_attempts : INT
+        pin_locked_until : TIMESTAMP
+        * created_at : TIMESTAMP
+        * updated_at : TIMESTAMP
+    }
+
+    entity "user_kyc" as user_kyc {
+        * **kyc_id** : UUID <<PK>>
+        --
+        * user_id : UUID <<FK,UQ>>
+        * full_name : VARCHAR(100)
+        * date_of_birth : DATE
+        * id_number : VARCHAR(20)
+        * id_issue_date : DATE
+        * id_issue_place : VARCHAR(255)
+        place_of_origin : VARCHAR(255)
+        permanent_address : VARCHAR(255)
+        id_front_image : BYTEA
+        id_back_image : BYTEA
+        * status : VARCHAR(20)
+        * submitted_at : TIMESTAMP
+        verified_by : UUID
+        verified_at : TIMESTAMP
+        rejection_reason : VARCHAR(500)
+        * created_at : TIMESTAMP
+        * updated_at : TIMESTAMP
+    }
+
+    entity "merchants" as merchants {
+        * **merchant_id** : UUID <<PK>>
+        --
+        * name : VARCHAR(100)
+        * type : VARCHAR(50)
+        * user_id : UUID <<FK>>
+        * active : BOOLEAN
+        * created_at : TIMESTAMP
+        * updated_at : TIMESTAMP
+    }
+
+    entity "invalidated_tokens" as inv_tokens {
+        * **jti** : VARCHAR(255) <<PK>>
+        --
+        * expiry_time : TIMESTAMP
+    }
+}
+
+' =====================================================
+' WALLET-SERVICE
+' =====================================================
+package "wallet-service (wallet_db)" #FFF3E0 {
+
+    entity "wallets" as wallets {
+        * **wallet_id** : UUID <<PK>>
+        --
+        * user_id : UUID <<UQ>>
+        * balance : NUMERIC(18,2)
+        * status : VARCHAR(20)
+        * wallet_type : VARCHAR(20)
+        daily_limit : NUMERIC(18,2)
+        monthly_limit : NUMERIC(18,2)
+        daily_spent : NUMERIC(18,2)
+        last_daily_reset : DATE
+        monthly_spent : NUMERIC(18,2)
+        last_monthly_reset : DATE
+        * currency : VARCHAR(3)
+        * created_at : TIMESTAMP
+        * updated_at : TIMESTAMP
+    }
+
+    entity "wallet_ledger" as wallet_ledger {
+        * **entry_id** : UUID <<PK>>
+        --
+        * wallet_id : UUID <<FK>>
+        transaction_id : UUID
+        * direction : VARCHAR(10)
+        * amount : NUMERIC(18,2)
+        * balance_before : NUMERIC(18,2)
+        * balance_after : NUMERIC(18,2)
+        * reason : VARCHAR(20)
+        note : VARCHAR(255)
+        * created_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' TRANSACTION-SERVICE
+' =====================================================
+package "transaction-service (transaction_db)" #E3F2FD {
+
+    entity "transactions" as transactions {
+        * **transaction_id** : UUID <<PK>>
+        --
+        * request_id : VARCHAR(255) <<UQ>>
+        * from_user_id : UUID
+        from_phone : VARCHAR(15)
+        from_full_name : VARCHAR(100)
+        * to_user_id : UUID
+        to_phone : VARCHAR(15)
+        to_full_name : VARCHAR(100)
+        * amount : NUMERIC(18,2)
+        * fee : NUMERIC(18,2)
+        * transaction_type : VARCHAR(30)
+        * status : VARCHAR(20)
+        merchant_id : UUID
+        description : TEXT
+        * created_at : TIMESTAMP
+        * updated_at : TIMESTAMP
+    }
+
+    entity "transaction_status_history" as tsh {
+        * **history_id** : UUID <<PK>>
+        --
+        * transaction_id : UUID <<FK>>
+        from_status : VARCHAR(20)
+        * to_status : VARCHAR(20)
+        reason : VARCHAR(500)
+        * changed_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' NOTIFICATION-SERVICE
+' =====================================================
+package "notification-service (notification_db)" #F3E5F5 {
+
+    entity "notification" as notification {
+        * **id** : UUID <<PK>>
+        --
+        * user_id : UUID
+        * title : VARCHAR(255)
+        description : VARCHAR(500)
+        * type : VARCHAR(20)
+        transaction_id : UUID
+        transaction_type : VARCHAR(50)
+        amount : NUMERIC(19,2)
+        direction : VARCHAR(10)
+        counterparty_name : VARCHAR(255)
+        counterparty_phone : VARCHAR(20)
+        transaction_status : VARCHAR(30)
+        * is_read : BOOLEAN
+        * created_at : TIMESTAMP
+    }
+
+    entity "notification_log" as notification_log {
+        * **id** : UUID <<PK>>
+        --
+        * channel : VARCHAR(10)
+        * recipient : VARCHAR(255)
+        user_id : UUID
+        transaction_id : UUID
+        transaction_type : VARCHAR(50)
+        amount : NUMERIC(19,2)
+        direction : VARCHAR(10)
+        * source : VARCHAR(20)
+        * status : VARCHAR(10)
+        error_message : VARCHAR(500)
+        * created_at : TIMESTAMP
+    }
+}
+
+' ============================================================
+' Quan hệ trong cùng database (FK cứng)
+' ============================================================
+users      ||--o|  user_kyc  : "có 1 hồ sơ"
+users      ||--o{  merchants : "quản lý nhiều"
+wallets    ||--o{  wallet_ledger : "ghi sổ cái"
+transactions ||--o{ tsh : "lưu lịch sử trạng thái"
+
+' ============================================================
+' Quan hệ logic (cross-service, không có FK cứng)
+' ============================================================
+users ..o|  wallets         : "logic (1-1)"
+users ..o{  transactions    : "gửi / nhận (logic)"
+merchants ..o{  transactions : "PAYMENT (logic)"
+transactions ..o{  wallet_ledger : "logic"
+users ..o{  notification    : "nhận thông báo (logic)"
+transactions ..o{ notification : "logic"
+users ..o{  notification_log : "logic"
+transactions ..o{ notification_log : "logic"
+
+legend bottom right
+  | Ký hiệu | Ý nghĩa |
+  |---|---|
+  | <b>**...** : UUID <<PK>></b> | Khóa chính |
+  | <<FK>>     | Khóa ngoại cứng (cùng DB) |
+  | <<UQ>>     | Ràng buộc duy nhất |
+  | <b>*</b>   | NOT NULL |
+  | <b>──</b>  | Quan hệ FK cứng |
+  | <b>┄┄</b> | Quan hệ logic (cross-service) |
+endlegend
+
+@enduml

@@ -172,6 +172,33 @@ export interface TransactionHistoryPage {
   totalPages: number;
 }
 
+/** Trùng schema với LedgerEntryResponse ở wallet-service. */
+export interface LedgerEntry {
+  entryId: string;
+  transactionId?: string;
+  direction: 'DEBIT' | 'CREDIT';
+  amount: number;
+  signedAmount: number;
+  currency: string;
+  balanceBefore: number;
+  balanceAfter: number;
+  reason: string;
+  reasonLabel: string;
+  note?: string;
+  createdAt: string;
+}
+
+/** PageResponse<LedgerEntryResponse> ở wallet-service. */
+export interface LedgerPage {
+  content: LedgerEntry[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
 /** StatsOverviewResponse ở transaction-service. */
 export interface StatsOverview {
   totalTransactions: number;
