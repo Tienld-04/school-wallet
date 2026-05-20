@@ -81,16 +81,6 @@ const adminMenuItems = [
     ),
   },
   {
-    to: '/admin/revenue',
-    label: 'Doanh thu',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
-  },
-  {
     to: '/admin/users',
     label: 'Quản lý người dùng',
     icon: (
@@ -119,9 +109,22 @@ const adminMenuItems = [
   },
 ];
 
+const revenueIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+);
+
 const MainLayout: React.FC = () => {
-  const { logout, role } = useAuth();
+  const { logout, role, user } = useAuth();
   const isAdmin = role === 'ADMIN';
+  // Admin → /admin/revenue (platform fee). User có merchants → /merchant-revenue. Còn lại → ẩn.
+  const revenueLink = isAdmin
+    ? '/admin/revenue'
+    : user?.hasMerchants
+      ? '/merchant-revenue'
+      : null;
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -194,6 +197,13 @@ const MainLayout: React.FC = () => {
               {showLabel && <span>{item.label}</span>}
             </NavLink>
           ))}
+
+          {revenueLink && (
+            <NavLink to={revenueLink} className={linkClass}>
+              <span className="shrink-0">{revenueIcon}</span>
+              {showLabel && <span>Doanh thu</span>}
+            </NavLink>
+          )}
 
           {isAdmin && (
             <>

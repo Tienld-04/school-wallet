@@ -17,6 +17,7 @@ import MerchantManagement from '../pages/admin/MerchantManagement';
 import KycManagement from '../pages/admin/KycManagement';
 import StatsDashboard from '../pages/admin/StatsDashboard';
 import RevenueDashboard from '../pages/admin/RevenueDashboard';
+import MerchantRevenueDashboard from '../pages/MerchantRevenueDashboard';
 import TransactionLookup from '../pages/TransactionLookup';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -51,6 +52,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/top-up/result" element={<TopUpResult />} />
         <Route path="/transactions" element={<TransactionHistory />} />
         <Route path="/transaction-lookup" element={<TransactionLookup />} />
+        <Route path="/merchant-revenue" element={<MerchantRevenueDashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin/stats" element={<AdminRoute><StatsDashboard /></AdminRoute>} />
         <Route path="/admin/revenue" element={<AdminRoute><RevenueDashboard /></AdminRoute>} />

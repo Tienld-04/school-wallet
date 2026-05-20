@@ -1,0 +1,109 @@
+@startuml db-notification
+title Cơ sở dữ liệu **notification_db** (notification-service)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+skinparam roundCorner 6
+skinparam padding 3
+
+skinparam entity {
+    BackgroundColor #FFFFFF
+    BorderColor #6A1B9A
+    HeaderBackgroundColor #AB47BC
+    FontColor #FFFFFF
+    StereotypeFontColor #F3E5F5
+    AttributeFontColor #1F2937
+    AttributeFontSize 11
+    FontSize 13
+    BorderThickness 1.5
+}
+skinparam ArrowColor #374151
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #4B5563
+skinparam ArrowFontSize 11
+
+' =============================================================
+' Bảng: notification
+' =============================================================
+entity "notification" as notification {
+  <color:#B8861B>**# id**</color> : UUID <<PK>>
+  ==
+  * user_id : UUID
+  * title : VARCHAR(255)
+    description : VARCHAR(500)
+  * type : VARCHAR(20)
+    transaction_id : UUID
+    transaction_type : VARCHAR(50)
+    amount : NUMERIC(19,2)
+    direction : VARCHAR(10)
+    counterparty_name : VARCHAR(255)
+    counterparty_phone : VARCHAR(20)
+    transaction_status : VARCHAR(30)
+  * is_read : BOOLEAN
+  * created_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_notification (id)
+  idx_notification_user_id (user_id)
+  idx_notification_created_at (created_at)
+  .. Checks ..
+  type IN ('TRANSACTION','SYSTEM')
+  direction IN ('DEBIT','CREDIT')
+}
+
+' =============================================================
+' Bảng: notification_log
+' =============================================================
+entity "notification_log" as notification_log {
+  <color:#B8861B>**# id**</color> : UUID <<PK>>
+  ==
+  * channel : VARCHAR(10)
+  * recipient : VARCHAR(255)
+    user_id : UUID
+    transaction_id : UUID
+    transaction_type : VARCHAR(50)
+    amount : NUMERIC(19,2)
+    direction : VARCHAR(10)
+  * source : VARCHAR(20)
+  * status : VARCHAR(10)
+    error_message : VARCHAR(500)
+  * created_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_notification_log (id)
+  idx_nlog_transaction_id (transaction_id)
+  idx_nlog_user_id (user_id)
+  idx_nlog_created_at (created_at)
+  .. Checks ..
+  channel IN ('EMAIL','SMS')
+  direction IN ('DEBIT','CREDIT')
+  source IN ('TRANSACTION','INTERNAL')
+  status IN ('SENT','FAILED')
+}
+
+' =============================================================
+' Quan hệ FK (cùng database)
+' =============================================================
+' (Không có FK cứng giữa 2 bảng trong notification_db — cùng nhận sự kiện độc lập)
+
+' =============================================================
+' Cross-service references (logic, không FK cứng)
+'   notification.user_id        → users.user_id (user_db)
+'   notification.transaction_id → transactions.transaction_id (transaction_db)
+'   notification_log.user_id    → users.user_id (user_db)
+'   notification_log.transaction_id → transactions.transaction_id (transaction_db)
+' =============================================================
+
+legend bottom right
+  | Ký hiệu | Ý nghĩa |
+  |---|---|
+  | <b>#</b>          | Khóa chính (PK) |
+  | <b>*</b>          | NOT NULL |
+  | (không *)         | NULL được |
+  | <<PK>>            | Primary key |
+  | <<UQ>>            | UNIQUE constraint |
+  | <color:#1976D2>tên xanh</color> | Cột là FK (cross-service, logic) |
+endlegend
+
+@enduml

@@ -40,6 +40,7 @@ export interface UserResponse {
   role: string;
   kycStatus: string;
   createdAt: string;
+  hasMerchants: boolean;
 }
 
 export interface ApiErrorResponse {
@@ -241,6 +242,33 @@ export interface MerchantRevenue {
   merchantId: string;
   transactionCount: number;
   totalRevenue: number;
+}
+
+/** KPI doanh thu cho user là chủ merchant (filter to_user_id = current user). */
+export interface MerchantEarningsOverview {
+  grossRevenue: number;
+  netRevenue: number;
+  totalFee: number;
+  transactionCount: number;
+  averageNetPerTx: number;
+  topMerchantId: string | null;
+  topMerchantNetRevenue: number;
+}
+
+/** Điểm biểu đồ doanh thu merchant theo period. */
+export interface MerchantEarningsTimeSeriesPoint {
+  period: string;
+  count: number;
+  grossRevenue: number;
+  netRevenue: number;
+}
+
+/** Breakdown doanh thu theo từng merchant của user. */
+export interface MerchantBreakdown {
+  merchantId: string;
+  transactionCount: number;
+  grossRevenue: number;
+  netRevenue: number;
 }
 
 /** Trùng schema với TransactionStatusHistoryResponse ở transaction-service. */

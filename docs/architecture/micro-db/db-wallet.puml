@@ -1,0 +1,107 @@
+@startuml db-wallet
+title Cơ sở dữ liệu **wallet_db** (wallet-service)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+skinparam roundCorner 6
+skinparam padding 3
+
+skinparam entity {
+    BackgroundColor #FFFFFF
+    BorderColor #E65100
+    HeaderBackgroundColor #FFA726
+    FontColor #FFFFFF
+    StereotypeFontColor #FFF3E0
+    AttributeFontColor #1F2937
+    AttributeFontSize 11
+    FontSize 13
+    BorderThickness 1.5
+}
+skinparam ArrowColor #374151
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #4B5563
+skinparam ArrowFontSize 11
+
+' =============================================================
+' Bảng: wallets
+' =============================================================
+entity "wallets" as wallets {
+  <color:#B8861B>**# wallet_id**</color> : UUID <<PK>>
+  ==
+  * user_id : UUID <<UQ>>
+  * balance : NUMERIC(18,2)
+  * status : VARCHAR(20)
+  * wallet_type : VARCHAR(20)
+    daily_limit : NUMERIC(18,2)
+    monthly_limit : NUMERIC(18,2)
+    daily_spent : NUMERIC(18,2)
+    last_daily_reset : DATE
+    monthly_spent : NUMERIC(18,2)
+    last_monthly_reset : DATE
+  * currency : VARCHAR(3)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_wallets (wallet_id)
+  uq_wallets_user_id (user_id)
+  .. Checks ..
+  status IN ('ACTIVE','LOCKED')
+  wallet_type IN ('USER_WALLET','ADMIN_WALLET')
+  balance >= 0
+}
+
+' =============================================================
+' Bảng: wallet_ledger (sổ sao kê)
+' =============================================================
+entity "wallet_ledger" as wallet_ledger {
+  <color:#B8861B>**# entry_id**</color> : UUID <<PK>>
+  ==
+  * <color:#1976D2>wallet_id</color> : UUID <<FK>>
+    transaction_id : UUID
+  * direction : VARCHAR(10)
+  * amount : NUMERIC(18,2)
+  * balance_before : NUMERIC(18,2)
+  * balance_after : NUMERIC(18,2)
+  * reason : VARCHAR(20)
+    note : VARCHAR(255)
+  * created_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_wallet_ledger (entry_id)
+  idx_wallet_ledger_wallet_id (wallet_id)
+  idx_wallet_ledger_transaction_id (transaction_id)
+  idx_wallet_ledger_created_at (created_at)
+  fk_ledger_wallet → wallets(wallet_id)
+  .. Checks ..
+  direction IN ('DEBIT','CREDIT')
+  reason IN ('PAYMENT','TRANSFER_IN','TRANSFER_OUT',
+             'TOP_UP','REFUND','PLATFORM_FEE')
+  amount > 0
+}
+
+' =============================================================
+' Quan hệ FK (cùng database)
+' =============================================================
+wallets ||--o{ wallet_ledger : "ghi sổ sao kê"
+
+' =============================================================
+' Cross-service references (logic, không FK cứng)
+'   wallets.user_id            → users.user_id (user_db)
+'   wallet_ledger.transaction_id → transactions.transaction_id (transaction_db)
+' =============================================================
+
+legend bottom right
+  | Ký hiệu | Ý nghĩa |
+  |---|---|
+  | <b>#</b>          | Khóa chính (PK) |
+  | <b>*</b>          | NOT NULL |
+  | (không *)         | NULL được |
+  | <<PK>>            | Primary key |
+  | <<FK>>            | Foreign key (cùng DB) |
+  | <<UQ>>            | UNIQUE constraint |
+  | <color:#1976D2>tên xanh</color> | Cột là FK |
+endlegend
+
+@enduml
