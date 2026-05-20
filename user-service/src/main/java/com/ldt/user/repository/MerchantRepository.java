@@ -12,6 +12,7 @@ import java.util.UUID;
 public interface MerchantRepository extends JpaRepository<Merchant, UUID>, JpaSpecificationExecutor<Merchant> {
     boolean existsByName(String name);
     boolean existsByNameAndMerchantIdNot(String name, UUID merchantId);
+    boolean existsByUser_UserId(UUID userId);
     List<Merchant> findByUser_UserId(UUID userId);
     List<Merchant> findByActiveTrue();
     List<Merchant> findByActiveTrueAndType(MerchantType type);

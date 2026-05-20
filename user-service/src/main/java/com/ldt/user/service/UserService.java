@@ -18,6 +18,7 @@ import com.ldt.user.model.KycStatus;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.model.UserStatus;
+import com.ldt.user.repository.MerchantRepository;
 import com.ldt.user.repository.UserRepository;
 import com.ldt.user.service.verify.VerifyOTPTokenService;
 import jakarta.transaction.Transactional;
@@ -42,6 +43,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final MerchantRepository merchantRepository;
     private final RestTemplate restTemplate;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
@@ -101,14 +103,19 @@ public class UserService {
     public UserResponse getUserById(UUID userId) {
         User user = userRepository.findById(userId)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return userMapper.toUserResponse(user);
+        UserResponse response = userMapper.toUserResponse(user);
+        response.setHasMerchants(merchantRepository.existsByUser_UserId(userId));
+        return response;
     }
 
     public UserResponse getUserCurent() {
         String user_id = UserContext.getUserId();
-        User user = userRepository.findById(UUID.fromString(user_id))
+        UUID uid = UUID.fromString(user_id);
+        User user = userRepository.findById(uid)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return userMapper.toUserResponse(user);
+        UserResponse response = userMapper.toUserResponse(user);
+        response.setHasMerchants(merchantRepository.existsByUser_UserId(uid));
+        return response;
     }
 
     /**
