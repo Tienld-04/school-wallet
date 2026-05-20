@@ -1,0 +1,66 @@
+@startuml 13-user-revenue-analysis
+title Sơ đồ tuần tự - Doanh thu của chủ dịch vụ
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1976D2
+skinparam ActorBackgroundColor #BBDEFB
+
+actor "Chủ dịch vụ" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "User Service" as US
+database "user_db" as UDB
+participant "Transaction Service" as TS
+database "transaction_db" as TDB
+
+User -> FE : 1: Mở trang Doanh thu
+FE -> GW : 1.1: Yêu cầu danh sách dịch vụ của tôi
+GW -> US : 1.1.1: Chuyển tiếp yêu cầu (kèm userId từ JWT)
+US -> UDB : 1.1.1.1: Truy vấn dịch vụ của user
+UDB --> US : 1.1.1.2: Trả về danh sách
+US --> GW : 1.1.2: Trả về danh sách
+GW --> FE : 1.2: Trả về danh sách
+FE -> FE : 1.3: Lưu ánh xạ ID → tên dịch vụ (dùng cho hiển thị)
+
+User -> FE : 2: Xem chỉ số doanh thu tổng quan
+FE -> GW : 2.1: Yêu cầu chỉ số doanh thu
+GW -> TS : 2.1.1: Chuyển tiếp yêu cầu (kèm userId từ JWT)
+TS -> TDB : 2.1.1.1: Truy vấn tổng doanh thu của user (gross / net / phí)
+TDB --> TS : 2.1.1.2: Trả về dữ liệu
+TS -> TDB : 2.1.1.3: Truy vấn dịch vụ có doanh thu cao nhất
+TDB --> TS : 2.1.1.4: Trả về dữ liệu
+TS --> GW : 2.1.2: Trả về kết quả tổng hợp
+GW --> FE : 2.2: Trả về kết quả
+FE --> User : 2.3: Hiển thị 4 chỉ số doanh thu
+
+User -> FE : 3: Xem biểu đồ doanh thu theo thời gian
+FE -> GW : 3.1: Yêu cầu chuỗi dữ liệu doanh thu
+GW -> TS : 3.1.1: Chuyển tiếp yêu cầu
+TS -> TDB : 3.1.1.1: Truy vấn doanh thu nhóm theo ngày / tuần / tháng
+TDB --> TS : 3.1.1.2: Trả về dữ liệu chuỗi thời gian
+TS --> GW : 3.1.2: Trả về kết quả
+GW --> FE : 3.2: Trả về kết quả
+FE --> User : 3.3: Hiển thị biểu đồ cột doanh thu
+
+User -> FE : 4: Xem doanh thu theo từng dịch vụ
+FE -> GW : 4.1: Yêu cầu doanh thu theo dịch vụ
+GW -> TS : 4.1.1: Chuyển tiếp yêu cầu
+TS -> TDB : 4.1.1.1: Truy vấn doanh thu nhóm theo dịch vụ của user
+TDB --> TS : 4.1.1.2: Trả về danh sách (sắp xếp giảm dần)
+TS --> GW : 4.1.2: Trả về kết quả
+GW --> FE : 4.2: Trả về kết quả
+FE --> User : 4.3: Hiển thị biểu đồ tròn top 5 + bảng chi tiết
+
+User -> FE : 5: Đổi khoảng thời gian / mức chia
+FE -> GW : 5.1: Gọi lại 3 yêu cầu doanh thu với tham số mới
+GW -> TS : 5.1.1: Chuyển tiếp yêu cầu
+TS -> TDB : 5.1.1.1: Truy vấn lại dữ liệu
+TDB --> TS : 5.1.1.2: Trả về dữ liệu mới
+TS --> GW : 5.1.2: Trả về dữ liệu
+GW --> FE : 5.2: Trả về dữ liệu
+FE --> User : 5.3: Cập nhật toàn bộ dashboard
+
+@enduml
