@@ -1,0 +1,147 @@
+@startuml db-user
+title Cơ sở dữ liệu **user_db** (user-service)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+skinparam roundCorner 6
+skinparam padding 3
+
+skinparam entity {
+    BackgroundColor #FFFFFF
+    BorderColor #2E7D32
+    HeaderBackgroundColor #66BB6A
+    FontColor #FFFFFF
+    StereotypeFontColor #E8F5E9
+    AttributeFontColor #1F2937
+    AttributeFontSize 11
+    FontSize 13
+    BorderThickness 1.5
+}
+skinparam ArrowColor #374151
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #4B5563
+skinparam ArrowFontSize 11
+
+' =============================================================
+' Bảng: users
+' =============================================================
+entity "users" as users {
+  <color:#B8861B>**# user_id**</color> : UUID <<PK>>
+  ==
+  * full_name : VARCHAR(100)
+  * phone : VARCHAR(10) <<UQ>>
+  * email : VARCHAR(100) <<UQ>>
+  * password : VARCHAR(255)
+  * role : VARCHAR(20)
+  * status : VARCHAR(20)
+  * kyc_status : VARCHAR(20)
+    last_login_at : TIMESTAMP
+  * failed_login_count : INT
+  * transaction_pin_hash : VARCHAR(255)
+  * pin_failed_attempts : INT
+    pin_locked_until : TIMESTAMP
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_users (user_id)
+  uq_users_phone (phone)
+  uq_users_email (email)
+  .. Checks ..
+  role IN ('USER','ADMIN')
+  status IN ('ACTIVE','LOCKED')
+  kyc_status IN ('UNVERIFIED','PENDING','VERIFIED','REJECTED')
+}
+
+' =============================================================
+' Bảng: user_kyc
+' =============================================================
+entity "user_kyc" as user_kyc {
+  <color:#B8861B>**# kyc_id**</color> : UUID <<PK>>
+  ==
+  * <color:#1976D2>user_id</color> : UUID <<FK,UQ>>
+  * full_name : VARCHAR(100)
+  * date_of_birth : DATE
+  * id_number : VARCHAR(20)
+  * id_issue_date : DATE
+  * id_issue_place : VARCHAR(255)
+    place_of_origin : VARCHAR(255)
+    permanent_address : VARCHAR(255)
+    id_front_url : VARCHAR(500)
+    id_back_url : VARCHAR(500)
+    id_front_image : BYTEA
+    id_back_image : BYTEA
+  * status : VARCHAR(20)
+  * submitted_at : TIMESTAMP
+    verified_by : UUID
+    verified_at : TIMESTAMP
+    rejection_reason : VARCHAR(500)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_user_kyc (kyc_id)
+  uq_user_kyc_user_id (user_id)
+  fk_user_kyc_user → users(user_id)
+  .. Checks ..
+  status IN ('PENDING','VERIFIED','REJECTED')
+}
+
+' =============================================================
+' Bảng: merchants
+' =============================================================
+entity "merchants" as merchants {
+  <color:#B8861B>**# merchant_id**</color> : UUID <<PK>>
+  ==
+  * name : VARCHAR(100)
+  * type : VARCHAR(50)
+  * <color:#1976D2>user_id</color> : UUID <<FK>>
+  * active : BOOLEAN
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  --
+  .. Indexes ..
+  pk_merchants (merchant_id)
+  fk_merchants_user → users(user_id)
+  .. Checks ..
+  type IN ('CANTEEN','PARKING','PRINTING','LIBRARY',
+           'BOOKSTORE','CLUB','EVENT','OTHER')
+}
+
+' =============================================================
+' Bảng: invalidated_tokens
+' =============================================================
+entity "invalidated_tokens" as inv_tokens {
+  <color:#B8861B>**# jti**</color> : VARCHAR(255) <<PK>>
+  ==
+  * expiry_time : TIMESTAMP
+}
+
+' =============================================================
+' Quan hệ FK (cùng database)
+' =============================================================
+users ||--o|  user_kyc  : "có 1 hồ sơ KYC"
+users ||--o{  merchants : "quản lý nhiều"
+
+' =============================================================
+' Cross-service references (logic, không FK cứng)
+'   users.user_id      ← wallets.user_id (wallet_db)
+'   users.user_id      ← transactions.from_user_id / to_user_id (transaction_db)
+'   users.user_id      ← notification.user_id (notification_db)
+'   merchants.merchant_id ← transactions.merchant_id (transaction_db)
+' =============================================================
+
+legend bottom right
+  | Ký hiệu | Ý nghĩa |
+  |---|---|
+  | <b>#</b>          | Khóa chính (PK) |
+  | <b>*</b>          | NOT NULL |
+  | (không *)         | NULL được |
+  | <<PK>>            | Primary key |
+  | <<FK>>            | Foreign key (cùng DB) |
+  | <<UQ>>            | UNIQUE constraint |
+  | <color:#1976D2>tên xanh</color> | Cột là FK |
+endlegend
+
+@enduml
