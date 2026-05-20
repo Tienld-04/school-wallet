@@ -14,5 +14,6 @@ public class UserResponse {
     private String role;
     private String kycStatus;
     private LocalDateTime createdAt;
-
+    // True nếu user sở hữu ít nhất 1 merchant — FE dùng để hiện/ẩn menu "Doanh thu"
+    private boolean hasMerchants;
 }
