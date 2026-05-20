@@ -3,6 +3,9 @@ package com.ldt.transaction.controller;
 import com.ldt.transaction.context.UserContext;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.request.TransactionHistoryRequest;
+import com.ldt.transaction.dto.response.MerchantBreakdownResponse;
+import com.ldt.transaction.dto.response.MerchantEarningsOverviewResponse;
+import com.ldt.transaction.dto.response.MerchantEarningsTimeSeriesPoint;
 import com.ldt.transaction.dto.response.MerchantRevenueResponse;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
 import com.ldt.transaction.dto.response.RevenueOverviewResponse;
@@ -236,6 +239,60 @@ public class TransactionController {
         LocalDate toDate = to != null ? to : today;
         return ResponseEntity.ok(revenueStatsService.getByMerchant(
                 fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX)));
+    }
+
+    // ── Merchant owner earnings (cho USER là chủ merchant — filter to_user_id = currentUser) ──
+
+    /**
+     * KPI doanh thu của user chủ merchant trong [from, to].
+     */
+    @GetMapping("/merchant/revenue/overview")
+    public ResponseEntity<MerchantEarningsOverviewResponse> getMyEarningsOverview(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        UUID userId = UUID.fromString(UserContext.getUserId());
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = from != null ? from : today.minusDays(29);
+        LocalDate toDate = to != null ? to : today;
+        return ResponseEntity.ok(revenueStatsService.getMyEarningsOverview(
+                userId, fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX)));
+    }
+
+    /**
+     * Biểu đồ doanh thu của user chủ merchant theo thời gian.
+     */
+    @GetMapping("/merchant/revenue/timeseries")
+    public ResponseEntity<List<MerchantEarningsTimeSeriesPoint>> getMyEarningsTimeSeries(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "day") String granularity) {
+        UUID userId = UUID.fromString(UserContext.getUserId());
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = from != null ? from : today.minusDays(29);
+        LocalDate toDate = to != null ? to : today;
+        return ResponseEntity.ok(revenueStatsService.getMyEarningsTimeSeries(
+                userId, fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX), granularity));
+    }
+
+    /**
+     * Breakdown theo từng merchant của user.
+     */
+    @GetMapping("/merchant/revenue/by-merchant")
+    public ResponseEntity<List<MerchantBreakdownResponse>> getMyEarningsByMerchant(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        UUID userId = UUID.fromString(UserContext.getUserId());
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = from != null ? from : today.minusDays(29);
+        LocalDate toDate = to != null ? to : today;
+        return ResponseEntity.ok(revenueStatsService.getMyEarningsByMerchant(
+                userId, fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX)));
     }
 
     // VNPay TopUp endpoints

@@ -1,5 +1,8 @@
 package com.ldt.transaction.service;
 
+import com.ldt.transaction.dto.response.MerchantBreakdownResponse;
+import com.ldt.transaction.dto.response.MerchantEarningsOverviewResponse;
+import com.ldt.transaction.dto.response.MerchantEarningsTimeSeriesPoint;
 import com.ldt.transaction.dto.response.MerchantRevenueResponse;
 import com.ldt.transaction.dto.response.RevenueOverviewResponse;
 import com.ldt.transaction.dto.response.RevenueTimeSeriesPoint;
@@ -91,6 +94,84 @@ public class RevenueStatsService {
                         .merchantId((UUID) row[0])
                         .transactionCount(((Number) row[1]).longValue())
                         .totalRevenue(toBigDecimal(row[2]))
+                        .build())
+                .toList();
+    }
+
+    // ── Merchant owner side (filter to_user_id = current user) ──
+
+    /**
+     * KPI doanh thu của user là chủ merchant: gross + net + fee + top merchant.
+     */
+    public MerchantEarningsOverviewResponse getMyEarningsOverview(UUID toUserId, LocalDateTime from, LocalDateTime to) {
+        List<Object[]> rows = transactionRepository.aggregateMerchantEarningsOverview(toUserId, from, to);
+        Object[] kpis = rows.isEmpty()
+                ? new Object[]{0L, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}
+                : rows.get(0);
+
+        long txCount = ((Number) kpis[0]).longValue();
+        BigDecimal gross = toBigDecimal(kpis[1]);
+        BigDecimal net = toBigDecimal(kpis[2]);
+        BigDecimal fee = toBigDecimal(kpis[3]);
+        BigDecimal avgNet = txCount == 0
+                ? BigDecimal.ZERO
+                : net.divide(BigDecimal.valueOf(txCount), 2, RoundingMode.HALF_UP);
+
+        // Top merchant của user — lấy từ kết quả group by merchant
+        UUID topMerchantId = null;
+        BigDecimal topMerchantNet = BigDecimal.ZERO;
+        List<Object[]> merchantRows = transactionRepository.aggregateMerchantEarningsByMerchant(toUserId, from, to);
+        if (!merchantRows.isEmpty()) {
+            Object[] top = merchantRows.get(0);
+            topMerchantId = (UUID) top[0];
+            topMerchantNet = toBigDecimal(top[3]);
+        }
+
+        return MerchantEarningsOverviewResponse.builder()
+                .grossRevenue(gross)
+                .netRevenue(net)
+                .totalFee(fee)
+                .transactionCount(txCount)
+                .averageNetPerTx(avgNet)
+                .topMerchantId(topMerchantId)
+                .topMerchantNetRevenue(topMerchantNet)
+                .build();
+    }
+
+    /**
+     * Doanh thu theo thời gian cho user chủ merchant.
+     */
+    public List<MerchantEarningsTimeSeriesPoint> getMyEarningsTimeSeries(UUID toUserId, LocalDateTime from, LocalDateTime to, String granularity) {
+        String g = granularity == null ? "day" : granularity.toLowerCase();
+        if (!Set.of("day", "week", "month").contains(g)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "granularity chỉ nhận: day | week | month");
+        }
+        return transactionRepository.aggregateMerchantEarningsTimeSeries(toUserId, g, from, to).stream()
+                .map(row -> {
+                    Timestamp ts = (Timestamp) row[0];
+                    long count = ((Number) row[1]).longValue();
+                    BigDecimal gross = toBigDecimal(row[2]);
+                    BigDecimal net = toBigDecimal(row[3]);
+                    return MerchantEarningsTimeSeriesPoint.builder()
+                            .period(ts.toLocalDateTime().toLocalDate().toString())
+                            .count(count)
+                            .grossRevenue(gross)
+                            .netRevenue(net)
+                            .build();
+                })
+                .toList();
+    }
+
+    /**
+     * Breakdown theo từng merchant của user — sort DESC theo net.
+     */
+    public List<MerchantBreakdownResponse> getMyEarningsByMerchant(UUID toUserId, LocalDateTime from, LocalDateTime to) {
+        return transactionRepository.aggregateMerchantEarningsByMerchant(toUserId, from, to).stream()
+                .map(row -> MerchantBreakdownResponse.builder()
+                        .merchantId((UUID) row[0])
+                        .transactionCount(((Number) row[1]).longValue())
+                        .grossRevenue(toBigDecimal(row[2]))
+                        .netRevenue(toBigDecimal(row[3]))
                         .build())
                 .toList();
     }

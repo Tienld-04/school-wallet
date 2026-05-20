@@ -141,4 +141,67 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             nativeQuery = true)
     List<Object[]> aggregateRevenueByMerchant(@Param("from") LocalDateTime from,
                                               @Param("to") LocalDateTime to);
+
+    // ── Merchant earnings (cho USER là chủ merchant — filter to_user_id) ──
+
+    @Query(value =
+            "SELECT " +
+                    "  COUNT(*) AS tx_count, " +
+                    "  COALESCE(SUM(amount), 0) AS gross_revenue, " +
+                    "  COALESCE(SUM(amount - fee), 0) AS net_revenue, " +
+                    "  COALESCE(SUM(fee), 0) AS total_fee " +
+                    "FROM transactions " +
+                    "WHERE to_user_id = :toUserId " +
+                    "  AND merchant_id IS NOT NULL " +
+                    "  AND status = 'SUCCESS' " +
+                    "  AND created_at BETWEEN :from AND :to",
+            nativeQuery = true)
+    List<Object[]> aggregateMerchantEarningsOverview(@Param("toUserId") UUID toUserId,
+                                                     @Param("from") LocalDateTime from,
+                                                     @Param("to") LocalDateTime to);
+
+    @Query(value =
+            "WITH series AS ( " +
+                    "  SELECT generate_series( " +
+                    "    DATE_TRUNC(:granularity, CAST(:from AS timestamp)), " +
+                    "    DATE_TRUNC(:granularity, CAST(:to AS timestamp)), " +
+                    "    CAST('1 ' || :granularity AS interval) " +
+                    "  ) AS period " +
+                    ") " +
+                    "SELECT s.period, " +
+                    "       COUNT(t.transaction_id) AS cnt, " +
+                    "       COALESCE(SUM(t.amount), 0) AS gross_revenue, " +
+                    "       COALESCE(SUM(t.amount - t.fee), 0) AS net_revenue " +
+                    "FROM series s " +
+                    "LEFT JOIN transactions t " +
+                    "  ON DATE_TRUNC(:granularity, t.created_at) = s.period " +
+                    "  AND t.to_user_id = :toUserId " +
+                    "  AND t.merchant_id IS NOT NULL " +
+                    "  AND t.status = 'SUCCESS' " +
+                    "  AND t.created_at BETWEEN :from AND :to " +
+                    "GROUP BY s.period " +
+                    "ORDER BY s.period ASC",
+            nativeQuery = true)
+    List<Object[]> aggregateMerchantEarningsTimeSeries(@Param("toUserId") UUID toUserId,
+                                                       @Param("granularity") String granularity,
+                                                       @Param("from") LocalDateTime from,
+                                                       @Param("to") LocalDateTime to);
+
+    @Query(value =
+            "SELECT " +
+                    "  merchant_id, " +
+                    "  COUNT(*) AS tx_count, " +
+                    "  SUM(amount) AS gross_revenue, " +
+                    "  SUM(amount - fee) AS net_revenue " +
+                    "FROM transactions " +
+                    "WHERE to_user_id = :toUserId " +
+                    "  AND merchant_id IS NOT NULL " +
+                    "  AND status = 'SUCCESS' " +
+                    "  AND created_at BETWEEN :from AND :to " +
+                    "GROUP BY merchant_id " +
+                    "ORDER BY net_revenue DESC",
+            nativeQuery = true)
+    List<Object[]> aggregateMerchantEarningsByMerchant(@Param("toUserId") UUID toUserId,
+                                                       @Param("from") LocalDateTime from,
+                                                       @Param("to") LocalDateTime to);
 }
