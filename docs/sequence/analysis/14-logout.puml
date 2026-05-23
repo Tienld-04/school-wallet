@@ -1,0 +1,53 @@
+@startuml 14-logout-analysis
+title Sơ đồ tuần tự - Đăng xuất tài khoản
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.2
+skinparam roundCorner 8
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1976D2
+skinparam ActorBackgroundColor #BBDEFB
+
+actor "Người dùng" as User
+participant "Front-end" as FE
+participant "API Gateway" as GW
+participant "User Service" as US
+database "user_db" as UDB
+
+User -> FE : 1: Bấm "Đăng xuất"
+FE -> FE : 1.1: Lấy mã xác thực (token) từ thiết bị
+FE -> GW : 1.2: Gửi yêu cầu đăng xuất (kèm token)
+GW -> US : 1.2.1: Chuyển tiếp yêu cầu
+US -> US : 1.2.1.1: Giải mã token, lấy mã định danh phiên
+US -> UDB : 1.2.1.2: Kiểm tra mã định danh phiên đã bị thu hồi chưa
+UDB --> US : 1.2.1.3: Trả về kết quả (chưa thu hồi)
+US -> UDB : 1.2.1.4: Lưu mã định danh phiên vào danh sách thu hồi
+UDB --> US : 1.2.1.5: Xác nhận
+US --> GW : 1.2.2: Trả về xác nhận đăng xuất thành công
+GW --> FE : 1.3: Trả về xác nhận
+FE -> FE : 1.4: Xoá token khỏi thiết bị
+FE --> User : 1.5: Chuyển sang trang đăng nhập
+
+User -> FE : 2: Bấm "Đăng xuất" khi token đã hết hạn
+FE -> FE : 2.1: Lấy mã xác thực (token) từ thiết bị
+FE -> GW : 2.2: Gửi yêu cầu đăng xuất (kèm token)
+GW -> US : 2.2.1: Chuyển tiếp yêu cầu
+US -> US : 2.2.1.1: Giải mã token → không hợp lệ / hết hạn
+US --> GW : 2.2.2: Trả về thông báo lỗi
+GW --> FE : 2.3: Trả về thông báo lỗi
+FE -> FE : 2.4: Bỏ qua lỗi, vẫn xoá token khỏi thiết bị\n(đảm bảo người dùng luôn được đăng xuất phía thiết bị)
+FE --> User : 2.5: Chuyển sang trang đăng nhập
+
+User -> FE : 3: Bấm "Đăng xuất" khi token đã thu hồi trước đó
+FE -> FE : 3.1: Lấy mã xác thực (token) từ thiết bị
+FE -> GW : 3.2: Gửi yêu cầu đăng xuất (kèm token)
+GW -> US : 3.2.1: Chuyển tiếp yêu cầu
+US -> US : 3.2.1.1: Giải mã token, lấy mã định danh phiên
+US -> UDB : 3.2.1.2: Kiểm tra mã định danh phiên đã bị thu hồi chưa
+UDB --> US : 3.2.1.3: Trả về kết quả (đã có trong danh sách thu hồi)
+US --> GW : 3.2.2: Trả về xác nhận (không cần lưu thêm)
+GW --> FE : 3.3: Trả về xác nhận
+FE -> FE : 3.4: Xoá token khỏi thiết bị
+FE --> User : 3.5: Chuyển sang trang đăng nhập
+
+@enduml
