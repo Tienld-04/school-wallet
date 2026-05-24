@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/check-phone",
                                 "/api/v1/otp/**",
                                 "/api/v1/transactions/topup/ipn",
                                 "/ws/**",
