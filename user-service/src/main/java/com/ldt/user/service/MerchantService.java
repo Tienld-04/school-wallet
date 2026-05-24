@@ -148,6 +148,7 @@ public class MerchantService {
                 .active(merchant.getActive())
                 .userId(merchant.getUser().getUserId())
                 .userPhone(merchant.getUser().getPhone())
+                .userName(merchant.getUser().getFullName())
                 .createdAt(merchant.getCreatedAt())
                 .build();
     }

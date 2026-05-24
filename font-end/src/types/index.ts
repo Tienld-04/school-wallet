@@ -89,6 +89,7 @@ export interface MerchantResponse {
   active: boolean;
   userId: string;
   userPhone: string;
+  userName?: string;
   createdAt: string;
 }
 

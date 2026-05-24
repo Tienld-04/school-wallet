@@ -4,6 +4,7 @@ import adminApi from '../../api/adminApi';
 import merchantApi from '../../api/merchantApi';
 import Pagination from '../../components/common/Pagination/Pagination';
 import type { MerchantResponse, MerchantType, MerchantRequest } from '../../types';
+import { getErrorMessage } from '../../utils/errorMessage';
 
 const MerchantManagement: React.FC = () => {
   const [merchants, setMerchants] = useState<MerchantResponse[]>([]);
@@ -86,8 +87,8 @@ const MerchantManagement: React.FC = () => {
       }
       setShowModal(false);
       fetchMerchants();
-    } catch {
-      toast.error(editingId ? 'Cập nhật thất bại' : 'Tạo merchant thất bại');
+    } catch (err) {
+      toast.error(getErrorMessage(err, editingId ? 'Cập nhật thất bại' : 'Tạo merchant thất bại'));
     } finally {
       setSubmitting(false);
     }
@@ -100,8 +101,8 @@ const MerchantManagement: React.FC = () => {
       await adminApi.deleteMerchant(merchantId);
       toast.success('Xóa merchant thành công');
       fetchMerchants();
-    } catch {
-      toast.error('Xóa merchant thất bại');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Xóa merchant thất bại'));
     } finally {
       setDeleting(null);
     }
@@ -172,6 +173,7 @@ const MerchantManagement: React.FC = () => {
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50">
                   <th className="text-left px-6 py-3.5 font-semibold text-slate-600">Tên</th>
+                  <th className="text-left px-6 py-3.5 font-semibold text-slate-600">Chủ dịch vụ</th>
                   <th className="text-left px-6 py-3.5 font-semibold text-slate-600">Loại</th>
                   <th className="text-left px-6 py-3.5 font-semibold text-slate-600">Trạng thái</th>
                   <th className="text-left px-6 py-3.5 font-semibold text-slate-600">Ngày tạo</th>
@@ -182,6 +184,10 @@ const MerchantManagement: React.FC = () => {
                 {merchants.map((m) => (
                   <tr key={m.merchantId} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-800">{m.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-800">{m.userName || '—'}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{m.userPhone}</div>
+                    </td>
                     <td className="px-6 py-4">
                       <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary-50 text-primary-700">
                         {getTypeDesc(m.type)}
