@@ -19,6 +19,9 @@ const authApi = {
 
   changePin: (data: ChangePinRequest): Promise<{ message: string }> =>
     axiosClient.put<{ message: string }>('/auth/change-pin', data),
+
+  checkPhone: (phone: string): Promise<{ exists: boolean }> =>
+    axiosClient.get<{ exists: boolean }>(`/auth/check-phone?phone=${phone}`),
 };
 
 export default authApi;

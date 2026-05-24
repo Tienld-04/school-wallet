@@ -179,7 +179,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
           </div>
 
           <p className="text-indigo-400/30 text-xs">
-            &copy; 2026 School Wallet. All rights reserved.
+            &copy; School Wallet. Design by TienDev.
           </p>
         </div>
       </div>
