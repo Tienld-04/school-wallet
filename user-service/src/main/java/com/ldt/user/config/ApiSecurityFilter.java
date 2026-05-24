@@ -21,7 +21,8 @@ public class ApiSecurityFilter extends OncePerRequestFilter {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/login",
             "/api/auth/register",
-            "/api/auth/forgot-password"
+            "/api/auth/forgot-password",
+            "/api/auth/check-phone"
     );
 
     @Override

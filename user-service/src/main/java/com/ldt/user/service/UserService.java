@@ -56,6 +56,10 @@ public class UserService {
     @Value("${qr.secret-key}")
     private String qrSecretKey;
 
+    public boolean checkPhoneExists(String phone) {
+        return userRepository.existsByPhone(phone);
+    }
+
     @Transactional
     public void createUser(UserCreateRequest userCreateRequest) {
         // 1. Verify token xác thực SĐT

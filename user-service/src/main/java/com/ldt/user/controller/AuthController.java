@@ -53,4 +53,10 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Đổi OTP thành công"));
     }
 
+    @GetMapping("/check-phone")
+    public ResponseEntity<Map<String, Boolean>> checkPhone(@RequestParam String phone) {
+        boolean exists = userService.checkPhoneExists(phone);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
 }
