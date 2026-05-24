@@ -31,10 +31,12 @@ axiosClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const AUTH_PATHS = ['/login', '/register', '/forgot-password'];
+
 axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !AUTH_PATHS.includes(window.location.pathname)) {
       removeToken();
       window.location.href = '/login';
     }

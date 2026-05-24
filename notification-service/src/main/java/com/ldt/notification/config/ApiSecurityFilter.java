@@ -10,12 +10,24 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class ApiSecurityFilter extends OncePerRequestFilter {
 
     @Value("${internal.secret}")
     private String internalSecret;
+
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/api/otp/send",
+            "/api/otp/verify"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,

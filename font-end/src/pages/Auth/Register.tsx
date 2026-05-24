@@ -101,6 +101,11 @@ const Register: React.FC = () => {
     setLoading(true);
     setApiError('');
     try {
+      const { exists } = await authApi.checkPhone(form.phone);
+      if (exists) {
+        setErrors({ phone: 'Số điện thoại này đã được đăng ký.' });
+        return;
+      }
       await otpApi.send(form.phone);
       toast.success('Mã OTP đã được gửi!');
       setStep(STEPS.OTP);
