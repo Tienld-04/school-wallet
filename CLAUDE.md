@@ -131,20 +131,17 @@ npm run dev                     # Vite dev server (port 3000)
 npm run build                   # tsc && vite build
 ```
 
-## Quy tắc làm việc (BẮT BUỘC)
+## Rules & quy ước
 
-- **Xin phê duyệt trước khi code:** Trước khi viết/sửa code mới hoặc chạy subagent để thực thi, PHẢI trình bày kế hoạch (định làm gì, file nào, cách tiếp cận) và **hỏi ý kiến + chờ tôi đồng ý** rồi mới bắt đầu. KHÔNG tự ý code hay spawn agent khi chưa được duyệt.
-- Tác vụ chỉ đọc/khảo sát (đọc file, search, giải thích) thì không cần hỏi.
+Các quy tắc làm việc và quy ước kỹ thuật được tách thành file riêng trong `.claude/rules/` (Claude Code tự nạp lúc khởi động):
 
-## Quy ước & lưu ý quan trọng
+| File | Phạm vi | Nội dung |
+|---|---|---|
+| `workflow.md` | luôn nạp | Quy tắc làm việc BẮT BUỘC: **xin phê duyệt trước khi code / chạy agent** |
+| `conventions.md` | luôn nạp | Env root, bảo mật nội bộ + JWT, ddl-auto vs CHECK, admin endpoint dual-gate, 1 DB/service |
+| `wallet-service.md` | `wallet-service/**` | Lock ví UUID ascending, double-entry, transfer-with-fee, idempotency trong lock |
+| `transaction-service.md` | `transaction-service/**` | Engine 4 pha (TransactionService2), platform fee, idempotency, ActiveMQ afterCommit, topup |
+| `user-service.md` | `user-service/**` | KYC cache evict, đăng ký tạo ví, first-admin, vị trí enum |
 
-- **Env dùng chung:** `EnvLoader` đọc `.env` từ working directory của process → file `.env` ở **gốc repo trùm** `.env` của từng service. Đổi DB password / VNPay creds phải sửa `d:/BE/school-wallet/.env`.
-- **Bảo mật nội bộ:** service downstream KHÔNG tự verify JWT. Gateway verify JWT → gọi `/internal/users/validate?jti` (blacklist) → strip rồi inject `X-User-Id/Role/Phone`. Mọi `/internal/**` bảo vệ bằng header `X-Internal-Secret`.
-- **JWT:** HS512, claims `sub=userId`, `role`, `phone`, `jti`, exp 3h. Logout = lưu `jti` vào `invalidated_tokens`.
-- **`ddl-auto=update` KHÔNG cập nhật CHECK constraint** khi thêm enum value → phải `ALTER TABLE` thủ công (vd `LedgerReason.PLATFORM_FEE`). `schema.sql` hiện thiếu `PLATFORM_FEE` trong CHECK của `wallet_ledger.reason`.
-- **Platform fee:** `platform.fee-rate=0.10`, chỉ áp dụng `/merchant/payment`. Customer trả full amount → merchant nhận `amount-fee`, admin (first ADMIN) nhận `fee`. Customer là admin → fee waive về 0.
-- **Idempotency:** transfer/topup dùng unique `requestId` (FE generate). Wallet lock 2/3 ví theo UUID ascending tránh deadlock.
-- **KYC defense-in-depth:** FE `KycGuard` + BE check `KYC_NOT_VERIFIED` cho sender. Đổi `kycStatus` phải `@CacheEvict(value="users", allEntries=true)`.
-- **Thêm endpoint admin:** khai báo ở gateway `SecurityConfig` AND check role trong controller.
-- **TransactionService2** là engine production (V1 read-only). `TopupCleanupScheduler` đang DISABLED.
+> File có `paths:` chỉ nạp khi Claude đụng file khớp glob (tiết kiệm context); file không có `paths:` nạp mọi phiên.
 
