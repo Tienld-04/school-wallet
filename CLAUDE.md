@@ -20,66 +20,97 @@ Ví điện tử nội bộ. Kiến trúc **Microservices + API Gateway + React 
 
 ## Cấu trúc dự án
 
+> Lưu ý chung: hầu hết **enum** (UserRole, WalletType, TransactionStatus, NotificationType…) nằm trong `model/` cùng entity, **không** ở thư mục `enums/`. Mỗi service đều tự có `ApiSecurityFilter` (đọc header `X-User-*` → `UserContext`) và package `exception/` (AppException, ErrorCode, ErrorResponse, GlobalExceptionHandler).
+
 ```
 school-wallet/
 ├── CLAUDE.md                 # tài liệu này
-├── schema.sql                # DDL tổng hợp toàn bộ DB (4 service)
+├── schema.sql                # DDL tổng hợp toàn bộ DB (4 service có DB)
 ├── .env                      # env DÙNG CHUNG — trùm .env của từng service
 ├── docs/                     # tài liệu thiết kế (xem mục Docs bên dưới)
 ├── .tools/                   # plantuml.jar + script báo cáo
 │
-├── api-gateway/              # com.ldt.gateway
+├── api-gateway/             # com.ldt.gateway — không có DB
 │   └── src/main/java/com/ldt/gateway/
-│       ├── config/           # GatewayConfig (routing), SecurityConfig
-│       ├── filter/           # AuthGlobalFilter (validate jti + inject header)
-│       ├── exception/        # GlobalExceptionHandler, AppException, ErrorCode
-│       └── utils/            # JwtUtil (HMAC-SHA512)
+│       ├── ApiGatewayApplication.java
+│       ├── config/          # GatewayConfig (routing), SecurityConfig (JWT resource server), CorsConfig
+│       ├── filter/          # AuthGlobalFilter (validate jti + strip & inject X-User-*)
+│       ├── exception/       # AppException, ErrorCode, ErrorResponse, GlobalExceptionHandler
+│       └── utils/           # JwtUtil (HMAC-SHA512), EnvLoader
 │
-├── user-service/            # com.ldt.user
+├── user-service/            # com.ldt.user — DB user_service
 │   └── src/main/java/com/ldt/user/
-│       ├── config/          # Security, BCrypt, RestTemplate, Jpa(auditing), Cache, EnvLoader
+│       ├── config/          # ApiSecurityFilter, InternalSecretFilter, BCryptConfig, CacheConfig, JpaConfig(auditing), RestTemplateConfig, EnvLoader
 │       ├── context/         # UserContext (ThreadLocal từ header gateway)
-│       ├── controller/      # Auth, User, Merchant, Admin, Internal
-│       ├── dto/             # auth, kyc, merchant, request, response, wallet
-│       ├── enums/           # UserRole, UserStatus, KycStatus, MerchantType, QrCodeType
-│       ├── exception/  mapper/  model/  repository/
-│       └── service/         # + service/verify (verify OTP token HMAC)
+│       ├── controller/      # Auth, User, Merchant, Admin, InternalUser
+│       ├── dto/             # auth/, kyc/, merchant/, request/, response/, wallet/
+│       ├── enums/           # QrCodeType (CHỈ enum này ở đây)
+│       ├── mapper/          # UserMapper
+│       ├── model/           # entity: User, UserKyc, Merchant, InvalidatedToken
+│       │                    # enum:   UserRole, UserStatus, KycStatus, MerchantType
+│       ├── repository/      # User, UserKyc, Merchant, InvalidatedToken
+│       └── service/         # Auth, User, Admin, Jwt, Kyc, Merchant, InternalUser
+│           └── verify/      # VerifyOTPTokenService (verify OTP token HMAC)
 │
-├── wallet-service/          # com.ldt.wallet
+├── wallet-service/          # com.ldt.wallet — DB wallet_service
 │   └── src/main/java/com/ldt/wallet/
-│       ├── config/  context/  controller/  exception/
-│       ├── dto/             # request, response
-│       ├── model/           # Wallet, WalletLedger (double-entry)
-│       ├── repository/
-│       └── service/         # WalletService (transfer/transfer-with-fee), WalletTopupService
+│       ├── config/          # ApiSecurityFilter, InternalSecretFilter, JpaConfig, RestTemplateConfig, EnvLoader
+│       ├── context/         # UserContext
+│       ├── controller/      # WalletController (/api/wallets), InternalWalletController (/internal/wallets)
+│       ├── dto/             # request/ (Create, Topup, Transfer, TransferWithFee), response/ (Balance, LedgerEntry, Wallet, Page)
+│       ├── model/           # entity: Wallet, WalletLedger (double-entry)
+│       │                    # enum:   LedgerDirection, LedgerReason, WalletStatus, WalletType
+│       ├── repository/      # Wallet, WalletLedger
+│       └── service/         # WalletService (transfer / transfer-with-fee), WalletTopupService
 │
-├── transaction-service/     # com.ldt.transaction
+├── transaction-service/     # com.ldt.transaction — DB transaction_service
 │   └── src/main/java/com/ldt/transaction/
-│       ├── config/  context/  controller/  enums/  exception/  mapper/
-│       ├── dto/             # payment, request, response, topup, transfer, user
-│       ├── event/  producer/ # TransactionNotificationEvent → ActiveMQ
-│       ├── model/           # Transaction, TransactionStatusHistory
-│       ├── repository/  scheduler/  # TopupCleanupScheduler (DISABLED)
-│       └── service/         # TransactionService(V1 read-only), TransactionService2(engine)
+│       ├── config/          # ApiSecurityFilter, JpaConfig, RestTemplateConfig, EnvLoader
+│       ├── context/         # UserContext
+│       ├── controller/      # TransactionController (transfer, payment, history, detail, dashboard, topup)
+│       ├── dto/             # (gốc: TransactionResponse, TransferRequest) + payment/ request/ response/ topup/ transfer/ user/
+│       ├── enums/           # VnPayIpnCode, VnPayTransactionCode
+│       ├── event/           # TransactionNotificationEvent
+│       ├── producer/        # TransactionEventProducer → ActiveMQ topic transaction-notification
+│       ├── mapper/          # TransactionMapper
+│       ├── model/           # entity: Transaction, TransactionStatusHistory
+│       │                    # enum:   TransactionStatus, TransactionType
+│       ├── repository/      # Transaction, TransactionStatusHistory
+│       ├── scheduler/       # TopupCleanupScheduler (DISABLED)
+│       └── service/         # TransactionService (V1 read-only), TransactionService2 (engine),
+│           │                # TransactionStatsService, RevenueStatsService, TransactionStatusHistoryService
 │           └── topup/       # TopupService, VnPayService (HMAC-SHA512)
 │
-├── notification-service/    # com.ldt.notification
+├── notification-service/    # com.ldt.notification — DB notification_service
 │   └── src/main/java/com/ldt/notification/
-│       ├── config/          # WebSocketConfig (STOMP /ws), ActiveMQ, Redis
-│       ├── consumer/        # TransactionEventConsumer (topic transaction-notification)
-│       ├── context/  controller/  dto/  event/  exception/  model/  repository/
-│       └── service/         # Otp, Email(SendGrid), SpeedSms, Notification, WebSocketNoti
+│       ├── config/          # ApiSecurityFilter, JmsConfig (ActiveMQ), RedisConfig, WebSocketConfig (STOMP /ws), BCryptConfig, RestTemplateConfig, EnvLoader
+│       ├── consumer/        # TransactionEventConsumer (listen topic transaction-notification)
+│       ├── context/         # UserContext
+│       ├── controller/      # NotificationController (inbox), OtpController, InternalNotificationController (send-email)
+│       ├── dto/             # NotificationResponse, OtpSend/Verify(+Response), SendEmailRequest
+│       ├── event/           # TransactionNotificationEvent
+│       ├── model/           # entity: Notification, NotificationLog
+│       │                    # enum:   NotificationChannel, NotificationDirection, NotificationSource, NotificationStatus, NotificationType
+│       ├── repository/      # Notification, NotificationLog
+│       └── service/         # Otp, Email (SendGrid), SpeedSms, Notification, NotificationTransaction, NotificationLog, WebSocketNoti
 │
-└── font-end/                # React 19 + TS + Vite
-    ├── package.json  vite.config.ts  tailwind.config.js  vercel.json
+└── font-end/                # React 19 + TS + Vite (dev port 3000)
+    ├── package.json  vite.config.ts  tailwind.config.js  tsconfig.json  vercel.json  index.html
     └── src/
-        ├── api/             # axiosClient + authApi/userApi/walletApi/transactionApi/...
-        ├── assets/styles/
-        ├── components/      # common/ (Button,Input,Loading,Pagination,KycGuard), qr/
+        ├── main.tsx  App.tsx  index.css  vite-env.d.ts
+        ├── api/             # axiosClient + authApi, userApi, walletApi, transactionApi,
+        │                    #   merchantApi, merchantStatsApi, adminApi, adminStatsApi, otpApi
+        ├── components/
+        │   ├── common/      # Button/, Input/, Loading/, Pagination/, KycGuard.tsx
+        │   └── qr/          # MyQrCard, QrScanner, QrTransferScreen
         ├── contexts/        # AuthContext (token + full user + refreshUser)
         ├── hooks/           # useAuth
         ├── layouts/         # MainLayout (sidebar user/admin), AuthLayout
-        ├── pages/           # user pages + Auth/ + admin/
+        ├── pages/           # USER: Dashboard, Transfer, Payment, TopUp, TopUpResult,
+        │   │                #       TransactionHistory, TransactionLookup, MyMerchants,
+        │   │                #       MerchantRevenueDashboard, Profile
+        │   ├── Auth/        # Login, Register, ForgotPassword
+        │   └── admin/       # StatsDashboard, RevenueDashboard, UserManagement, MerchantManagement, KycManagement
         ├── routes/          # AppRoutes (PrivateRoute, AdminRoute, GuestRoute)
         ├── types/           # index.ts — toàn bộ interface request/response
         └── utils/           # storage, validators, errorMessage
@@ -99,6 +130,11 @@ npm install
 npm run dev                     # Vite dev server (port 3000)
 npm run build                   # tsc && vite build
 ```
+
+## Quy tắc làm việc (BẮT BUỘC)
+
+- **Xin phê duyệt trước khi code:** Trước khi viết/sửa code mới hoặc chạy subagent để thực thi, PHẢI trình bày kế hoạch (định làm gì, file nào, cách tiếp cận) và **hỏi ý kiến + chờ tôi đồng ý** rồi mới bắt đầu. KHÔNG tự ý code hay spawn agent khi chưa được duyệt.
+- Tác vụ chỉ đọc/khảo sát (đọc file, search, giải thích) thì không cần hỏi.
 
 ## Quy ước & lưu ý quan trọng
 
