@@ -271,9 +271,6 @@ const Transfer: React.FC = () => {
               <p className="font-semibold text-slate-800 text-base">{recipient.fullName}</p>
               <p className="text-sm text-slate-500 mt-0.5">{recipient.phone}</p>
             </div>
-            <div className="ml-auto">
-              <span className="text-xs bg-secondary-100 text-secondary-700 px-2.5 py-1 rounded-full font-medium">Đã xác minh</span>
-            </div>
           </div>
 
           {/* Số tiền */}
