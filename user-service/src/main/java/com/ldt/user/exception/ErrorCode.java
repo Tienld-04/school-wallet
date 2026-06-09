@@ -39,8 +39,8 @@ public enum ErrorCode {
     KYC_NOT_FOUND(1030, "Không tìm thấy hồ sơ KYC", HttpStatus.NOT_FOUND),
     KYC_ID_NUMBER_EXISTS(1032, "Số CCCD đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST),
     ADMIN_NOT_CONFIGURED(1033, "Hệ thống chưa cấu hình tài khoản admin", HttpStatus.INTERNAL_SERVER_ERROR),
-    PIN_MISMATCH(1034, "Xác nhận mã OTP không khớp", HttpStatus.BAD_REQUEST);
-
+    PIN_MISMATCH(1034, "Xác nhận mã OTP không khớp", HttpStatus.BAD_REQUEST),
+    ADMIN_ACCESS_DENIED(1035, "Admin không được phép cung cấp dịch vụ, hãy thêm dịch vụ cho tài khoản người dùng", HttpStatus.FORBIDDEN);
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.message = message;
         this.code = code;
