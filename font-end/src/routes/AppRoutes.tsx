@@ -1,25 +1,29 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import Loading from '../components/common/Loading/Loading';
+// Login giữ import tĩnh: là trang vào đầu tiên, tránh nháy spinner khi mở app.
 import Login from '../pages/Auth/Login';
-import Register from '../pages/Auth/Register';
-import ForgotPassword from '../pages/Auth/ForgotPassword';
-import MainLayout from '../layouts/MainLayout';
-import Dashboard from '../pages/Dashboard';
-import Transfer from '../pages/Transfer';
-import Payment from '../pages/Payment';
-import TopUp from '../pages/TopUp';
-import TopUpResult from '../pages/TopUpResult';
-import TransactionHistory from '../pages/TransactionHistory';
-import Profile from '../pages/Profile';
-import UserManagement from '../pages/admin/UserManagement';
-import MerchantManagement from '../pages/admin/MerchantManagement';
-import KycManagement from '../pages/admin/KycManagement';
-import StatsDashboard from '../pages/admin/StatsDashboard';
-import RevenueDashboard from '../pages/admin/RevenueDashboard';
-import MerchantRevenueDashboard from '../pages/MerchantRevenueDashboard';
-import TransactionLookup from '../pages/TransactionLookup';
-import MyMerchants from '../pages/MyMerchants';
+
+// Các trang còn lại lazy-load để tách khỏi bundle chính (recharts/html5-qrcode chỉ tải khi cần).
+const Register = lazy(() => import('../pages/Auth/Register'));
+const ForgotPassword = lazy(() => import('../pages/Auth/ForgotPassword'));
+const MainLayout = lazy(() => import('../layouts/MainLayout'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Transfer = lazy(() => import('../pages/Transfer'));
+const Payment = lazy(() => import('../pages/Payment'));
+const TopUp = lazy(() => import('../pages/TopUp'));
+const TopUpResult = lazy(() => import('../pages/TopUpResult'));
+const TransactionHistory = lazy(() => import('../pages/TransactionHistory'));
+const Profile = lazy(() => import('../pages/Profile'));
+const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
+const MerchantManagement = lazy(() => import('../pages/admin/MerchantManagement'));
+const KycManagement = lazy(() => import('../pages/admin/KycManagement'));
+const StatsDashboard = lazy(() => import('../pages/admin/StatsDashboard'));
+const RevenueDashboard = lazy(() => import('../pages/admin/RevenueDashboard'));
+const MerchantRevenueDashboard = lazy(() => import('../pages/MerchantRevenueDashboard'));
+const TransactionLookup = lazy(() => import('../pages/TransactionLookup'));
+const MyMerchants = lazy(() => import('../pages/MyMerchants'));
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -38,8 +42,15 @@ const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
 };
 
+const PageFallback: React.FC = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <Loading size="lg" />
+  </div>
+);
+
 const AppRoutes: React.FC = () => {
   return (
+    <Suspense fallback={<PageFallback />}>
     <Routes>
       <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
@@ -65,6 +76,7 @@ const AppRoutes: React.FC = () => {
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </Suspense>
   );
 };
 
