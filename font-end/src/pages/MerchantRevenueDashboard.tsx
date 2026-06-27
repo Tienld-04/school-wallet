@@ -67,6 +67,7 @@ const MerchantRevenueDashboard: React.FC = () => {
   const [granularity, setGranularity] = useState<StatsGranularity>('day');
   const [loading, setLoading] = useState(true);
   const [merchantsLoaded, setMerchantsLoaded] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Map merchantId → name (chỉ từ merchants user sở hữu)
   const merchantNameMap = useMemo(() => {
@@ -129,6 +130,29 @@ const MerchantRevenueDashboard: React.FC = () => {
 
   const resolveMerchantName = (id: string) => merchantNameMap.get(id) ?? id.slice(0, 8) + '…';
 
+  const handleExport = async () => {
+    if (from > to) {
+      // from/to dạng yyyy-MM-dd → so sánh chuỗi = so sánh thời gian.
+      toast.error('Ngày bắt đầu phải trước ngày kết thúc');
+      return;
+    }
+    setExporting(true);
+    try {
+      // overview & byMerchant trong state đã đồng bộ với from/to (fetchAll chạy khi range đổi).
+      // Chỉ fetch riêng time series ở mức 'day' để luôn có chi tiết từng ngày,
+      // vì biểu đồ có thể đang ở mức 'week'/'month'.
+      const daily = await merchantStatsApi.getTimeSeries('day', from, to);
+      // Dynamic import: exceljs (nặng) chỉ tải khi user thực sự xuất file.
+      const { exportMerchantRevenue } = await import('../utils/exportMerchantRevenue');
+      await exportMerchantRevenue({ from, to, overview, daily, byMerchant, resolveMerchantName });
+      toast.success('Đã xuất file Excel');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Không thể xuất file Excel'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const pieData = useMemo(() => {
     if (byMerchant.length === 0) return [];
     const top5 = byMerchant.slice(0, 5);
@@ -184,19 +208,38 @@ const MerchantRevenueDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Doanh thu</h1>
           <p className="text-sm text-slate-500">Doanh thu từ các dịch vụ bạn cung cấp</p>
         </div>
-        <button
-          onClick={fetchAll}
-          disabled={loading}
-          className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-50"
-          title="Tải lại"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loading ? 'animate-spin' : ''}>
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-            <path d="M21 3v5h-5" />
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-            <path d="M8 16H3v5" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={loading || exporting}
+            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-colors"
+            title="Xuất doanh thu ra file Excel"
+          >
+            {exporting ? (
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            )}
+            {exporting ? 'Đang xuất…' : 'Xuất Excel'}
+          </button>
+          <button
+            onClick={fetchAll}
+            disabled={loading}
+            className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-50"
+            title="Tải lại"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loading ? 'animate-spin' : ''}>
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Filter range */}
