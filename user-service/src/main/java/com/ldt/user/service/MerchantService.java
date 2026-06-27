@@ -8,6 +8,7 @@ import com.ldt.user.exception.ErrorCode;
 import com.ldt.user.model.Merchant;
 import com.ldt.user.model.MerchantType;
 import com.ldt.user.model.User;
+import com.ldt.user.model.UserRole;
 import com.ldt.user.repository.MerchantRepository;
 import com.ldt.user.repository.UserRepository;
 import jakarta.persistence.criteria.Predicate;
@@ -37,7 +38,9 @@ public class MerchantService {
         MerchantType type = parseMerchantType(request.getType());
         User user = userRepository.findByPhone(request.getUserPhone())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
+        if(user.getRole().equals(UserRole.ADMIN)){
+            throw new AppException(ErrorCode.ADMIN_ACCESS_DENIED);
+        }
         Merchant merchant = Merchant.builder()
                 .name(request.getName())
                 .type(type)
