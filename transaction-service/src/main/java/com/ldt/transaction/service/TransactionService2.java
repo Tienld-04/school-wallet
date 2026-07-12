@@ -3,19 +3,19 @@ package com.ldt.transaction.service;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
-import com.ldt.transaction.dto.transfer.WalletTransferRequest;
-import com.ldt.transaction.dto.transfer.WalletTransferWithFeeRequest;
 import com.ldt.transaction.dto.user.InternalVerifyPinRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.event.TransactionNotificationEvent;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
+import com.ldt.transaction.grpc.WalletGrpcClient;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.producer.TransactionEventProducer;
 import com.ldt.transaction.repository.TransactionRepository;
+import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,9 +52,10 @@ public class TransactionService2 {
     private final TransactionEventProducer notificationProducer;
     private final TransactionStatusHistoryService statusHistoryService;
     private final TransactionTemplate transactionTemplate;
+    private final WalletGrpcClient walletGrpcClient;
 
-    @Value("${service.wallet-service.url}")
-    private String walletServiceUrl;
+    // @Value("${service.wallet-service.url}")
+    // private String walletServiceUrl;
 
     @Value("${user-service.url}")
     private String userServiceUrl;
@@ -347,19 +348,33 @@ public class TransactionService2 {
      */
     private WalletCallResult callWalletTransfer(TransactionContext ctx, UserPair users,
                                                 UUID transactionId, BigDecimal amount) {
-        WalletTransferRequest req = new WalletTransferRequest();
-        req.setFromUserId(users.from().getUserId());
-        req.setToUserId(users.to().getUserId());
-        req.setAmount(amount);
-        req.setTransactionId(transactionId);
-        req.setReason(ctx.walletReason());
-        req.setNote(ctx.description());
+        // Using HTTP 5
+        // WalletTransferRequest req = new WalletTransferRequest();
+        // req.setFromUserId(users.from().getUserId());
+        // req.setToUserId(users.to().getUserId());
+        // req.setAmount(amount);
+        // req.setTransactionId(transactionId);
+        // req.setReason(ctx.walletReason());
+        // req.setNote(ctx.description());
+        // try {
+        //     restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer", req, Void.class);
+        //     return WalletCallResult.ok();
+        // } catch (HttpClientErrorException ex) {
+        //     log.warn("Wallet transfer rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
+        //     return WalletCallResult.fail(ex.getResponseBodyAsString());
+        // } catch (Exception ex) {
+        //     log.error("Wallet transfer error for tx {}: {}", transactionId, ex.getMessage(), ex);
+        //     return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+        // }
+        // Using gRPC
         try {
-            restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer", req, Void.class);
+            walletGrpcClient.transfer(users.from().getUserId(), users.to().getUserId(),
+                    amount, transactionId, ctx.walletReason(), ctx.description());
             return WalletCallResult.ok();
-        } catch (HttpClientErrorException ex) {
-            log.warn("Wallet transfer rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
-            return WalletCallResult.fail(ex.getResponseBodyAsString());
+        } catch (StatusRuntimeException ex) {
+            String message = describe(ex);
+            log.warn("Wallet transfer rejected for tx {}: {}", transactionId, message);
+            return WalletCallResult.fail(message);
         } catch (Exception ex) {
             log.error("Wallet transfer error for tx {}: {}", transactionId, ex.getMessage(), ex);
             return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
@@ -373,25 +388,45 @@ public class TransactionService2 {
     private WalletCallResult callWalletTransferWithFee(TransactionContext ctx, UserPair users,
                                                        UserInternalResponse admin, UUID transactionId,
                                                        BigDecimal amount, BigDecimal fee) {
-        WalletTransferWithFeeRequest req = new WalletTransferWithFeeRequest();
-        req.setFromUserId(users.from().getUserId());
-        req.setToUserId(users.to().getUserId());
-        req.setPlatformUserId(admin.getUserId());
-        req.setAmount(amount);
-        req.setFee(fee);
-        req.setTransactionId(transactionId);
-        req.setNote(ctx.description());
+        // Using HTTP 5
+        // WalletTransferWithFeeRequest req = new WalletTransferWithFeeRequest();
+        // req.setFromUserId(users.from().getUserId());
+        // req.setToUserId(users.to().getUserId());
+        // req.setPlatformUserId(admin.getUserId());
+        // req.setAmount(amount);
+        // req.setFee(fee);
+        // req.setTransactionId(transactionId);
+        // req.setNote(ctx.description());
+        // try {
+        //     restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer-with-fee",
+        //             req, Void.class);
+        //     return WalletCallResult.ok();
+        // } catch (HttpClientErrorException ex) {
+        //     log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
+        //     return WalletCallResult.fail(ex.getResponseBodyAsString());
+        // } catch (Exception ex) {
+        //     log.error("Wallet transfer-with-fee error for tx {}: {}", transactionId, ex.getMessage(), ex);
+        //     return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+        // }
+        // Using gRPC
         try {
-            restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer-with-fee",
-                    req, Void.class);
+            walletGrpcClient.transferWithFee(users.from().getUserId(), users.to().getUserId(),
+                    admin.getUserId(), amount, fee, transactionId, ctx.description());
             return WalletCallResult.ok();
-        } catch (HttpClientErrorException ex) {
-            log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
-            return WalletCallResult.fail(ex.getResponseBodyAsString());
+        } catch (StatusRuntimeException ex) {
+            String message = describe(ex);
+            log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, message);
+            return WalletCallResult.fail(message);
         } catch (Exception ex) {
             log.error("Wallet transfer-with-fee error for tx {}: {}", transactionId, ex.getMessage(), ex);
             return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
         }
+    }
+
+    /** Lấy message nghiệp vụ từ gRPC error (description); fallback về tên mã status nếu rỗng. */
+    private static String describe(StatusRuntimeException ex) {
+        String description = ex.getStatus().getDescription();
+        return description != null ? description : ex.getStatus().getCode().name();
     }
 
     /**
