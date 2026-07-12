@@ -4,17 +4,18 @@ import com.ldt.transaction.dto.topup.InitiateTopupRequest;
 import com.ldt.transaction.dto.topup.InitiateTopupResponse;
 import com.ldt.transaction.dto.topup.TopupStatusResponse;
 import com.ldt.transaction.dto.topup.VnPayIpnResponse;
-import com.ldt.transaction.dto.topup.WalletTopupRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.enums.VnPayIpnCode;
 import com.ldt.transaction.enums.VnPayTransactionCode;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
+import com.ldt.transaction.grpc.WalletGrpcClient;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.repository.TransactionRepository;
 import com.ldt.transaction.service.TransactionStatusHistoryService;
+import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,9 +43,10 @@ public class TopupService {
     private final TransactionStatusHistoryService statusHistoryService;
     private final VnPayService vnPayService;
     private final RestTemplate restTemplate;
+    private final WalletGrpcClient walletGrpcClient;
 
-    @Value("${service.wallet-service.url}")
-    private String walletServiceUrl;
+    // @Value("${service.wallet-service.url}")
+    // private String walletServiceUrl;
 
     @Value("${user-service.url}")
     private String userServiceUrl;
@@ -260,17 +262,32 @@ public class TopupService {
     }
 
     private void creditWallet(Transaction tx) {
-        WalletTopupRequest req = new WalletTopupRequest();
-        req.setToUserId(tx.getToUserId());
-        req.setAmount(tx.getAmount());
-        req.setTransactionId(tx.getTransactionId());
-        req.setNote("Nap tien VNPay - " + tx.getRequestId());
+        // Using HTTP 5
+        // WalletTopupRequest req = new WalletTopupRequest();
+        // req.setToUserId(tx.getToUserId());
+        // req.setAmount(tx.getAmount());
+        // req.setTransactionId(tx.getTransactionId());
+        // req.setNote("Nap tien VNPay - " + tx.getRequestId());
+        // try {
+        //     restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/topup", req, Void.class);
+        // } catch (HttpClientErrorException ex) {
+        //     log.warn("Wallet topup rejected for tx {}: {}",
+        //             tx.getTransactionId(), ex.getResponseBodyAsString());
+        //     throw new AppException(ErrorCode.TOPUP_FAILED, ex.getResponseBodyAsString());
+        // } catch (Exception ex) {
+        //     log.error("Wallet topup error for tx {}: {}",
+        //             tx.getTransactionId(), ex.getMessage(), ex);
+        //     throw new AppException(ErrorCode.TOPUP_FAILED, "Lỗi hệ thống: " + ex.getMessage());
+        // }
+        // Using gRPC
         try {
-            restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/topup", req, Void.class);
-        } catch (HttpClientErrorException ex) {
-            log.warn("Wallet topup rejected for tx {}: {}",
-                    tx.getTransactionId(), ex.getResponseBodyAsString());
-            throw new AppException(ErrorCode.TOPUP_FAILED, ex.getResponseBodyAsString());
+            walletGrpcClient.topup(tx.getToUserId(), tx.getAmount(), tx.getTransactionId(),
+                    "Nap tien VNPay - " + tx.getRequestId());
+        } catch (StatusRuntimeException ex) {
+            String description = ex.getStatus().getDescription();
+            String message = description != null ? description : ex.getStatus().getCode().name();
+            log.warn("Wallet topup rejected for tx {}: {}", tx.getTransactionId(), message);
+            throw new AppException(ErrorCode.TOPUP_FAILED, message);
         } catch (Exception ex) {
             log.error("Wallet topup error for tx {}: {}",
                     tx.getTransactionId(), ex.getMessage(), ex);

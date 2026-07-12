@@ -38,7 +38,7 @@ spring:
     in-memory: false
   jms:
     pub-sub-domain: true
-
+#  REST /internal/wallets/*
 service:
   wallet-service:
     url: "${WALLET_SERVICE_URL:http://localhost:8082}"
@@ -46,6 +46,13 @@ user-service:
   url: "${USER_SERVICE_URL:http://localhost:8081}"
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
+
+# gRPC client → wallet-service
+grpc:
+  client:
+    wallet:
+      address: "static://${WALLET_GRPC_HOST:localhost}:${WALLET_GRPC_PORT:9090}"
+      negotiation-type: plaintext
 
 platform:
   fee-rate: "${PLATFORM_FEE_RATE:0.10}"
