@@ -31,3 +31,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
+
+# gRPC server
+grpc:
+  server:
+    port: "${WALLET_GRPC_PORT:9090}"
