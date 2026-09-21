@@ -87,9 +87,12 @@ services:
       ACTIVEMQ_BROKER_URL: "tcp://activemq:61616"
       WALLET_SERVICE_URL: "http://wallet-service:8082"
       USER_SERVICE_URL: "http://user-service:8081"
+      WALLET_GRPC_HOST: "wallet-service"
     depends_on:
       postgres: { condition: service_healthy }
       activemq: { condition: service_started }
+      wallet-service: { condition: service_started }
+      user-service: { condition: service_started }
     restart: unless-stopped
     networks: [school-wallet]
 
