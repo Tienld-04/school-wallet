@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class KycRejectRequest {
-    @NotBlank(message = "Lý do từ chối không được để trống")
-    @Size(max = 500, message = "Lý do tối đa 500 ký tự")
+    @NotBlank(message = "{validation.rejection_reason.required}")
+    @Size(max = 500, message = "{validation.rejection_reason.max_length}")
     private String rejectionReason;
 }

@@ -1,5 +1,6 @@
 package com.ldt.transaction.controller;
 
+import com.ldt.transaction.constant.UserConstants;
 import com.ldt.transaction.context.UserContext;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.request.TransactionHistoryRequest;
@@ -150,7 +151,7 @@ public class TransactionController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        if (!"ADMIN".equals(UserContext.getRole())) {
+        if (!UserConstants.ROLE_ADMIN.equals(UserContext.getRole())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         LocalDate today = LocalDate.now();
@@ -172,7 +173,7 @@ public class TransactionController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "day") String granularity) {
-        if (!"ADMIN".equals(UserContext.getRole())) {
+        if (!UserConstants.ROLE_ADMIN.equals(UserContext.getRole())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         LocalDate today = LocalDate.now();
@@ -192,7 +193,7 @@ public class TransactionController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        if (!"ADMIN".equals(UserContext.getRole())) {
+        if (!UserConstants.ROLE_ADMIN.equals(UserContext.getRole())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         LocalDate today = LocalDate.now();
@@ -212,7 +213,7 @@ public class TransactionController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "day") String granularity) {
-        if (!"ADMIN".equals(UserContext.getRole())) {
+        if (!UserConstants.ROLE_ADMIN.equals(UserContext.getRole())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         LocalDate today = LocalDate.now();
@@ -231,7 +232,7 @@ public class TransactionController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        if (!"ADMIN".equals(UserContext.getRole())) {
+        if (!UserConstants.ROLE_ADMIN.equals(UserContext.getRole())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         LocalDate today = LocalDate.now();

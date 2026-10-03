@@ -3,7 +3,7 @@
 Ví điện tử nội bộ. Kiến trúc **Microservices + API Gateway + React SPA**.
 
 - **Stack BE:** Spring Boot 3.5.10, Java 21, Spring Data JPA, Spring Security (Resource Server JWT HS512), Spring Cloud Gateway (Reactive WebFlux), Maven (mvnw wrapper).
-- **Hạ tầng:** PostgreSQL (mỗi service 1 DB, KHÔNG có FK xuyên service), Redis (cache + OTP), ActiveMQ (topic pub/sub), WebSocket/STOMP (SockJS), VNPay sandbox (topup), SendGrid (email), SpeedSMS (SMS OTP).
+- **Hạ tầng:** PostgreSQL (mỗi service 1 DB, KHÔNG có FK xuyên service), Redis (cache + OTP), ActiveMQ (topic pub/sub), gRPC (transaction → wallet, port 9090), WebSocket/STOMP (SockJS), VNPay sandbox (topup), SendGrid (email), SpeedSMS (SMS OTP).
 - **Stack FE:** React 19 + TypeScript, Vite 6, Tailwind CSS 3, React Router 7, Axios, react-toastify, recharts, html5-qrcode, qrcode.react.
 - Base package mọi service BE: `com.ldt.<service>`.
 
@@ -13,10 +13,30 @@ Ví điện tử nội bộ. Kiến trúc **Microservices + API Gateway + React 
 |---|---|---|
 | `api-gateway` | 8080 | JWT auth, routing, inject header `X-User-*`, CORS, forward WebSocket |
 | `user-service` | 8081 | User, auth, PIN, KYC, QR, merchant CRUD, internal lookup |
-| `wallet-service` | 8082 | Ví, hạn mức, transfer 2-bên, transfer 3-bên (split fee), topup CREDIT |
-| `transaction-service` | 8084 | Orchestration transfer/payment/topup, history, dashboard, VNPay |
+| `wallet-service` | 8082 (+ gRPC 9090) | Ví, hạn mức, transfer 2-bên, transfer 3-bên (split fee), topup CREDIT |
+| `transaction-service` | 8084 | Orchestration transfer/payment/topup (gọi wallet qua gRPC), history, dashboard, VNPay |
 | `notification-service` | 8085 | OTP, email, SMS, inbox, ActiveMQ consumer, WebSocket push |
 | `font-end` | 3000 (dev) | React SPA, đăng nhập phone + password, role USER/ADMIN |
+
+## Giao tiếp nội bộ giữa các service
+
+| Caller → Callee | Kênh | Nội dung |
+|---|---|---|
+| gateway → user-service | REST | `/internal/users/validate?jti` (check blacklist token) |
+| user-service → wallet-service | REST | `POST /internal/wallets` — tạo ví lúc đăng ký |
+| user-service → notification-service | REST | `/internal/notifications/send-email` |
+| transaction-service → user-service | REST | lookup user (`TransactionService2`, `TopupService`) |
+| **transaction-service → wallet-service** | **gRPC 9090** | `Transfer`, `TransferWithFee`, `Topup` |
+| transaction-service → notification-service | ActiveMQ topic | `transaction-notification` |
+
+### gRPC (branch `feature/grpc-contract`)
+
+- **Server:** `WalletGrpcService` (`@GrpcService`) + `GrpcExceptionAdvice` map `ErrorCode` → `io.grpc.Status`.
+- **Client:** `WalletGrpcClient` (`@GrpcClient("wallet")`), blocking stub, deadline 10s.
+- **Proto bị copy 2 bản y hệt:** `wallet-service/src/main/proto/wallet.proto` và `transaction-service/src/main/proto/wallet.proto`, cùng `java_package = com.ldt.wallet.grpc`. Docker build context tách theo từng service nên chưa gộp 1 nguồn được → **sửa 1 bên phải sửa cả 2**, lệch nhau vẫn compile pass.
+- **REST cũ đã comment:** `/internal/wallets/{transfer,transfer-with-fee,topup}` trong `InternalWalletController` — chỉ còn `POST /internal/wallets`. Đây là migrate **một phần**: lookup sang user-service vẫn là RestTemplate.
+- **Dial:** client dùng `static://${WALLET_GRPC_HOST}:${WALLET_GRPC_PORT}`. `.env` gốc set `localhost` (đúng khi chạy trên host) → docker-compose **phải** override `WALLET_GRPC_HOST: wallet-service` cho transaction-service, nếu không container tự gọi chính mình.
+- ⚠️ **Port 9090 không qua `ApiSecurityFilter`** (đó là servlet filter, gRPC là Netty listener riêng) → 3 RPC này **chưa check `X-Internal-Secret`**. Hiện chỉ an toàn nhờ 9090 không publish ra host, chỉ reachable trong network `school-wallet`. Muốn chặn thì cần `ServerInterceptor` + `ClientInterceptor`.
 
 ## Cấu trúc dự án
 
@@ -54,10 +74,13 @@ school-wallet/
 │
 ├── wallet-service/          # com.ldt.wallet — DB wallet_service
 │   └── src/main/java/com/ldt/wallet/
-│       ├── config/          # ApiSecurityFilter, InternalSecretFilter, JpaConfig, RestTemplateConfig, EnvLoader
+│       ├── config/          # ApiSecurityFilter, JpaConfig, RestTemplateConfig, EnvLoader
+│       │                    #   (InternalSecretFilter đã comment — ApiSecurityFilter thay thế)
 │       ├── context/         # UserContext
-│       ├── controller/      # WalletController (/api/wallets), InternalWalletController (/internal/wallets)
+│       ├── controller/      # WalletController (/api/wallets), InternalWalletController (/internal/wallets — chỉ còn createWallet)
 │       ├── dto/             # request/ (Create, Topup, Transfer, TransferWithFee), response/ (Balance, LedgerEntry, Wallet, Page)
+│       ├── grpc/            # WalletGrpcService (@GrpcService), GrpcExceptionAdvice
+│       │                    #   proto: src/main/proto/wallet.proto
 │       ├── model/           # entity: Wallet, WalletLedger (double-entry)
 │       │                    # enum:   LedgerDirection, LedgerReason, WalletStatus, WalletType
 │       ├── repository/      # Wallet, WalletLedger
@@ -71,6 +94,8 @@ school-wallet/
 │       ├── dto/             # (gốc: TransactionResponse, TransferRequest) + payment/ request/ response/ topup/ transfer/ user/
 │       ├── enums/           # VnPayIpnCode, VnPayTransactionCode
 │       ├── event/           # TransactionNotificationEvent
+│       ├── grpc/            # WalletGrpcClient (@GrpcClient("wallet"), blocking stub, deadline 10s)
+│       │                    #   proto: src/main/proto/wallet.proto (BẢN COPY của wallet-service)
 │       ├── producer/        # TransactionEventProducer → ActiveMQ topic transaction-notification
 │       ├── mapper/          # TransactionMapper
 │       ├── model/           # entity: Transaction, TransactionStatusHistory

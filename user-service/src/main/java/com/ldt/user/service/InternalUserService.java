@@ -3,6 +3,7 @@ package com.ldt.user.service;
 import com.ldt.user.dto.response.UserInternalResponse;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.repository.UserRepository;
@@ -20,6 +21,7 @@ import java.util.List;
 public class InternalUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Messages messages;
 
     @Cacheable(value = "users", key = "#phone_number")
     public UserInternalResponse getUserByPhone(String phone_number) {
@@ -72,7 +74,7 @@ public class InternalUserService {
         if (user.getPinLockedUntil() != null) {
             if (LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
                 long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
-                throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+                throw new AppException(ErrorCode.PIN_LOCKED, messages.get("error.pin_locked.retry_after", String.valueOf(minutesLeft)));
             }
             user.setPinFailedAttempts(0);
             user.setPinLockedUntil(null);
@@ -83,10 +85,10 @@ public class InternalUserService {
             if (attempts >= 5) {
                 user.setPinLockedUntil(LocalDateTime.now().plusMinutes(15));
                 userRepository.save(user);
-                throw new AppException(ErrorCode.PIN_LOCKED, "Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
+                throw new AppException(ErrorCode.PIN_LOCKED, messages.get("error.pin_locked.too_many_attempts"));
             }
             userRepository.save(user);
-            throw new AppException(ErrorCode.INVALID_PIN, "Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
+            throw new AppException(ErrorCode.INVALID_PIN, messages.get("error.invalid_pin.remaining_attempts", String.valueOf(5 - attempts)));
         }
         user.setPinFailedAttempts(0);
         user.setPinLockedUntil(null);

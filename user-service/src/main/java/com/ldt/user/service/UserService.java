@@ -11,8 +11,10 @@ import com.ldt.user.dto.response.QrVerifyResponse;
 import com.ldt.user.dto.response.RecipientResponse;
 import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.dto.wallet.CreateWalletRequest;
+import com.ldt.user.enums.QrCodeType;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.mapper.UserMapper;
 import com.ldt.user.model.KycStatus;
 import com.ldt.user.model.User;
@@ -49,6 +51,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     private final VerifyOTPTokenService verifyOTPTokenService;
+    private final Messages messages;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -100,7 +103,7 @@ public class UserService {
             throw ae;
         } catch (Exception e) {
             log.error("Registration failed for phone {}: {}", userCreateRequest.getPhone(), e.getMessage());
-            throw new AppException(ErrorCode.REGISTRATION_FAILED, "Đăng ký thất bại. Vui lòng thử lại sau");
+            throw new AppException(ErrorCode.REGISTRATION_FAILED, messages.get("error.registration_failed.retry"));
         }
     }
 
@@ -149,7 +152,7 @@ public class UserService {
         // Kiểm tra tài khoản có đang bị khóa không
         if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
             long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
-            throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+            throw new AppException(ErrorCode.PIN_LOCKED, messages.get("error.pin_locked.retry_after", String.valueOf(minutesLeft)));
         }
         // Xác thực PIN
         if (!passwordEncoder.matches(rawPin, user.getTransactionPinHash())) {
@@ -158,10 +161,10 @@ public class UserService {
             if (attempts >= 5) {
                 user.setPinLockedUntil(LocalDateTime.now().plusMinutes(15));
                 userRepository.save(user);
-                throw new AppException(ErrorCode.PIN_LOCKED, "Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
+                throw new AppException(ErrorCode.PIN_LOCKED, messages.get("error.pin_locked.too_many_attempts"));
             }
             userRepository.save(user);
-            throw new AppException(ErrorCode.INVALID_PIN, "Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
+            throw new AppException(ErrorCode.INVALID_PIN, messages.get("error.invalid_pin.remaining_attempts", String.valueOf(5 - attempts)));
         }
         user.setPinFailedAttempts(0);
         user.setPinLockedUntil(null);
@@ -182,7 +185,7 @@ public class UserService {
         String sig = hmacSha512(phone + "|" + name, qrSecretKey);
         try {
             ObjectNode node = objectMapper.createObjectNode();
-            node.put("type", "SCHOOL_WALLET_STATIC");
+            node.put("type", QrCodeType.SCHOOL_WALLET_STATIC_QR.getValue());
             node.put("phone", phone);
             node.put("name", name);
             node.put("sig", sig);
@@ -221,7 +224,7 @@ public class UserService {
         String sig = hmacSha512(data, qrSecretKey);
         try {
             ObjectNode node = objectMapper.createObjectNode();
-            node.put("type", "SCHOOL_WALLET_DYNAMIC");
+            node.put("type", QrCodeType.SCHOOL_WALLET_DYNAMIC_QR.getValue());
             node.put("phone", phone);
             node.put("name", name);
             node.put("amount", amountStr);
@@ -241,7 +244,7 @@ public class UserService {
         try {
             JsonNode node = objectMapper.readTree(request.getQrContent());
             String type = node.path("type").asText();
-            if (!"SCHOOL_WALLET_STATIC".equals(type) && !"SCHOOL_WALLET_DYNAMIC".equals(type)) {
+            if (!QrCodeType.SCHOOL_WALLET_STATIC_QR.getValue().equals(type) && !QrCodeType.SCHOOL_WALLET_DYNAMIC_QR.getValue().equals(type)) {
                 throw new AppException(ErrorCode.QR_INVALID_SYSTEM);
             }
             String phone = node.path("phone").asText();
@@ -249,7 +252,7 @@ public class UserService {
             String sig = node.path("sig").asText();
             String expectedSig;
             // for dynamic qr
-            if ("SCHOOL_WALLET_DYNAMIC".equals(type)) {
+            if (QrCodeType.SCHOOL_WALLET_DYNAMIC_QR.getValue().equals(type)) {
                 String amountStr = node.path("amount").asText();
                 String desc = node.path("description").asText();
                 long expiredAt = node.path("expiredAt").asLong();

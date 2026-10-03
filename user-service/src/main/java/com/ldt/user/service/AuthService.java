@@ -8,6 +8,7 @@ import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.auth.LogoutRequest;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.model.InvalidatedToken;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserStatus;
@@ -40,6 +41,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RestTemplate restTemplate;
+    private final Messages messages;
 
     @Value("${service.notification-service.url}")
     private String notificationServiceUrl;
@@ -80,7 +82,7 @@ public class AuthService {
         Map<String, String> body = Map.of(
                 "toEmail", user.getEmail(),
                 "toName", user.getFullName(),
-                "subject", "School Wallet - Mật khẩu mới",
+                "subject", messages.get("email.reset_password.subject"),
                 "htmlContent", html
         );
 
@@ -127,13 +129,13 @@ public class AuthService {
                         </tr>
                         <tr>
                           <td style="padding:32px;">
-                            <p style="font-size:16px;color:#333;">Xin chào <strong>%s</strong>,</p>
-                            <p style="font-size:15px;color:#555;">Mật khẩu của bạn đã được đặt lại. Dưới đây là mật khẩu mới:</p>
+                            <p style="font-size:16px;color:#333;">%s <strong>%s</strong>,</p>
+                            <p style="font-size:15px;color:#555;">%s</p>
                             <div style="background:#f0f0f0;border-radius:6px;padding:16px;text-align:center;margin:20px 0;">
                               <span style="font-size:24px;font-weight:bold;letter-spacing:4px;color:#2c3e50;">%s</span>
                             </div>
-                            <p style="font-size:14px;color:#e74c3c;font-weight:bold;">Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.</p>
-                            <p style="font-size:13px;color:#999;">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng liên hệ 0936733881 để được hỗ trợ.</p>
+                            <p style="font-size:14px;color:#e74c3c;font-weight:bold;">%s</p>
+                            <p style="font-size:13px;color:#999;">%s</p>
                           </td>
                         </tr>
                         <tr>
@@ -146,7 +148,13 @@ public class AuthService {
                   </table>
                 </body>
                 </html>
-                """.formatted(fullName, newPassword);
+                """.formatted(
+                        messages.get("email.reset_password.greeting"),
+                        fullName,
+                        messages.get("email.reset_password.intro"),
+                        newPassword,
+                        messages.get("email.reset_password.warning"),
+                        messages.get("email.reset_password.support"));
     }
 
     public void changePassword(ChangePasswordRequest request) {
@@ -183,7 +191,7 @@ public class AuthService {
             user.setPinFailedAttempts(attempts);
             userRepository.save(user);
             throw new AppException(ErrorCode.INVALID_PIN,
-                    "Mã OTP hiện tại không đúng (đã sai " + attempts + " lần)");
+                    messages.get("error.invalid_current_otp.attempts", String.valueOf(attempts)));
         }
 
         user.setTransactionPinHash(passwordEncoder.encode(request.getNewPin()));

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"eureka HTTP %{http_code}\\\\n\" --retry 30 --retry-delay 2 --retry-all-errors --max-time 120 http://localhost:8761/)"
+    ]
+  }
+}

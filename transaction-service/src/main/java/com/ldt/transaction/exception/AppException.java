@@ -10,7 +10,7 @@ public class AppException extends RuntimeException {
     private String customMessage;
 
     public AppException(ErrorCode errorCode) {
-        super(errorCode.getMessage());
+        super(errorCode.getMessageKey());
         this.errorCode = errorCode;
     }
 

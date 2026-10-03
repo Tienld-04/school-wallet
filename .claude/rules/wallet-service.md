@@ -4,7 +4,7 @@ paths:
 ---
 # Wallet Service — quy tắc
 
-- **wallet-service là source-of-truth số dư.** Mọi thay đổi tiền đi qua `/internal/wallets/*` (`X-Internal-Secret`).
+- **wallet-service là source-of-truth số dư.** Mọi thay đổi tiền đi qua **gRPC `WalletInternalService`** (`Transfer`/`TransferWithFee`/`Topup`, port 9090) — bản REST `/internal/wallets/{transfer,transfer-with-fee,topup}` đã comment lại. REST chỉ còn `POST /internal/wallets` (tạo ví, có `X-Internal-Secret`).
 - **Lock ví:** `@Transactional` + `findByUserIdForUpdate` (SELECT FOR UPDATE). Lock nhiều ví theo **UUID ascending** để tránh deadlock (2 ví `transfer`, 3 ví `transfer-with-fee`).
 - **Idempotency check BÊN TRONG lock** (vd `WalletTopupService`): acquire row lock trước, check ledger sau → race-safe khi callback retry.
 - **Double-entry:** mỗi giao dịch ghi các `WalletLedger` entry cùng `transactionId`; reason theo `LedgerReason`.

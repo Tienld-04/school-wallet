@@ -1,21 +1,24 @@
 package com.ldt.transaction.service;
 
+import com.ldt.transaction.constant.LedgerReasonConstants;
+import com.ldt.transaction.constant.UserConstants;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
-import com.ldt.transaction.dto.transfer.WalletTransferRequest;
-import com.ldt.transaction.dto.transfer.WalletTransferWithFeeRequest;
 import com.ldt.transaction.dto.user.InternalVerifyPinRequest;
 import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.event.TransactionNotificationEvent;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
+import com.ldt.transaction.grpc.WalletGrpcClient;
+import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.producer.TransactionEventProducer;
 import com.ldt.transaction.repository.TransactionRepository;
+import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,19 +55,18 @@ public class TransactionService2 {
     private final TransactionEventProducer notificationProducer;
     private final TransactionStatusHistoryService statusHistoryService;
     private final TransactionTemplate transactionTemplate;
+    private final WalletGrpcClient walletGrpcClient;
+    private final Messages messages;
 
-    @Value("${service.wallet-service.url}")
-    private String walletServiceUrl;
+    // @Value("${service.wallet-service.url}")
+    // private String walletServiceUrl;
 
-    @Value("${user-service.url}")
+    @Value("${service.user-service.url}")
     private String userServiceUrl;
 
     @Value("${platform.fee-rate:0.10}")
     private BigDecimal feeRate;
 
-    /**
-     * Snapshot toàn bộ input của 1 giao dịch để engine xử lý đồng nhất.
-     */
     private record TransactionContext(
             String requestId,
             String pin,
@@ -79,15 +81,9 @@ public class TransactionService2 {
             boolean applyPlatformFee) {
     }
 
-    /**
-     * Gom info sender + receiver thành 1 đơn vị trả về từ batch call.
-     */
     private record UserPair(UserInternalResponse from, UserInternalResponse to) {
     }
 
-    /**
-     * Kết quả gọi wallet-service: success + error message (nếu fail).
-     */
     private record WalletCallResult(boolean success, String errorMessage) {
         static WalletCallResult ok() {
             return new WalletCallResult(true, null);
@@ -99,29 +95,13 @@ public class TransactionService2 {
     }
 
     /**
-     * Map TransactionType → reason string khớp với LedgerReason ở wallet-service.
-     */
-    // private static String walletReasonOf(TransactionType type) {
-    //     return switch (type) {
-    //         TODO: 2 case dưới chỉ dùng khi /payment, /topup endpoint
-    //         case TOPUP -> "TOP_UP";
-    //         case PAYMENT -> "PAYMENT";
-    //         default -> "TRANSFER_OUT";
-    //     };
-    // }
-
-    /**
      * Entry cho /transfer, /payment, /topup — không tính fee, delegate xuống engine.
      */
     public TransactionResponse transfer(TransferRequest request, String fromPhone, TransactionType type) {
         if (fromPhone.equals(request.getToPhoneNumber())) {
             throw new AppException(ErrorCode.SELF_TRANSFER);
         }
-        // TODO: nhánh PAYMENT/TOPUP chỉ áp dụng khi /payment, /topup endpoint
-        // String successMsg = type == TransactionType.PAYMENT
-        //         ? "Thanh toán thành công"
-        //         : (type == TransactionType.TOPUP ? "Nạp tiền thành công" : "Chuyển tiền thành công");
-        String successMsg = "Chuyển tiền thành công";
+        String successMsg = messages.getVi("transaction.transfer.success");
 
         return executeTransaction(new TransactionContext(
                 request.getRequestId(),
@@ -132,7 +112,7 @@ public class TransactionService2 {
                 request.getDescription(),
                 type,
                 null,
-                "TRANSFER_OUT",
+                LedgerReasonConstants.TRANSFER_OUT,
                 successMsg,
                 false));
     }
@@ -146,7 +126,7 @@ public class TransactionService2 {
         }
         String description = (request.getDescription() != null && !request.getDescription().isBlank())
                 ? request.getDescription()
-                : "Thanh toán " + request.getMerchantName();
+                : messages.getVi("transaction.payment.default_description", request.getMerchantName());
 
         return executeTransaction(new TransactionContext(
                 request.getRequestId(),
@@ -157,8 +137,8 @@ public class TransactionService2 {
                 description,
                 TransactionType.PAYMENT,
                 request.getMerchantId(),
-                "PAYMENT",
-                "Thanh toán merchant thành công",
+                LedgerReasonConstants.PAYMENT,
+                messages.getVi("transaction.payment.success"),
                 true));
     }
 
@@ -181,13 +161,13 @@ public class TransactionService2 {
         verifyPin(ctx.fromPhone(), ctx.pin());
         // 3. Fetch user info + check LOCKED status
         UserPair users = fetchUserPair(ctx.fromPhone(), ctx.toPhone());
-        if ("LOCKED".equals(users.from().getStatus())) {
+        if (UserConstants.STATUS_LOCKED.equals(users.from().getStatus())) {
             throw new AppException(ErrorCode.SENDER_LOCKED);
         }
-        if ("LOCKED".equals(users.to().getStatus())) {
+        if (UserConstants.STATUS_LOCKED.equals(users.to().getStatus())) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
-        if (!"VERIFIED".equals(users.from().getKycStatus())) {
+        if (!UserConstants.KYC_VERIFIED.equals(users.from().getKycStatus())) {
             throw new AppException(ErrorCode.KYC_NOT_VERIFIED);
         }
         // 4. Nếu là merchant payment có áp dụng fee platform, ctx.applyPlatformFee() = true -> fetch admin.
@@ -240,7 +220,7 @@ public class TransactionService2 {
             throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED, e.getResponseBodyAsString());
         } catch (Exception e) {
             throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED,
-                    "Không thể xác thực PIN: " + e.getMessage());
+                    messages.get("error.pin_verification", e.getMessage()));
         }
     }
 
@@ -258,18 +238,18 @@ public class TransactionService2 {
                     });
         } catch (Exception e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED,
-                    "Không thể lấy thông tin người dùng: " + e.getMessage());
+                    messages.get("error.user_lookup", e.getMessage()));
         }
         List<UserInternalResponse> body = response.getBody();
         if (body == null || body.size() < 2) {
-            throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
+            throw new AppException(ErrorCode.TRANSFER_FAILED, messages.get("error.user_info_not_found"));
         }
         Map<String, UserInternalResponse> userMap = body.stream()
                 .collect(Collectors.toMap(UserInternalResponse::getPhone, Function.identity(), (a, b) -> a));
         UserInternalResponse fromUser = userMap.get(fromPhone);
         UserInternalResponse toUser = userMap.get(toPhone);
         if (fromUser == null || toUser == null) {
-            throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
+            throw new AppException(ErrorCode.TRANSFER_FAILED, messages.get("error.user_info_not_found"));
         }
         return new UserPair(fromUser, toUser);
     }
@@ -298,7 +278,7 @@ public class TransactionService2 {
             try {
                 Transaction saved = transactionRepository.saveAndFlush(tx);
                 statusHistoryService.record(saved.getTransactionId(), null,
-                        TransactionStatus.PENDING, "Giao dịch được khởi tạo");
+                        TransactionStatus.PENDING, messages.getVi("transaction.history.created"));
                 return Optional.of(saved);
             } catch (DataIntegrityViolationException e) {
                 status.setRollbackOnly();
@@ -330,14 +310,14 @@ public class TransactionService2 {
                     UserInternalResponse.class);
             UserInternalResponse admin = resp.getBody();
             if (admin == null || admin.getUserId() == null) {
-                throw new AppException(ErrorCode.TRANSFER_FAILED, "Hệ thống chưa cấu hình tài khoản admin");
+                throw new AppException(ErrorCode.TRANSFER_FAILED, messages.get("error.admin_not_configured"));
             }
             return admin;
         } catch (HttpClientErrorException e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED, e.getResponseBodyAsString());
         } catch (Exception e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED,
-                    "Lỗi hệ thống: " + e.getMessage());
+                    messages.get("error.system", e.getMessage()));
         }
     }
 
@@ -347,22 +327,36 @@ public class TransactionService2 {
      */
     private WalletCallResult callWalletTransfer(TransactionContext ctx, UserPair users,
                                                 UUID transactionId, BigDecimal amount) {
-        WalletTransferRequest req = new WalletTransferRequest();
-        req.setFromUserId(users.from().getUserId());
-        req.setToUserId(users.to().getUserId());
-        req.setAmount(amount);
-        req.setTransactionId(transactionId);
-        req.setReason(ctx.walletReason());
-        req.setNote(ctx.description());
+        // Using HTTP 5
+        // WalletTransferRequest req = new WalletTransferRequest();
+        // req.setFromUserId(users.from().getUserId());
+        // req.setToUserId(users.to().getUserId());
+        // req.setAmount(amount);
+        // req.setTransactionId(transactionId);
+        // req.setReason(ctx.walletReason());
+        // req.setNote(ctx.description());
+        // try {
+        //     restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer", req, Void.class);
+        //     return WalletCallResult.ok();
+        // } catch (HttpClientErrorException ex) {
+        //     log.warn("Wallet transfer rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
+        //     return WalletCallResult.fail(ex.getResponseBodyAsString());
+        // } catch (Exception ex) {
+        //     log.error("Wallet transfer error for tx {}: {}", transactionId, ex.getMessage(), ex);
+        //     return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+        // }
+        // Using gRPC
         try {
-            restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer", req, Void.class);
+            walletGrpcClient.transfer(users.from().getUserId(), users.to().getUserId(),
+                    amount, transactionId, ctx.walletReason(), ctx.description());
             return WalletCallResult.ok();
-        } catch (HttpClientErrorException ex) {
-            log.warn("Wallet transfer rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
-            return WalletCallResult.fail(ex.getResponseBodyAsString());
+        } catch (StatusRuntimeException ex) {
+            String message = describe(ex);
+            log.warn("Wallet transfer rejected for tx {}: {}", transactionId, message);
+            return WalletCallResult.fail(message);
         } catch (Exception ex) {
             log.error("Wallet transfer error for tx {}: {}", transactionId, ex.getMessage(), ex);
-            return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+            return WalletCallResult.fail(messages.getVi("error.system", ex.getMessage()));
         }
     }
 
@@ -373,25 +367,45 @@ public class TransactionService2 {
     private WalletCallResult callWalletTransferWithFee(TransactionContext ctx, UserPair users,
                                                        UserInternalResponse admin, UUID transactionId,
                                                        BigDecimal amount, BigDecimal fee) {
-        WalletTransferWithFeeRequest req = new WalletTransferWithFeeRequest();
-        req.setFromUserId(users.from().getUserId());
-        req.setToUserId(users.to().getUserId());
-        req.setPlatformUserId(admin.getUserId());
-        req.setAmount(amount);
-        req.setFee(fee);
-        req.setTransactionId(transactionId);
-        req.setNote(ctx.description());
+        // Using HTTP 5
+        // WalletTransferWithFeeRequest req = new WalletTransferWithFeeRequest();
+        // req.setFromUserId(users.from().getUserId());
+        // req.setToUserId(users.to().getUserId());
+        // req.setPlatformUserId(admin.getUserId());
+        // req.setAmount(amount);
+        // req.setFee(fee);
+        // req.setTransactionId(transactionId);
+        // req.setNote(ctx.description());
+        // try {
+        //     restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer-with-fee",
+        //             req, Void.class);
+        //     return WalletCallResult.ok();
+        // } catch (HttpClientErrorException ex) {
+        //     log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
+        //     return WalletCallResult.fail(ex.getResponseBodyAsString());
+        // } catch (Exception ex) {
+        //     log.error("Wallet transfer-with-fee error for tx {}: {}", transactionId, ex.getMessage(), ex);
+        //     return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+        // }
+        // Using gRPC
         try {
-            restTemplate.postForEntity(walletServiceUrl + "/internal/wallets/transfer-with-fee",
-                    req, Void.class);
+            walletGrpcClient.transferWithFee(users.from().getUserId(), users.to().getUserId(),
+                    admin.getUserId(), amount, fee, transactionId, ctx.description());
             return WalletCallResult.ok();
-        } catch (HttpClientErrorException ex) {
-            log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, ex.getResponseBodyAsString());
-            return WalletCallResult.fail(ex.getResponseBodyAsString());
+        } catch (StatusRuntimeException ex) {
+            String message = describe(ex);
+            log.warn("Wallet transfer-with-fee rejected for tx {}: {}", transactionId, message);
+            return WalletCallResult.fail(message);
         } catch (Exception ex) {
             log.error("Wallet transfer-with-fee error for tx {}: {}", transactionId, ex.getMessage(), ex);
-            return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+            return WalletCallResult.fail(messages.getVi("error.system", ex.getMessage()));
         }
+    }
+
+    /** Lấy message nghiệp vụ từ gRPC error (description); fallback về tên mã status nếu rỗng. */
+    private static String describe(StatusRuntimeException ex) {
+        String description = ex.getStatus().getDescription();
+        return description != null ? description : ex.getStatus().getCode().name();
     }
 
     /**

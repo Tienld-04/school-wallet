@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class VerifyPinRequest {
-    @NotBlank(message = "Mã PIN không được để trống")
-    @Size(min = 6, max = 6, message = "Mã PIN phải đúng 6 số")
+    @NotBlank(message = "{validation.pin.required}")
+    @Size(min = 6, max = 6, message = "{validation.pin.length}")
     private String pin;
 }

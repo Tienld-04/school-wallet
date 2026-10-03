@@ -8,13 +8,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ChangePasswordRequest {
-    @NotBlank(message = "Mật khẩu hiện tại không được để trống")
+    @NotBlank(message = "{validation.current_password.required}")
     private String currentPassword;
 
-    @NotBlank(message = "Mật khẩu mới không được để trống")
-    @Size(min = 6, message = "Mật khẩu mới tối thiểu 6 ký tự")
+    @NotBlank(message = "{validation.new_password.required}")
+    @Size(min = 6, message = "{validation.new_password.min_length}")
     private String newPassword;
 
-    @NotBlank(message = "Xác nhận mật khẩu không được để trống")
+    @NotBlank(message = "{validation.confirm_password.required}")
     private String confirmPassword;
 }

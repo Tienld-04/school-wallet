@@ -1,6 +1,8 @@
 package com.ldt.notification.service;
 
+import com.ldt.notification.constant.TransactionTypeConstants;
 import com.ldt.notification.event.TransactionNotificationEvent;
+import com.ldt.notification.i18n.Messages;
 import com.ldt.notification.model.NotificationChannel;
 import com.ldt.notification.model.NotificationDirection;
 import com.ldt.notification.model.NotificationStatus;
@@ -20,9 +22,10 @@ public class NotificationTransactionService {
 
     private final EmailService emailService;
     private final NotificationLogService notificationLogService;
+    private final Messages messages;
 
     public void notifySender(TransactionNotificationEvent event) {
-        boolean isPayment = "PAYMENT".equals(event.getTransactionType());
+        boolean isPayment = TransactionTypeConstants.PAYMENT.equals(event.getTransactionType());
         String verb = isPayment ? "thanh toán" : "chuyển";
         String message = String.format(
                 "Bạn đã %s %s VND cho %s (%s). Nội dung: %s. Mã GD: %s",
@@ -37,8 +40,8 @@ public class NotificationTransactionService {
 
         if (event.getFromEmail() != null) {
             String subject = isPayment
-                    ? "School Wallet - Thanh toán thành công"
-                    : "School Wallet - Chuyển tiền thành công";
+                    ? messages.getVi("email.transaction.subject.payment.sender")
+                    : messages.getVi("email.transaction.subject.transfer.sender");
             String html = buildTransactionEmailHtml(
                     event.getFromFullName(),
                     event.getTransactionType(),
@@ -65,7 +68,7 @@ public class NotificationTransactionService {
     }
 
     public void notifyReceiver(TransactionNotificationEvent event) {
-        boolean isPayment = "PAYMENT".equals(event.getTransactionType());
+        boolean isPayment = TransactionTypeConstants.PAYMENT.equals(event.getTransactionType());
         String message = isPayment
                 ? String.format(
                         "Bạn nhận được thanh toán %s VND từ %s (%s). Nội dung: %s. Mã GD: %s",
@@ -85,8 +88,8 @@ public class NotificationTransactionService {
 
         if (event.getToEmail() != null) {
             String subject = isPayment
-                    ? "School Wallet - Bạn nhận được thanh toán"
-                    : "School Wallet - Bạn nhận được tiền";
+                    ? messages.getVi("email.transaction.subject.payment.receiver")
+                    : messages.getVi("email.transaction.subject.transfer.receiver");
             String html = buildTransactionEmailHtml(
                     event.getToFullName(),
                     event.getTransactionType(),
@@ -146,39 +149,39 @@ public class NotificationTransactionService {
                         </tr>
                         <tr>
                           <td style="padding:32px;">
-                            <p style="font-size:16px;color:#333;">Xin chào <strong>%s</strong>,</p>
-                            <p style="font-size:15px;color:#555;">Giao dịch của bạn đã được xử lý:</p>
+                            <p style="font-size:16px;color:#333;">%s <strong>%s</strong>,</p>
+                            <p style="font-size:15px;color:#555;">%s</p>
                             <table width="100%%" cellpadding="10" cellspacing="0" style="background:#f9f9f9;border-radius:6px;margin:16px 0;">
                               <tr>
-                                <td style="color:#888;font-size:14px;">Loại giao dịch</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:14px;text-align:right;font-weight:bold;">%s</td>
                               </tr>
                               <tr>
-                                <td style="color:#888;font-size:14px;">Số tiền</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:18px;text-align:right;font-weight:bold;color:%s;">%s</td>
                               </tr>
                               <tr>
-                                <td style="color:#888;font-size:14px;">Đối tác</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:14px;text-align:right;">%s (%s)</td>
                               </tr>
                               <tr>
-                                <td style="color:#888;font-size:14px;">Nội dung</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:14px;text-align:right;">%s</td>
                               </tr>
                               <tr>
-                                <td style="color:#888;font-size:14px;">Mã giao dịch</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:12px;text-align:right;color:#888;">%s</td>
                               </tr>
                               <tr>
-                                <td style="color:#888;font-size:14px;">Trạng thái</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:14px;text-align:right;font-weight:bold;color:#27ae60;">%s</td>
                               </tr>
                               <tr>
-                                <td style="color:#888;font-size:14px;">Thời gian</td>
+                                <td style="color:#888;font-size:14px;">%s</td>
                                 <td style="font-size:14px;text-align:right;">%s</td>
                               </tr>
                             </table>
-                            <p style="font-size:13px;color:#999;">Nếu bạn không thực hiện giao dịch này, vui lòng liên hệ 0936733881 để được hỗ trợ ngay.</p>
+                            <p style="font-size:13px;color:#999;">%s</p>
                           </td>
                         </tr>
                         <tr>
@@ -192,14 +195,16 @@ public class NotificationTransactionService {
                 </body>
                 </html>
                 """.formatted(
-                recipientName,
-                transactionType,
-                amountColor, amount,
-                counterpartyName, counterpartyPhone,
-                description,
-                transactionId,
-                status,
-                time
+                messages.getVi("email.transaction.greeting"), recipientName,
+                messages.getVi("email.transaction.intro"),
+                messages.getVi("email.transaction.label.type"), transactionType,
+                messages.getVi("email.transaction.label.amount"), amountColor, amount,
+                messages.getVi("email.transaction.label.counterparty"), counterpartyName, counterpartyPhone,
+                messages.getVi("email.transaction.label.description"), description,
+                messages.getVi("email.transaction.label.transaction_id"), transactionId,
+                messages.getVi("email.transaction.label.status"), status,
+                messages.getVi("email.transaction.label.time"), time,
+                messages.getVi("email.transaction.support")
         );
     }
 }
