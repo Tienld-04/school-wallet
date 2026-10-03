@@ -8,6 +8,7 @@ import com.ldt.wallet.dto.response.LedgerEntryResponse;
 import com.ldt.wallet.dto.response.PageResponse;
 import com.ldt.wallet.exception.AppException;
 import com.ldt.wallet.exception.ErrorCode;
+import com.ldt.wallet.i18n.Messages;
 import com.ldt.wallet.model.LedgerDirection;
 import com.ldt.wallet.model.LedgerReason;
 import com.ldt.wallet.model.Wallet;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 public class WalletService {
     private final WalletRepository walletRepository;
     private final WalletLedgerRepository walletLedgerRepository;
+    private final Messages messages;
 
     @Transactional
     public void createWallet(WalletCreateRequest walletCreateRequest) {
@@ -54,7 +56,7 @@ public class WalletService {
         // Idempotency: nếu transactionId đã được xử lý thì bỏ qua
         UUID transactionId = walletTransferRequest.getTransactionId();
         if (transactionId != null && !walletLedgerRepository.findByTransactionId(transactionId).isEmpty()) {
-            return "Chuyển tiền thành công";
+            return messages.getVi("wallet.transfer.success");
         }
         // Lock theo thứ tự UUID nhỏ trước để tránh deadlock khi 2 transfer đồng thời đổi chiều nhau
         UUID fromUserId = walletTransferRequest.getFromUserId();
@@ -115,7 +117,7 @@ public class WalletService {
                 amount, fromBalanceBefore, fromBalanceAfter, fromReason, walletTransferRequest.getNote());
         writeLedger(toWallet, walletTransferRequest.getTransactionId(), LedgerDirection.CREDIT,
                 amount, toBalanceBefore, toBalanceAfter, toReason, walletTransferRequest.getNote());
-        return "Chuyển tiền thành công";
+        return messages.getVi("wallet.transfer.success");
     }
 
     /**
@@ -137,7 +139,7 @@ public class WalletService {
         UUID transactionId = req.getTransactionId();
         // Idempotency: nếu transactionId đã có ledger thì coi như xong
         if (transactionId != null && !walletLedgerRepository.findByTransactionId(transactionId).isEmpty()) {
-            return "Thanh toán thành công";
+            return messages.getVi("wallet.payment.success");
         }
 
         UUID fromId = req.getFromUserId();
@@ -223,9 +225,9 @@ public class WalletService {
                 merchantAmount, toBefore, toAfter, LedgerReason.PAYMENT, req.getNote());
         writeLedger(platformWallet, transactionId, LedgerDirection.CREDIT,
                 fee, platformBefore, platformAfter, LedgerReason.PLATFORM_FEE,
-                "Phí nền tảng giao dịch " + transactionId);
+                messages.getVi("ledger.note.platform_fee", String.valueOf(transactionId)));
 
-        return "Thanh toán thành công";
+        return messages.getVi("wallet.payment.success");
     }
 
     public PageResponse<LedgerEntryResponse> getMyLedger(String userId, int page, int size) {
@@ -259,15 +261,6 @@ public class WalletService {
         return balanceResponse;
     }
 
-    private static final Map<LedgerReason, String> REASON_LABELS = Map.of(
-            LedgerReason.PAYMENT,       "Thanh toán",
-            LedgerReason.TRANSFER_IN,   "Nhận tiền chuyển khoản",
-            LedgerReason.TRANSFER_OUT,  "Chuyển tiền đi",
-            LedgerReason.TOP_UP,        "Nạp tiền",
-            LedgerReason.REFUND,        "Hoàn tiền",
-            LedgerReason.PLATFORM_FEE,  "Phí nền tảng"
-    );
-
     private LedgerEntryResponse toLedgerEntryResponse(WalletLedger entry, String currency) {
         boolean isDebit = entry.getDirection() == LedgerDirection.DEBIT;
         BigDecimal signedAmount = isDebit
@@ -283,7 +276,7 @@ public class WalletService {
                 .balanceBefore(entry.getBalanceBefore())
                 .balanceAfter(entry.getBalanceAfter())
                 .reason(entry.getReason().name())
-                .reasonLabel(REASON_LABELS.getOrDefault(entry.getReason(), entry.getReason().name()))
+                .reasonLabel(messages.get("ledger.reason." + entry.getReason().name()))
                 .note(entry.getNote())
                 .createdAt(entry.getCreatedAt())
                 .build();

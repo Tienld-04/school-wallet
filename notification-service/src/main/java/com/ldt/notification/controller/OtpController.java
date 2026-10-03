@@ -3,6 +3,7 @@ package com.ldt.notification.controller;
 import com.ldt.notification.dto.OtpSendRequest;
 import com.ldt.notification.dto.OtpVerifyRequest;
 import com.ldt.notification.dto.OtpVerifyResponse;
+import com.ldt.notification.i18n.Messages;
 import com.ldt.notification.service.OtpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +21,12 @@ import java.util.Map;
 public class OtpController {
 
     private final OtpService otpService;
+    private final Messages messages;
 
     @PostMapping("/send")
     public ResponseEntity<Map<String, String>> sendOtp(@Valid @RequestBody OtpSendRequest request) {
         otpService.sendOtp(request.getPhone());
-        return ResponseEntity.ok(Map.of("message", "Mã OTP đã được gửi đến số điện thoại của bạn"));
+        return ResponseEntity.ok(Map.of("message", messages.get("otp.sent")));
     }
 
     @PostMapping("/verify")

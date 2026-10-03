@@ -9,6 +9,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class WalletCreateRequest {
-    @NotNull(message = "userId không được để trống")
+    @NotNull(message = "{validation.user_id.required}")
     private UUID userId;
 }

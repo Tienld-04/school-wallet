@@ -10,17 +10,17 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UserCreateRequest {
-    @NotBlank(message = "Họ tên không được trống")
+    @NotBlank(message = "{validation.full_name.required}")
     private String fullName;
-    @NotBlank @Pattern(regexp = "^\\d{10}$", message = "SĐT phải đúng 10 số")
+    @NotBlank @Pattern(regexp = "^\\d{10}$", message = "{validation.phone.length}")
     private String phone;
-    @NotBlank @Email(message = "Email không hợp lệ")
+    @NotBlank @Email(message = "{validation.email.invalid}")
     private String email;
-    @NotBlank @Size(min = 6, message = "Mật khẩu tối thiểu 6 ký tự")
+    @NotBlank @Size(min = 6, message = "{validation.password.min_length}")
     private String password;
-    @NotBlank @Pattern(regexp = "^\\d{6}$", message = "Mã PIN phải đúng 6 số")
+    @NotBlank @Pattern(regexp = "^\\d{6}$", message = "{validation.pin.length}")
     private String transactionPin;
 
-    @NotBlank(message = "Token xác thực không được để trống")
+    @NotBlank(message = "{validation.verification_token.required}")
     private String verificationToken;
 }

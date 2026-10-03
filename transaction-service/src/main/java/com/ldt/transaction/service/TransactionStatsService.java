@@ -4,6 +4,7 @@ import com.ldt.transaction.dto.response.StatsOverviewResponse;
 import com.ldt.transaction.dto.response.TimeSeriesPoint;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
+import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.repository.TransactionRepository;
@@ -23,6 +24,7 @@ import java.util.Set;
 public class TransactionStatsService {
 
     private final TransactionRepository transactionRepository;
+    private final Messages messages;
 
 
     /**
@@ -62,7 +64,7 @@ public class TransactionStatsService {
     public List<TimeSeriesPoint> getTimeSeries(LocalDateTime from, LocalDateTime to, String granularity) {
         String g = granularity == null ? "day" : granularity.toLowerCase();
         if (!Set.of("day", "week", "month").contains(g)) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "granularity chỉ nhận: day | week | month");
+            throw new AppException(ErrorCode.INVALID_REQUEST, messages.get("error.invalid_granularity"));
         }
         return transactionRepository.aggregateTimeSeries(g, from, to).stream()
                 .map(row -> {

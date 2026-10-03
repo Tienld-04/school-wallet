@@ -13,18 +13,18 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class InitiateTopupRequest {
-    @NotBlank(message = "requestId không được để trống")
-    @Size(max = 64, message = "requestId tối đa 64 ký tự")
+    @NotBlank(message = "{validation.topup_request_id.required}")
+    @Size(max = 64, message = "{validation.topup_request_id.max_length}")
     private String requestId;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "10000", message = "Số tiền nạp tối thiểu là 10,000 VND")
-    @DecimalMax(value = "100000000", message = "Số tiền nạp tối đa là 100,000,000 VND")
+    @NotNull(message = "{validation.amount.required}")
+    @DecimalMin(value = "10000", message = "{validation.topup_amount.min}")
+    @DecimalMax(value = "100000000", message = "{validation.topup_amount.max}")
     private BigDecimal amount;
 
-    @Size(max = 20, message = "Mã ngân hàng tối đa 20 ký tự")
+    @Size(max = 20, message = "{validation.bank_code.max_length}")
     private String bankCode;
 
-    @Size(max = 5, message = "Locale tối đa 5 ký tự")
+    @Size(max = 5, message = "{validation.language.max_length}")
     private String language;
 }

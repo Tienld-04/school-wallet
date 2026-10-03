@@ -8,6 +8,7 @@ import com.ldt.transaction.dto.response.RevenueOverviewResponse;
 import com.ldt.transaction.dto.response.RevenueTimeSeriesPoint;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
+import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class RevenueStatsService {
 
     private final TransactionRepository transactionRepository;
+    private final Messages messages;
 
     /**
      * KPI tổng quan: tổng doanh thu, số giao dịch, trung bình, top merchant.
@@ -68,7 +70,7 @@ public class RevenueStatsService {
     public List<RevenueTimeSeriesPoint> getTimeSeries(LocalDateTime from, LocalDateTime to, String granularity) {
         String g = granularity == null ? "day" : granularity.toLowerCase();
         if (!Set.of("day", "week", "month").contains(g)) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "granularity chỉ nhận: day | week | month");
+            throw new AppException(ErrorCode.INVALID_REQUEST, messages.get("error.invalid_granularity"));
         }
         return transactionRepository.aggregateRevenueTimeSeries(g, from, to).stream()
                 .map(row -> {
@@ -144,7 +146,7 @@ public class RevenueStatsService {
     public List<MerchantEarningsTimeSeriesPoint> getMyEarningsTimeSeries(UUID toUserId, LocalDateTime from, LocalDateTime to, String granularity) {
         String g = granularity == null ? "day" : granularity.toLowerCase();
         if (!Set.of("day", "week", "month").contains(g)) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "granularity chỉ nhận: day | week | month");
+            throw new AppException(ErrorCode.INVALID_REQUEST, messages.get("error.invalid_granularity"));
         }
         return transactionRepository.aggregateMerchantEarningsTimeSeries(toUserId, g, from, to).stream()
                 .map(row -> {

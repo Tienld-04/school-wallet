@@ -1,6 +1,8 @@
 package com.ldt.user.exception;
 
 
+import com.ldt.user.i18n.Messages;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -8,13 +10,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+    private final Messages messages;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String message = ex.getFieldError() != null
                 ? ex.getFieldError().getDefaultMessage()
-                : ErrorCode.INVALID_REQUEST.getMessage();
+                : resolve(ErrorCode.INVALID_REQUEST);
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(ErrorCode.INVALID_REQUEST.getCode())
                 .message(message)
@@ -26,7 +30,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleApplicationException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();
-        String message = ex.getCustomMessage() != null ? ex.getCustomMessage() : errorCode.getMessage();
+        String message = ex.getCustomMessage() != null ? ex.getCustomMessage() : resolve(errorCode);
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(errorCode.getCode())
                 .message(message)
@@ -44,5 +48,9 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    private String resolve(ErrorCode errorCode) {
+        return messages.get(errorCode.getMessageKey());
     }
 }

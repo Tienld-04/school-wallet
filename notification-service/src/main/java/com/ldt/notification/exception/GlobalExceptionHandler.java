@@ -1,5 +1,7 @@
 package com.ldt.notification.exception;
 
+import com.ldt.notification.i18n.Messages;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -7,13 +9,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+    private final Messages messages;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String message = ex.getFieldError() != null
                 ? ex.getFieldError().getDefaultMessage()
-                : ErrorCode.INVALID_REQUEST.getMessage();
+                : messages.get(ErrorCode.INVALID_REQUEST.getMessageKey());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(ErrorCode.INVALID_REQUEST.getCode())
                 .message(message)
@@ -25,7 +29,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleApplicationException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();
-        String message = ex.getCustomMessage() != null ? ex.getCustomMessage() : errorCode.getMessage();
+        String message = ex.getCustomMessage() != null ? ex.getCustomMessage() : messages.get(errorCode.getMessageKey());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(errorCode.getCode())
                 .message(message)

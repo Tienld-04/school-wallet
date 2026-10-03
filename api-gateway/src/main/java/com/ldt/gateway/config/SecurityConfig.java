@@ -1,5 +1,6 @@
 package com.ldt.gateway.config;
 
+import com.ldt.gateway.constant.UserConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -51,11 +52,11 @@ public class SecurityConfig {
                         ).permitAll()
                         .pathMatchers("/api/v1/merchants/list", "/api/v1/merchants/types").permitAll()
                         .pathMatchers("/api/v1/merchants/my-user").authenticated()
-                        .pathMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
-                        .pathMatchers("/api/v1/transactions/dashboard/**").hasAuthority("ADMIN")
+                        .pathMatchers("/api/v1/admin/**").hasAuthority(UserConstants.ROLE_ADMIN)
+                        .pathMatchers("/api/v1/transactions/dashboard/**").hasAuthority(UserConstants.ROLE_ADMIN)
                         .pathMatchers("/api/v1/transactions/detail/**").authenticated()
-                        .pathMatchers("/api/v1/transactions/*/status-history").hasAuthority("ADMIN")
-                        .pathMatchers("/api/v1/merchants/**", "/api/v1/merchants").hasAuthority("ADMIN")
+                        .pathMatchers("/api/v1/transactions/*/status-history").hasAuthority(UserConstants.ROLE_ADMIN)
+                        .pathMatchers("/api/v1/merchants/**", "/api/v1/merchants").hasAuthority(UserConstants.ROLE_ADMIN)
                         .anyExchange().authenticated()
                 );
 
@@ -64,7 +65,7 @@ public class SecurityConfig {
 
     @Bean
     public RoleHierarchy roleHierarchy() {
-        return RoleHierarchyImpl.fromHierarchy("ADMIN > USER");
+        return RoleHierarchyImpl.fromHierarchy(UserConstants.ROLE_ADMIN + " > " + UserConstants.ROLE_USER);
     }
 
     @Bean

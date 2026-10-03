@@ -2,6 +2,7 @@ package com.ldt.notification.service;
 
 import com.ldt.notification.exception.AppException;
 import com.ldt.notification.exception.ErrorCode;
+import com.ldt.notification.i18n.Messages;
 import com.ldt.notification.model.NotificationChannel;
 import com.ldt.notification.model.NotificationStatus;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class SpeedSmsService {
 
     private final NotificationLogService notificationLogService;
     private final RestTemplate restTemplate;
+    private final Messages messages;
 
     @Value("${speedsms.access-token}")
     private String accessToken;
@@ -75,7 +77,7 @@ public class SpeedSmsService {
             log.error("Error sending SMS to: {} | Error: {}", phone, e.getMessage());
             notificationLogService.logInternal(NotificationChannel.SMS, phone,
                     NotificationStatus.FAILED, e.getMessage());
-            throw new AppException(ErrorCode.OTP_SEND_FAILED, "Gửi SMS thất bại: " + e.getMessage());
+            throw new AppException(ErrorCode.OTP_SEND_FAILED, messages.get("error.sms_send_failed", e.getMessage()));
         }
     }
 

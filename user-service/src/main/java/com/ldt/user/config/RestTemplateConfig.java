@@ -6,6 +6,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -17,7 +18,9 @@ public class RestTemplateConfig {
     @Value("${internal.secret}")
     private String internalSecret;
 
+    // @LoadBalanced: host trong URL là service id trên Eureka, không phải host:port
     @Bean
+    @LoadBalanced
     public RestTemplate restTemplate() {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
         connectionManager.setMaxTotal(100);
