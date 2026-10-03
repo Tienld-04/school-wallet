@@ -3,6 +3,7 @@ package com.ldt.notification.service;
 import com.ldt.notification.context.UserContext;
 import com.ldt.notification.dto.NotificationResponse;
 import com.ldt.notification.event.TransactionNotificationEvent;
+import com.ldt.notification.i18n.Messages;
 import com.ldt.notification.model.Notification;
 import com.ldt.notification.model.NotificationDirection;
 import com.ldt.notification.model.NotificationType;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final Messages messages;
 
     public void save(TransactionNotificationEvent event, UUID userId, NotificationDirection direction) {
         try {
@@ -47,10 +49,10 @@ public class NotificationService {
     private String buildTitle(String transactionType, NotificationDirection direction) {
         boolean isDebit = direction == NotificationDirection.DEBIT;
         return switch (transactionType) {
-            case "TRANSFER" -> isDebit ? "Chuyển tiền thành công" : "Bạn nhận được tiền";
-            case "TOPUP" -> "Nạp tiền thành công";
-            case "PAYMENT" -> isDebit ? "Thanh toán thành công" : "Bạn nhận được thanh toán";
-            default -> isDebit ? "Giao dịch thành công" : "Bạn nhận được tiền";
+            case "TRANSFER" -> messages.getVi(isDebit ? "notification.title.transfer.debit" : "notification.title.transfer.credit");
+            case "TOPUP" -> messages.getVi("notification.title.topup");
+            case "PAYMENT" -> messages.getVi(isDebit ? "notification.title.payment.debit" : "notification.title.payment.credit");
+            default -> messages.getVi(isDebit ? "notification.title.default.debit" : "notification.title.default.credit");
         };
     }
     

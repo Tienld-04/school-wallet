@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @Setter
 public class DynamicQrRequest {
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "1000", message = "Số tiền tối thiểu là 1.000đ")
+    @NotNull(message = "{validation.amount.required}")
+    @DecimalMin(value = "1000", message = "{validation.amount.min}")
     private BigDecimal amount;
     private String description;
 

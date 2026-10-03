@@ -2,6 +2,7 @@ package com.ldt.user.controller;
 
 import com.ldt.user.dto.auth.*;
 import com.ldt.user.dto.request.UserCreateRequest;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.service.AuthService;
 import com.ldt.user.service.UserService;
 import jakarta.validation.Valid;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
     private final UserService userService;
+    private final Messages messages;
 
     @PostMapping("/register")
     public ResponseEntity<String> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
@@ -38,19 +40,19 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
-        return ResponseEntity.ok(Map.of("message", "Mật khẩu mới đã được gửi đến email của bạn"));
+        return ResponseEntity.ok(Map.of("message", messages.get("auth.forgot_password.sent")));
     }
 
     @PutMapping("/change-password")
     public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(request);
-        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("auth.password.changed")));
     }
 
     @PutMapping("/change-pin")
     public ResponseEntity<Map<String, String>> changePin(@Valid @RequestBody ChangePinRequest request) {
         authService.changeTransactionPin(request);
-        return ResponseEntity.ok(Map.of("message", "Đổi OTP thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("auth.pin.changed")));
     }
 
     @GetMapping("/check-phone")

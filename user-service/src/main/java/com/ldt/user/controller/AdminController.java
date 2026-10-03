@@ -4,6 +4,7 @@ import com.ldt.user.dto.kyc.KycAdminListResponse;
 import com.ldt.user.dto.kyc.KycRejectRequest;
 import com.ldt.user.dto.request.ResetPinRequest;
 import com.ldt.user.dto.response.UsersResponse;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.model.UserStatus;
 import com.ldt.user.service.AdminService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+    private final Messages messages;
 
     @GetMapping("/user-statuses")
     public ResponseEntity<List<String>> getUserStatuses() {
@@ -42,13 +44,13 @@ public class AdminController {
     @PutMapping("/users/{userId}/toggle-status")
     public ResponseEntity<Map<String, String>> toggleUserStatus(@PathVariable UUID userId) {
         adminService.toggleUserStatus(userId);
-        return ResponseEntity.ok(Map.of("message", "Cập nhật trạng thái tài khoản thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("admin.user_status.updated")));
     }
 
     @PutMapping("/reset-pin")
     public ResponseEntity<Map<String, String>> resetTransactionPin(@Valid @RequestBody ResetPinRequest request) {
         adminService.resetTransactionPin(request.getPhone(), request.getNewPin());
-        return ResponseEntity.ok(Map.of("message", "Cấp lại mã PIN thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("admin.pin.reset")));
     }
     
     @GetMapping("/kyc")
@@ -62,7 +64,7 @@ public class AdminController {
     @PutMapping("/kyc/{kycId}/approve")
     public ResponseEntity<Map<String, String>> approveKyc(@PathVariable UUID kycId) {
         adminService.approveKyc(kycId);
-        return ResponseEntity.ok(Map.of("message", "Duyệt KYC thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("admin.kyc.approved")));
     }
 
     @PutMapping("/kyc/{kycId}/reject")
@@ -70,6 +72,6 @@ public class AdminController {
             @PathVariable UUID kycId,
             @Valid @RequestBody KycRejectRequest request) {
         adminService.rejectKyc(kycId, request.getRejectionReason());
-        return ResponseEntity.ok(Map.of("message", "Từ chối KYC thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("admin.kyc.rejected")));
     }
 }

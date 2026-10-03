@@ -50,6 +50,12 @@ spring:
           max-idle: 3
           min-idle: 1
           max-wait: 2000
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  web:
+    locale: vi
 
 internal:
   secret: "${INTERNAL_SECRET}"

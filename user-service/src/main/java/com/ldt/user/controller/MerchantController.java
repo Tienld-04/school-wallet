@@ -4,6 +4,7 @@ import com.ldt.user.context.UserContext;
 import com.ldt.user.dto.merchant.MerchantListResponse;
 import com.ldt.user.dto.merchant.MerchantRequest;
 import com.ldt.user.dto.merchant.MerchantResponse;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.service.MerchantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MerchantController {
     private final MerchantService merchantService;
+    private final Messages messages;
 
     @GetMapping("/list")
     public ResponseEntity<List<MerchantListResponse>> getActiveMerchants(
@@ -74,6 +76,6 @@ public class MerchantController {
     @DeleteMapping("/{merchantId}")
     public ResponseEntity<Map<String, String>> deleteMerchant(@PathVariable UUID merchantId) {
         merchantService.deleteMerchant(merchantId);
-        return ResponseEntity.ok(Map.of("message", "Xóa merchant thành công"));
+        return ResponseEntity.ok(Map.of("message", messages.get("merchant.deleted")));
     }
 }

@@ -8,6 +8,7 @@ import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.event.TransactionNotificationEvent;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
+import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.grpc.WalletGrpcClient;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
@@ -53,6 +54,7 @@ public class TransactionService2 {
     private final TransactionStatusHistoryService statusHistoryService;
     private final TransactionTemplate transactionTemplate;
     private final WalletGrpcClient walletGrpcClient;
+    private final Messages messages;
 
     // @Value("${service.wallet-service.url}")
     // private String walletServiceUrl;
@@ -122,7 +124,7 @@ public class TransactionService2 {
         // String successMsg = type == TransactionType.PAYMENT
         //         ? "Thanh toán thành công"
         //         : (type == TransactionType.TOPUP ? "Nạp tiền thành công" : "Chuyển tiền thành công");
-        String successMsg = "Chuyển tiền thành công";
+        String successMsg = messages.getVi("transaction.transfer.success");
 
         return executeTransaction(new TransactionContext(
                 request.getRequestId(),
@@ -147,7 +149,7 @@ public class TransactionService2 {
         }
         String description = (request.getDescription() != null && !request.getDescription().isBlank())
                 ? request.getDescription()
-                : "Thanh toán " + request.getMerchantName();
+                : messages.getVi("transaction.payment.default_description", request.getMerchantName());
 
         return executeTransaction(new TransactionContext(
                 request.getRequestId(),
@@ -159,7 +161,7 @@ public class TransactionService2 {
                 TransactionType.PAYMENT,
                 request.getMerchantId(),
                 "PAYMENT",
-                "Thanh toán merchant thành công",
+                messages.getVi("transaction.payment.success"),
                 true));
     }
 
@@ -241,7 +243,7 @@ public class TransactionService2 {
             throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED, e.getResponseBodyAsString());
         } catch (Exception e) {
             throw new AppException(ErrorCode.PIN_VERIFICATION_FAILED,
-                    "Không thể xác thực PIN: " + e.getMessage());
+                    messages.get("error.pin_verification", e.getMessage()));
         }
     }
 
@@ -259,18 +261,18 @@ public class TransactionService2 {
                     });
         } catch (Exception e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED,
-                    "Không thể lấy thông tin người dùng: " + e.getMessage());
+                    messages.get("error.user_lookup", e.getMessage()));
         }
         List<UserInternalResponse> body = response.getBody();
         if (body == null || body.size() < 2) {
-            throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
+            throw new AppException(ErrorCode.TRANSFER_FAILED, messages.get("error.user_info_not_found"));
         }
         Map<String, UserInternalResponse> userMap = body.stream()
                 .collect(Collectors.toMap(UserInternalResponse::getPhone, Function.identity(), (a, b) -> a));
         UserInternalResponse fromUser = userMap.get(fromPhone);
         UserInternalResponse toUser = userMap.get(toPhone);
         if (fromUser == null || toUser == null) {
-            throw new AppException(ErrorCode.TRANSFER_FAILED, "Không tìm thấy thông tin người dùng");
+            throw new AppException(ErrorCode.TRANSFER_FAILED, messages.get("error.user_info_not_found"));
         }
         return new UserPair(fromUser, toUser);
     }
@@ -299,7 +301,7 @@ public class TransactionService2 {
             try {
                 Transaction saved = transactionRepository.saveAndFlush(tx);
                 statusHistoryService.record(saved.getTransactionId(), null,
-                        TransactionStatus.PENDING, "Giao dịch được khởi tạo");
+                        TransactionStatus.PENDING, messages.getVi("transaction.history.created"));
                 return Optional.of(saved);
             } catch (DataIntegrityViolationException e) {
                 status.setRollbackOnly();
@@ -331,14 +333,14 @@ public class TransactionService2 {
                     UserInternalResponse.class);
             UserInternalResponse admin = resp.getBody();
             if (admin == null || admin.getUserId() == null) {
-                throw new AppException(ErrorCode.TRANSFER_FAILED, "Hệ thống chưa cấu hình tài khoản admin");
+                throw new AppException(ErrorCode.TRANSFER_FAILED, messages.get("error.admin_not_configured"));
             }
             return admin;
         } catch (HttpClientErrorException e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED, e.getResponseBodyAsString());
         } catch (Exception e) {
             throw new AppException(ErrorCode.TRANSFER_FAILED,
-                    "Lỗi hệ thống: " + e.getMessage());
+                    messages.get("error.system", e.getMessage()));
         }
     }
 
@@ -377,7 +379,7 @@ public class TransactionService2 {
             return WalletCallResult.fail(message);
         } catch (Exception ex) {
             log.error("Wallet transfer error for tx {}: {}", transactionId, ex.getMessage(), ex);
-            return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+            return WalletCallResult.fail(messages.getVi("error.system", ex.getMessage()));
         }
     }
 
@@ -419,7 +421,7 @@ public class TransactionService2 {
             return WalletCallResult.fail(message);
         } catch (Exception ex) {
             log.error("Wallet transfer-with-fee error for tx {}: {}", transactionId, ex.getMessage(), ex);
-            return WalletCallResult.fail("Lỗi hệ thống: " + ex.getMessage());
+            return WalletCallResult.fail(messages.getVi("error.system", ex.getMessage()));
         }
     }
 

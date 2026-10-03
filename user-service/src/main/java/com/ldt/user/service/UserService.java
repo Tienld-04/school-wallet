@@ -13,6 +13,7 @@ import com.ldt.user.dto.response.UserResponse;
 import com.ldt.user.dto.wallet.CreateWalletRequest;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
+import com.ldt.user.i18n.Messages;
 import com.ldt.user.mapper.UserMapper;
 import com.ldt.user.model.KycStatus;
 import com.ldt.user.model.User;
@@ -49,6 +50,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     private final VerifyOTPTokenService verifyOTPTokenService;
+    private final Messages messages;
 
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
@@ -100,7 +102,7 @@ public class UserService {
             throw ae;
         } catch (Exception e) {
             log.error("Registration failed for phone {}: {}", userCreateRequest.getPhone(), e.getMessage());
-            throw new AppException(ErrorCode.REGISTRATION_FAILED, "Đăng ký thất bại. Vui lòng thử lại sau");
+            throw new AppException(ErrorCode.REGISTRATION_FAILED, messages.get("error.registration_failed.retry"));
         }
     }
 
@@ -149,7 +151,7 @@ public class UserService {
         // Kiểm tra tài khoản có đang bị khóa không
         if (user.getPinLockedUntil() != null && LocalDateTime.now().isBefore(user.getPinLockedUntil())) {
             long minutesLeft = java.time.Duration.between(LocalDateTime.now(), user.getPinLockedUntil()).toMinutes() + 1;
-            throw new AppException(ErrorCode.PIN_LOCKED, "Chức năng chuyển tiền tạm khóa. Vui lòng thử lại sau " + minutesLeft + " phút");
+            throw new AppException(ErrorCode.PIN_LOCKED, messages.get("error.pin_locked.retry_after", String.valueOf(minutesLeft)));
         }
         // Xác thực PIN
         if (!passwordEncoder.matches(rawPin, user.getTransactionPinHash())) {
@@ -158,10 +160,10 @@ public class UserService {
             if (attempts >= 5) {
                 user.setPinLockedUntil(LocalDateTime.now().plusMinutes(15));
                 userRepository.save(user);
-                throw new AppException(ErrorCode.PIN_LOCKED, "Sai PIN quá 5 lần. Chức năng chuyển tiền bị tạm khóa 15 phút");
+                throw new AppException(ErrorCode.PIN_LOCKED, messages.get("error.pin_locked.too_many_attempts"));
             }
             userRepository.save(user);
-            throw new AppException(ErrorCode.INVALID_PIN, "Mã PIN không đúng. Còn " + (5 - attempts) + " lần thử");
+            throw new AppException(ErrorCode.INVALID_PIN, messages.get("error.invalid_pin.remaining_attempts", String.valueOf(5 - attempts)));
         }
         user.setPinFailedAttempts(0);
         user.setPinLockedUntil(null);

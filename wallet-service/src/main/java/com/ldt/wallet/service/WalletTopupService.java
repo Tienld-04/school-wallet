@@ -3,6 +3,7 @@ package com.ldt.wallet.service;
 import com.ldt.wallet.dto.request.WalletTopupRequest;
 import com.ldt.wallet.exception.AppException;
 import com.ldt.wallet.exception.ErrorCode;
+import com.ldt.wallet.i18n.Messages;
 import com.ldt.wallet.model.LedgerDirection;
 import com.ldt.wallet.model.LedgerReason;
 import com.ldt.wallet.model.Wallet;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class WalletTopupService {
     private final WalletRepository walletRepository;
     private final WalletLedgerRepository walletLedgerRepository;
+    private final Messages messages;
 
     @Transactional
     public String topup(WalletTopupRequest req) {
@@ -39,7 +41,7 @@ public class WalletTopupService {
         // 3. Idempotency check
         UUID transactionId = req.getTransactionId();
         if (!walletLedgerRepository.findByTransactionId(transactionId).isEmpty()) {
-            return "Nạp tiền thành công";
+            return messages.getVi("wallet.topup.success");
         }
         // 4. Update balance and create ledger entry
         BigDecimal balanceBefore = wallet.getBalance();
@@ -58,6 +60,6 @@ public class WalletTopupService {
                 .note(req.getNote())
                 .build();
         walletLedgerRepository.save(entry);
-        return "Nạp tiền thành công";
+        return messages.getVi("wallet.topup.success");
     }
 }

@@ -16,26 +16,26 @@ import java.util.UUID;
 @Getter
 @Setter
 public class WalletTransferWithFeeRequest {
-    @NotNull(message = "fromUserId không được để trống")
+    @NotNull(message = "{validation.from_user_id.required}")
     private UUID fromUserId;
 
-    @NotNull(message = "toUserId không được để trống")
+    @NotNull(message = "{validation.to_user_id.required}")
     private UUID toUserId;
 
-    @NotNull(message = "platformUserId không được để trống")
+    @NotNull(message = "{validation.platform_user_id.required}")
     private UUID platformUserId;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "0", inclusive = false, message = "Số tiền phải lớn hơn 0")
+    @NotNull(message = "{validation.amount.required}")
+    @DecimalMin(value = "0", inclusive = false, message = "{validation.amount.positive}")
     private BigDecimal amount;
 
-    @NotNull(message = "Phí không được để trống")
-    @DecimalMin(value = "0", message = "Phí không được âm")
+    @NotNull(message = "{validation.fee.required}")
+    @DecimalMin(value = "0", message = "{validation.fee.non_negative}")
     private BigDecimal fee;
 
-    @NotNull(message = "transactionId không được để trống")
+    @NotNull(message = "{validation.transaction_id.required}")
     private UUID transactionId;
 
-    @Size(max = 255, message = "Ghi chú tối đa 255 ký tự")
+    @Size(max = 255, message = "{validation.note.max_length}")
     private String note;
 }

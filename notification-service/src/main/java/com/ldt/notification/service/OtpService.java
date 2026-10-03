@@ -2,6 +2,7 @@ package com.ldt.notification.service;
 
 import com.ldt.notification.exception.AppException;
 import com.ldt.notification.exception.ErrorCode;
+import com.ldt.notification.i18n.Messages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ public class OtpService {
     private final RedisTemplate<String, String> redisTemplate;
     private final PasswordEncoder passwordEncoder;
     private final SpeedSmsService speedSmsService;
+    private final Messages messages;
 
     @Value("${otp.expiration-minutes}")
     private int expirationMinutes;
@@ -59,7 +61,7 @@ public class OtpService {
         String attemptsKey = ATTEMPTS_PREFIX + phone;
         redisTemplate.opsForValue().set(otpKey, passwordEncoder.encode(otp), expirationMinutes, TimeUnit.MINUTES);
         redisTemplate.opsForValue().set(cooldownKey, "1", resendCooldownSeconds, TimeUnit.SECONDS);
-        String content = "[School Wallet] - Ma xac thuc cua ban la: " + otp + ". Het han sau " + expirationMinutes + " phut.";
+        String content = messages.getVi("sms.otp.content", otp, String.valueOf(expirationMinutes));
         //smsService.sendSms(phone, content);
         speedSmsService.sendSms(phone, content);
         log.info("OTP sent to phone: {}", phone);
@@ -84,7 +86,7 @@ public class OtpService {
             redisTemplate.opsForValue().increment(attemptsKey);
             redisTemplate.expire(attemptsKey, expirationMinutes, TimeUnit.MINUTES);
             int remaining = maxAttempts - attempts - 1;
-            throw new AppException(ErrorCode.OTP_INVALID, "Mã OTP không đúng. Còn " + remaining + " lần thử");
+            throw new AppException(ErrorCode.OTP_INVALID, messages.get("error.otp_invalid.remaining_attempts", String.valueOf(remaining)));
         }
         redisTemplate.delete(otpKey);
         redisTemplate.delete(attemptsKey);

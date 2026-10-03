@@ -10,6 +10,7 @@ import com.ldt.transaction.enums.VnPayTransactionCode;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
 import com.ldt.transaction.grpc.WalletGrpcClient;
+import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
@@ -44,6 +45,7 @@ public class TopupService {
     private final VnPayService vnPayService;
     private final RestTemplate restTemplate;
     private final WalletGrpcClient walletGrpcClient;
+    private final Messages messages;
 
     // @Value("${service.wallet-service.url}")
     // private String walletServiceUrl;
@@ -66,7 +68,7 @@ public class TopupService {
             if (tx.getStatus() != TransactionStatus.PENDING) {
                 throw new AppException(ErrorCode.DUPLICATE_TRANSACTION);
             }
-            String orderInfo = "Nạp tiền vào ví " + userPhone;
+            String orderInfo = messages.getVi("topup.vnpay.order_info", userPhone);
             String paymentUrl = vnPayService.buildPaymentUrl(
                     requestId, tx.getAmount(), orderInfo, ipAddr,
                     request.getBankCode(), request.getLanguage());
@@ -90,7 +92,7 @@ public class TopupService {
             transactionRepository.save(stale);
             statusHistoryService.record(stale.getTransactionId(),
                     TransactionStatus.PENDING, TransactionStatus.CANCELLED,
-                    "Người dùng khởi tạo giao dịch nạp tiền mới");
+                    messages.getVi("topup.history.superseded"));
             log.debug("Cancelled stale PENDING topup requestId={} for userId={}", stale.getRequestId(), userId);
         }
         // 4. Create new Transaction record with PENDING status
@@ -106,13 +108,13 @@ public class TopupService {
         tx.setFee(BigDecimal.ZERO);
         tx.setTransactionType(TransactionType.TOPUP);
         tx.setStatus(TransactionStatus.PENDING);
-        tx.setDescription("Nạp tiền vào ví qua VNPay");
+        tx.setDescription(messages.getVi("topup.description"));
         Transaction saved = transactionRepository.saveAndFlush(tx);
         // 5. Record initial status history
         statusHistoryService.record(saved.getTransactionId(), null,
-                TransactionStatus.PENDING, "Khởi tạo yêu cầu nạp tiền VNPay");
+                TransactionStatus.PENDING, messages.getVi("topup.history.created"));
         // 6. Build VNPay payment URL and return to client
-        String orderInfo = "Nạp tiền vào ví " + userPhone;
+        String orderInfo = messages.getVi("topup.vnpay.order_info", userPhone);
         String paymentUrl = vnPayService.buildPaymentUrl(
                 requestId, request.getAmount(), orderInfo, ipAddr,
                 request.getBankCode(), request.getLanguage());
@@ -170,7 +172,7 @@ public class TopupService {
                 transactionRepository.save(tx);
                 statusHistoryService.record(tx.getTransactionId(),
                         TransactionStatus.PENDING, TransactionStatus.SUCCESS,
-                        "VNPay xác nhận thanh toán thành công");
+                        messages.getVi("topup.history.confirmed"));
                 log.debug("Topup SUCCESS requestId={} userId={} amount={}",
                         txnRef, tx.getToUserId(), tx.getAmount());
             } catch (Exception e) {
@@ -197,23 +199,16 @@ public class TopupService {
         return VnPayIpnCode.SUCCESS.toResponse();
     }
 
-    private static String mapVnpayCodeToReason(String responseCode, String txnStatus) {
+    private String mapVnpayCodeToReason(String responseCode, String txnStatus) {
         VnPayTransactionCode code = VnPayTransactionCode.fromCode(responseCode);
         if (code == null) {
-            return "VNPay từ chối: code=" + responseCode + " status=" + txnStatus;
+            return messages.getVi("topup.vnpay.rejected", responseCode, txnStatus);
         }
         return switch (code) {
-            case CANCELLED_BY_USER -> "Người dùng hủy giao dịch";
-            case NOT_REGISTERED_INTERNET_BANKING -> "Thẻ chưa đăng ký Internet Banking";
-            case AUTH_FAILED_3_TIMES -> "Xác thực thẻ không thành công quá 3 lần";
-            case PAYMENT_EXPIRED -> "Hết hạn chờ thanh toán";
-            case CARD_BLOCKED -> "Thẻ bị khóa";
-            case WRONG_OTP -> "OTP không chính xác";
-            case INSUFFICIENT_BALANCE -> "Tài khoản không đủ số dư";
-            case EXCEEDED_DAILY_LIMIT -> "Vượt hạn mức giao dịch trong ngày";
-            case BANK_MAINTENANCE -> "Ngân hàng đang bảo trì";
-            case WRONG_PASSWORD_EXCEEDED -> "Sai mật khẩu thanh toán quá số lần quy định";
-            default -> "VNPay từ chối: code=" + responseCode + " status=" + txnStatus;
+            case CANCELLED_BY_USER, NOT_REGISTERED_INTERNET_BANKING, AUTH_FAILED_3_TIMES, PAYMENT_EXPIRED,
+                 CARD_BLOCKED, WRONG_OTP, INSUFFICIENT_BALANCE, EXCEEDED_DAILY_LIMIT, BANK_MAINTENANCE,
+                 WRONG_PASSWORD_EXCEEDED -> messages.getVi("topup.vnpay.reason." + code.name());
+            default -> messages.getVi("topup.vnpay.rejected", responseCode, txnStatus);
         };
     }
 
@@ -225,10 +220,10 @@ public class TopupService {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
         String message = switch (tx.getStatus()) {
-            case SUCCESS -> "Nạp tiền thành công";
-            case FAILED -> "Nạp tiền thất bại";
-            case PENDING -> "Đang chờ xác nhận từ VNPay";
-            case CANCELLED -> "Bạn đã hủy giao dịch nạp tiền";
+            case SUCCESS -> messages.get("topup.status.success");
+            case FAILED -> messages.get("topup.status.failed");
+            case PENDING -> messages.get("topup.status.pending");
+            case CANCELLED -> messages.get("topup.status.cancelled");
         };
         return TopupStatusResponse.builder()
                 .requestId(tx.getRequestId())
@@ -247,7 +242,7 @@ public class TopupService {
                     userServiceUrl + "/internal/users/" + phone,
                     UserInternalResponse.class);
             if (user == null) {
-                throw new AppException(ErrorCode.TOPUP_FAILED, "Không tìm thấy thông tin người dùng");
+                throw new AppException(ErrorCode.TOPUP_FAILED, messages.get("error.user_info_not_found"));
             }
             return user;
         } catch (HttpClientErrorException ex) {
@@ -257,7 +252,7 @@ public class TopupService {
             throw ex;
         } catch (Exception ex) {
             log.error("User lookup error for phone {}: {}", phone, ex.getMessage(), ex);
-            throw new AppException(ErrorCode.TOPUP_FAILED, "Lỗi hệ thống: " + ex.getMessage());
+            throw new AppException(ErrorCode.TOPUP_FAILED, messages.get("error.system", ex.getMessage()));
         }
     }
 
@@ -282,7 +277,7 @@ public class TopupService {
         // Using gRPC
         try {
             walletGrpcClient.topup(tx.getToUserId(), tx.getAmount(), tx.getTransactionId(),
-                    "Nap tien VNPay - " + tx.getRequestId());
+                    messages.getVi("topup.wallet_note", tx.getRequestId()));
         } catch (StatusRuntimeException ex) {
             String description = ex.getStatus().getDescription();
             String message = description != null ? description : ex.getStatus().getCode().name();
@@ -291,7 +286,7 @@ public class TopupService {
         } catch (Exception ex) {
             log.error("Wallet topup error for tx {}: {}",
                     tx.getTransactionId(), ex.getMessage(), ex);
-            throw new AppException(ErrorCode.TOPUP_FAILED, "Lỗi hệ thống: " + ex.getMessage());
+            throw new AppException(ErrorCode.TOPUP_FAILED, messages.getVi("error.system", ex.getMessage()));
         }
     }
 }

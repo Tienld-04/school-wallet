@@ -2,28 +2,32 @@ package com.ldt.wallet.grpc;
 
 import com.ldt.wallet.exception.AppException;
 import com.ldt.wallet.exception.ErrorCode;
+import com.ldt.wallet.i18n.Messages;
 import io.grpc.Status;
+import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.advice.GrpcAdvice;
 import net.devh.boot.grpc.server.advice.GrpcExceptionHandler;
 
 @GrpcAdvice
+@RequiredArgsConstructor
 public class GrpcExceptionAdvice {
+    private final Messages messages;
 
     @GrpcExceptionHandler(AppException.class)
     public Status handleAppException(AppException ex) {
         ErrorCode ec = ex.getErrorCode();
-        return statusFor(ec).withDescription(ec.getMessage());
+        return statusFor(ec).withDescription(messages.getVi(ec.getMessageKey()));
     }
 
     @GrpcExceptionHandler(IllegalArgumentException.class)
     public Status handleIllegalArgument(IllegalArgumentException ex) {
         // UUID/BigDecimal/LedgerReason parse lỗi
-        return Status.INVALID_ARGUMENT.withDescription("Dữ liệu không hợp lệ: " + ex.getMessage());
+        return Status.INVALID_ARGUMENT.withDescription(messages.getVi("grpc.error.invalid_argument", ex.getMessage()));
     }
 
     @GrpcExceptionHandler(Throwable.class)
     public Status handleUnknown(Throwable ex) {
-        return Status.INTERNAL.withDescription("Lỗi hệ thống: " + ex.getMessage());
+        return Status.INTERNAL.withDescription(messages.getVi("grpc.error.internal", ex.getMessage()));
     }
 
     private static Status statusFor(ErrorCode ec) {

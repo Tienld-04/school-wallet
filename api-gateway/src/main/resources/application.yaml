@@ -15,6 +15,12 @@ spring:
   http:
     codecs:
       max-in-memory-size: 5MB
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  web:
+    locale: vi
 service:
   url:
     user-service: "lb://user-service"

@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class OtpSendRequest {
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Size(min = 10, max = 10, message = "Số điện thoại phải 10 số")
+    @NotBlank(message = "{validation.phone.required}")
+    @Size(min = 10, max = 10, message = "{validation.phone.length}")
     private String phone;
 }
