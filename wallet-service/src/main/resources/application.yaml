@@ -36,3 +36,10 @@ internal:
 grpc:
   server:
     port: "${WALLET_GRPC_PORT:9090}"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "${EUREKA_SERVER_URL:http://localhost:8761/eureka/}"
+  instance:
+    prefer-ip-address: true

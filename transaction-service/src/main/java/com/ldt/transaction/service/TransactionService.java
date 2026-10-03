@@ -57,7 +57,7 @@ public class TransactionService {
     @Value("${service.wallet-service.url}")
     private String walletServiceUrl;
 
-    @Value("${user-service.url}")
+    @Value("${service.user-service.url}")
     private String userServiceUrl;
 
 //    @Transactional(noRollbackFor = AppException.class)

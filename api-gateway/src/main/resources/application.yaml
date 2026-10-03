@@ -17,10 +17,10 @@ spring:
       max-in-memory-size: 5MB
 service:
   url:
-    user-service: "${USER_SERVICE_URL:http://localhost:8081}"
-    wallet-service: "${WALLET_SERVICE_URL:http://localhost:8082}"
-    transaction-service: "${TRANSACTION_SERVICE_URL:http://localhost:8084}"
-    notification-service: "${NOTIFICATION_SERVICE_URL:http://localhost:8085}"
+    user-service: "lb://user-service"
+    wallet-service: "lb://wallet-service"
+    transaction-service: "lb://transaction-service"
+    notification-service: "lb://notification-service"
 
 management:
   endpoints:
@@ -37,3 +37,10 @@ internal:
   secret: "${INTERNAL_SECRET}"
 jwt:
   secret-key: "${JWT_SECRET_KEY}"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "${EUREKA_SERVER_URL:http://localhost:8761/eureka/}"
+  instance:
+    prefer-ip-address: true

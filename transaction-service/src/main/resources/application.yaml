@@ -38,12 +38,11 @@ spring:
     in-memory: false
   jms:
     pub-sub-domain: true
-#  REST /internal/wallets/*
 service:
   wallet-service:
-    url: "${WALLET_SERVICE_URL:http://localhost:8082}"
-user-service:
-  url: "${USER_SERVICE_URL:http://localhost:8081}"
+    url: "http://wallet-service"
+  user-service:
+    url: "http://user-service"
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
 
@@ -51,7 +50,7 @@ internal:
 grpc:
   client:
     wallet:
-      address: "static://${WALLET_GRPC_HOST:localhost}:${WALLET_GRPC_PORT:9090}"
+      address: "discovery:///wallet-service"
       negotiation-type: plaintext
 
 platform:
@@ -63,3 +62,10 @@ vnpay:
   pay-url: "${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
   return-url: "${VNPAY_RETURN_URL:http://localhost:3000/top-up/result}"
   version: "${VNPAY_VERSION:2.1.0}"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "${EUREKA_SERVER_URL:http://localhost:8761/eureka/}"
+  instance:
+    prefer-ip-address: true
