@@ -1,5 +1,6 @@
 package com.ldt.notification.service;
 
+import com.ldt.notification.constant.TransactionTypeConstants;
 import com.ldt.notification.context.UserContext;
 import com.ldt.notification.dto.NotificationResponse;
 import com.ldt.notification.event.TransactionNotificationEvent;
@@ -49,9 +50,9 @@ public class NotificationService {
     private String buildTitle(String transactionType, NotificationDirection direction) {
         boolean isDebit = direction == NotificationDirection.DEBIT;
         return switch (transactionType) {
-            case "TRANSFER" -> messages.getVi(isDebit ? "notification.title.transfer.debit" : "notification.title.transfer.credit");
-            case "TOPUP" -> messages.getVi("notification.title.topup");
-            case "PAYMENT" -> messages.getVi(isDebit ? "notification.title.payment.debit" : "notification.title.payment.credit");
+            case TransactionTypeConstants.TRANSFER -> messages.getVi(isDebit ? "notification.title.transfer.debit" : "notification.title.transfer.credit");
+            case TransactionTypeConstants.TOPUP -> messages.getVi("notification.title.topup");
+            case TransactionTypeConstants.PAYMENT -> messages.getVi(isDebit ? "notification.title.payment.debit" : "notification.title.payment.credit");
             default -> messages.getVi(isDebit ? "notification.title.default.debit" : "notification.title.default.credit");
         };
     }

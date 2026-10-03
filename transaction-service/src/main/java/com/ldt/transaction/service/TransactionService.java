@@ -1,5 +1,6 @@
 package com.ldt.transaction.service;
 
+import com.ldt.transaction.constant.UserConstants;
 import com.ldt.transaction.context.UserContext;
 import com.ldt.transaction.dto.response.PageResponse;
 import com.ldt.transaction.dto.response.RecentTransactionResponse;
@@ -371,7 +372,7 @@ public class TransactionService {
         Transaction tx = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
 
-        boolean isAdmin = "ADMIN".equals(UserContext.getRole());
+        boolean isAdmin = UserConstants.ROLE_ADMIN.equals(UserContext.getRole());
         UUID callerId = UUID.fromString(UserContext.getUserId());
         if (!isAdmin && !callerId.equals(tx.getFromUserId()) && !callerId.equals(tx.getToUserId())) {
             throw new AppException(ErrorCode.TRANSACTION_NOT_FOUND);

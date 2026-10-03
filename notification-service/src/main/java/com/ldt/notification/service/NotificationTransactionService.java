@@ -1,5 +1,6 @@
 package com.ldt.notification.service;
 
+import com.ldt.notification.constant.TransactionTypeConstants;
 import com.ldt.notification.event.TransactionNotificationEvent;
 import com.ldt.notification.i18n.Messages;
 import com.ldt.notification.model.NotificationChannel;
@@ -24,7 +25,7 @@ public class NotificationTransactionService {
     private final Messages messages;
 
     public void notifySender(TransactionNotificationEvent event) {
-        boolean isPayment = "PAYMENT".equals(event.getTransactionType());
+        boolean isPayment = TransactionTypeConstants.PAYMENT.equals(event.getTransactionType());
         String verb = isPayment ? "thanh toán" : "chuyển";
         String message = String.format(
                 "Bạn đã %s %s VND cho %s (%s). Nội dung: %s. Mã GD: %s",
@@ -67,7 +68,7 @@ public class NotificationTransactionService {
     }
 
     public void notifyReceiver(TransactionNotificationEvent event) {
-        boolean isPayment = "PAYMENT".equals(event.getTransactionType());
+        boolean isPayment = TransactionTypeConstants.PAYMENT.equals(event.getTransactionType());
         String message = isPayment
                 ? String.format(
                         "Bạn nhận được thanh toán %s VND từ %s (%s). Nội dung: %s. Mã GD: %s",

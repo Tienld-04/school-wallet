@@ -1,5 +1,6 @@
 package com.ldt.transaction.service.topup;
 
+import com.ldt.transaction.constant.UserConstants;
 import com.ldt.transaction.dto.topup.InitiateTopupRequest;
 import com.ldt.transaction.dto.topup.InitiateTopupResponse;
 import com.ldt.transaction.dto.topup.TopupStatusResponse;
@@ -80,7 +81,7 @@ public class TopupService {
         }
         // 2. Fetch user + KYC check trước khi tạo giao dịch
         UserInternalResponse user = fetchUser(userPhone);
-        if (!"VERIFIED".equals(user.getKycStatus())) {
+        if (!UserConstants.KYC_VERIFIED.equals(user.getKycStatus())) {
             throw new AppException(ErrorCode.KYC_NOT_VERIFIED);
         }
         String toFullName = user.getFullName();

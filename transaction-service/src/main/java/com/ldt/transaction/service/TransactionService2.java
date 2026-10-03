@@ -1,5 +1,7 @@
 package com.ldt.transaction.service;
 
+import com.ldt.transaction.constant.LedgerReasonConstants;
+import com.ldt.transaction.constant.UserConstants;
 import com.ldt.transaction.dto.TransactionResponse;
 import com.ldt.transaction.dto.TransferRequest;
 import com.ldt.transaction.dto.payment.PaymentRequest;
@@ -8,8 +10,8 @@ import com.ldt.transaction.dto.user.UserInternalResponse;
 import com.ldt.transaction.event.TransactionNotificationEvent;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
-import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.grpc.WalletGrpcClient;
+import com.ldt.transaction.i18n.Messages;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;
@@ -65,9 +67,6 @@ public class TransactionService2 {
     @Value("${platform.fee-rate:0.10}")
     private BigDecimal feeRate;
 
-    /**
-     * Snapshot toàn bộ input của 1 giao dịch để engine xử lý đồng nhất.
-     */
     private record TransactionContext(
             String requestId,
             String pin,
@@ -82,15 +81,9 @@ public class TransactionService2 {
             boolean applyPlatformFee) {
     }
 
-    /**
-     * Gom info sender + receiver thành 1 đơn vị trả về từ batch call.
-     */
     private record UserPair(UserInternalResponse from, UserInternalResponse to) {
     }
 
-    /**
-     * Kết quả gọi wallet-service: success + error message (nếu fail).
-     */
     private record WalletCallResult(boolean success, String errorMessage) {
         static WalletCallResult ok() {
             return new WalletCallResult(true, null);
@@ -102,28 +95,12 @@ public class TransactionService2 {
     }
 
     /**
-     * Map TransactionType → reason string khớp với LedgerReason ở wallet-service.
-     */
-    // private static String walletReasonOf(TransactionType type) {
-    //     return switch (type) {
-    //         TODO: 2 case dưới chỉ dùng khi /payment, /topup endpoint
-    //         case TOPUP -> "TOP_UP";
-    //         case PAYMENT -> "PAYMENT";
-    //         default -> "TRANSFER_OUT";
-    //     };
-    // }
-
-    /**
      * Entry cho /transfer, /payment, /topup — không tính fee, delegate xuống engine.
      */
     public TransactionResponse transfer(TransferRequest request, String fromPhone, TransactionType type) {
         if (fromPhone.equals(request.getToPhoneNumber())) {
             throw new AppException(ErrorCode.SELF_TRANSFER);
         }
-        // TODO: nhánh PAYMENT/TOPUP chỉ áp dụng khi /payment, /topup endpoint
-        // String successMsg = type == TransactionType.PAYMENT
-        //         ? "Thanh toán thành công"
-        //         : (type == TransactionType.TOPUP ? "Nạp tiền thành công" : "Chuyển tiền thành công");
         String successMsg = messages.getVi("transaction.transfer.success");
 
         return executeTransaction(new TransactionContext(
@@ -135,7 +112,7 @@ public class TransactionService2 {
                 request.getDescription(),
                 type,
                 null,
-                "TRANSFER_OUT",
+                LedgerReasonConstants.TRANSFER_OUT,
                 successMsg,
                 false));
     }
@@ -160,7 +137,7 @@ public class TransactionService2 {
                 description,
                 TransactionType.PAYMENT,
                 request.getMerchantId(),
-                "PAYMENT",
+                LedgerReasonConstants.PAYMENT,
                 messages.getVi("transaction.payment.success"),
                 true));
     }
@@ -184,13 +161,13 @@ public class TransactionService2 {
         verifyPin(ctx.fromPhone(), ctx.pin());
         // 3. Fetch user info + check LOCKED status
         UserPair users = fetchUserPair(ctx.fromPhone(), ctx.toPhone());
-        if ("LOCKED".equals(users.from().getStatus())) {
+        if (UserConstants.STATUS_LOCKED.equals(users.from().getStatus())) {
             throw new AppException(ErrorCode.SENDER_LOCKED);
         }
-        if ("LOCKED".equals(users.to().getStatus())) {
+        if (UserConstants.STATUS_LOCKED.equals(users.to().getStatus())) {
             throw new AppException(ErrorCode.RECIPIENT_LOCKED);
         }
-        if (!"VERIFIED".equals(users.from().getKycStatus())) {
+        if (!UserConstants.KYC_VERIFIED.equals(users.from().getKycStatus())) {
             throw new AppException(ErrorCode.KYC_NOT_VERIFIED);
         }
         // 4. Nếu là merchant payment có áp dụng fee platform, ctx.applyPlatformFee() = true -> fetch admin.
