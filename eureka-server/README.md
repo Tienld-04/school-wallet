@@ -11,8 +11,13 @@ Thực tế chỉ 3 service dùng tới danh bạ: **gateway** (route `lb://` t�
 Port **8761** · Dashboard http://localhost:8761 · Không DB, không đọc `.env`
 
 ```powershell
-docker compose up -d eureka-server      # hoặc: cd eureka-server; .\mvnw spring-boot:run
+docker compose up -d eureka-server
+
+# Chạy local: phải đứng ở GỐC repo để EnvLoader đọc được .env (cần EUREKA_USER / EUREKA_PASSWORD)
+java -jar eureka-server\target\eureka-server-0.0.1-SNAPSHOT.jar
 ```
+
+API registry `/eureka/**` yêu cầu Basic auth (`EurekaAuthFilter`); dashboard `/` để mở.
 
 ## Cách 1 — Dashboard
 

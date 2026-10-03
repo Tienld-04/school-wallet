@@ -66,6 +66,6 @@ vnpay:
 eureka:
   client:
     service-url:
-      defaultZone: "${EUREKA_SERVER_URL:http://localhost:8761/eureka/}"
+      defaultZone: "${EUREKA_SERVER_URL:http://${EUREKA_USER}:${EUREKA_PASSWORD}@localhost:8761/eureka/}"
   instance:
     prefer-ip-address: true

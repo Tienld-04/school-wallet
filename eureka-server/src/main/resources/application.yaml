@@ -8,6 +8,9 @@ spring:
     enabled: false
 
 eureka:
+  auth:
+    username: "${EUREKA_USER}"
+    password: "${EUREKA_PASSWORD}"
   instance:
     hostname: "${EUREKA_HOSTNAME:localhost}"
   client:

@@ -42,9 +42,7 @@ services:
       - "8161:8161"     # Web console (admin/admin)
     networks: [school-wallet]
 
-  # ── Service registry ─────────────────────────────────────────────────────--
-  # Control plane: request của user KHÔNG đi qua đây. Chỉ nhận register/heartbeat.
-  # Stage A: chưa service nào là client, nên dashboard sẽ trống.
+  # ── Service registry ─────────────────────────────────────────────────────
   eureka-server:
     build: ./eureka-server
     container_name: eureka-server
@@ -53,6 +51,8 @@ services:
                         # REST API của Eureka cho phép register instance giả mạo.
     environment:
       EUREKA_HOSTNAME: "eureka-server"
+      EUREKA_USER: "${EUREKA_USER}"
+      EUREKA_PASSWORD: "${EUREKA_PASSWORD}"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8761/"]
@@ -73,7 +73,7 @@ services:
     environment:
       DB_USER_URL: "jdbc:postgresql://postgres:5432/user_service"
       REDIS_HOST: "redis"
-      EUREKA_SERVER_URL: "http://eureka-server:8761/eureka/"
+      EUREKA_SERVER_URL: "http://${EUREKA_USER}:${EUREKA_PASSWORD}@eureka-server:8761/eureka/"
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -90,7 +90,7 @@ services:
       - .env
     environment:
       DB_WALLET_URL: "jdbc:postgresql://postgres:5432/wallet_service"
-      EUREKA_SERVER_URL: "http://eureka-server:8761/eureka/"
+      EUREKA_SERVER_URL: "http://${EUREKA_USER}:${EUREKA_PASSWORD}@eureka-server:8761/eureka/"
     depends_on:
       postgres: { condition: service_healthy }
       eureka-server: { condition: service_healthy }
@@ -107,7 +107,7 @@ services:
     environment:
       DB_TRANSACTION_URL: "jdbc:postgresql://postgres:5432/transaction_service"
       ACTIVEMQ_BROKER_URL: "tcp://activemq:61616"
-      EUREKA_SERVER_URL: "http://eureka-server:8761/eureka/"
+      EUREKA_SERVER_URL: "http://${EUREKA_USER}:${EUREKA_PASSWORD}@eureka-server:8761/eureka/"
     depends_on:
       postgres: { condition: service_healthy }
       activemq: { condition: service_started }
@@ -128,7 +128,7 @@ services:
       DB_NOTIFICATION_URL: "jdbc:postgresql://postgres:5432/notification_service"
       REDIS_HOST: "redis"
       ACTIVEMQ_BROKER_URL: "tcp://activemq:61616"
-      EUREKA_SERVER_URL: "http://eureka-server:8761/eureka/"
+      EUREKA_SERVER_URL: "http://${EUREKA_USER}:${EUREKA_PASSWORD}@eureka-server:8761/eureka/"
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -145,7 +145,7 @@ services:
     env_file:
       - .env
     environment:
-      EUREKA_SERVER_URL: "http://eureka-server:8761/eureka/"
+      EUREKA_SERVER_URL: "http://${EUREKA_USER}:${EUREKA_PASSWORD}@eureka-server:8761/eureka/"
     depends_on:
       user-service: { condition: service_started }
       wallet-service: { condition: service_started }
