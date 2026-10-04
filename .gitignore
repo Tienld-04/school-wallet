@@ -6,6 +6,11 @@
 !**/.env.example
 
 .claude/settings.local.json
+.claude/settings.json
 
 docs/
 .tools/
+docker/
+
+CLAUDE.md
+.idea/
