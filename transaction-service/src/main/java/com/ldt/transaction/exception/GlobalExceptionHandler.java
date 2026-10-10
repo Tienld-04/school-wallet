@@ -1,6 +1,6 @@
 package com.ldt.transaction.exception;
 
-import com.ldt.transaction.i18n.Messages;
+import com.ldt.transaction.config.i18n.Messages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

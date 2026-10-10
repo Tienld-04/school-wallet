@@ -4,7 +4,7 @@ import com.ldt.user.dto.kyc.KycAdminListResponse;
 import com.ldt.user.dto.kyc.KycRejectRequest;
 import com.ldt.user.dto.request.ResetPinRequest;
 import com.ldt.user.dto.response.UsersResponse;
-import com.ldt.user.i18n.Messages;
+import com.ldt.user.config.i18n.Messages;
 import com.ldt.user.model.UserStatus;
 import com.ldt.user.service.AdminService;
 import jakarta.validation.Valid;

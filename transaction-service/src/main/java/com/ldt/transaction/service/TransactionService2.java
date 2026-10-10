@@ -11,7 +11,7 @@ import com.ldt.transaction.event.TransactionNotificationEvent;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
 import com.ldt.transaction.grpc.WalletGrpcClient;
-import com.ldt.transaction.i18n.Messages;
+import com.ldt.transaction.config.i18n.Messages;
 import com.ldt.transaction.mapper.TransactionMapper;
 import com.ldt.transaction.model.Transaction;
 import com.ldt.transaction.model.TransactionStatus;

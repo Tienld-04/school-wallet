@@ -8,7 +8,7 @@ import com.ldt.wallet.dto.response.LedgerEntryResponse;
 import com.ldt.wallet.dto.response.PageResponse;
 import com.ldt.wallet.exception.AppException;
 import com.ldt.wallet.exception.ErrorCode;
-import com.ldt.wallet.i18n.Messages;
+import com.ldt.wallet.config.i18n.Messages;
 import com.ldt.wallet.model.LedgerDirection;
 import com.ldt.wallet.model.LedgerReason;
 import com.ldt.wallet.model.Wallet;

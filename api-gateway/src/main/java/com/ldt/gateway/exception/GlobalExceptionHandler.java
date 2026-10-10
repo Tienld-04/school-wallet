@@ -1,7 +1,7 @@
 package com.ldt.gateway.exception;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ldt.gateway.i18n.Messages;
+import com.ldt.gateway.config.i18n.Messages;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

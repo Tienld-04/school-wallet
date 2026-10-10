@@ -2,7 +2,7 @@ package com.ldt.wallet.grpc;
 
 import com.ldt.wallet.exception.AppException;
 import com.ldt.wallet.exception.ErrorCode;
-import com.ldt.wallet.i18n.Messages;
+import com.ldt.wallet.config.i18n.Messages;
 import io.grpc.Status;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.advice.GrpcAdvice;

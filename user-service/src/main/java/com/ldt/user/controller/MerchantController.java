@@ -4,7 +4,7 @@ import com.ldt.user.context.UserContext;
 import com.ldt.user.dto.merchant.MerchantListResponse;
 import com.ldt.user.dto.merchant.MerchantRequest;
 import com.ldt.user.dto.merchant.MerchantResponse;
-import com.ldt.user.i18n.Messages;
+import com.ldt.user.config.i18n.Messages;
 import com.ldt.user.service.MerchantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

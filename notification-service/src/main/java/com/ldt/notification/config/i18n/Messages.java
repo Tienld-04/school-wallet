@@ -1,4 +1,4 @@
-package com.ldt.user.i18n;
+package com.ldt.notification.config.i18n;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -15,10 +15,11 @@ public class Messages {
     private final MessageSource messageSource;
 
     public String get(String key, Object... args) {
-        return messageSource.getMessage(key, args, key, currentLocale());
+        Locale locale = LocaleContextHolder.getLocaleContext() != null ? LocaleContextHolder.getLocale() : VI;
+        return messageSource.getMessage(key, args, key, locale);
     }
 
-    private Locale currentLocale() {
-        return LocaleContextHolder.getLocaleContext() != null ? LocaleContextHolder.getLocale() : VI;
+    public String getVi(String key, Object... args) {
+        return messageSource.getMessage(key, args, key, VI);
     }
 }
