@@ -1,6 +1,6 @@
 package com.ldt.notification.exception;
 
-import com.ldt.notification.i18n.Messages;
+import com.ldt.notification.config.i18n.Messages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -2,7 +2,7 @@ package com.ldt.notification.service;
 
 import com.ldt.notification.constant.TransactionTypeConstants;
 import com.ldt.notification.event.TransactionNotificationEvent;
-import com.ldt.notification.i18n.Messages;
+import com.ldt.notification.config.i18n.Messages;
 import com.ldt.notification.model.NotificationChannel;
 import com.ldt.notification.model.NotificationDirection;
 import com.ldt.notification.model.NotificationStatus;

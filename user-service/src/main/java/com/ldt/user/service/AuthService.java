@@ -8,7 +8,7 @@ import com.ldt.user.dto.auth.LoginResponse;
 import com.ldt.user.dto.auth.LogoutRequest;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
-import com.ldt.user.i18n.Messages;
+import com.ldt.user.config.i18n.Messages;
 import com.ldt.user.model.InvalidatedToken;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserStatus;

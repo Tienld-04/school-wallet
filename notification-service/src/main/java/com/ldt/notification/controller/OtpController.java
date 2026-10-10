@@ -3,7 +3,7 @@ package com.ldt.notification.controller;
 import com.ldt.notification.dto.OtpSendRequest;
 import com.ldt.notification.dto.OtpVerifyRequest;
 import com.ldt.notification.dto.OtpVerifyResponse;
-import com.ldt.notification.i18n.Messages;
+import com.ldt.notification.config.i18n.Messages;
 import com.ldt.notification.service.OtpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

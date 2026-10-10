@@ -8,7 +8,7 @@ import com.ldt.transaction.dto.response.RevenueOverviewResponse;
 import com.ldt.transaction.dto.response.RevenueTimeSeriesPoint;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
-import com.ldt.transaction.i18n.Messages;
+import com.ldt.transaction.config.i18n.Messages;
 import com.ldt.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

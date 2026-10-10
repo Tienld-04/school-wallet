@@ -1,4 +1,4 @@
-package com.ldt.transaction.i18n;
+package com.ldt.wallet.config.i18n;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -10,7 +10,7 @@ import java.util.Locale;
 @Component
 @RequiredArgsConstructor
 public class Messages {
-    private static final Locale VI = Locale.of("vi");
+    public static final Locale VI = Locale.of("vi");
 
     private final MessageSource messageSource;
 
