@@ -3,7 +3,7 @@ package com.ldt.user.service;
 import com.ldt.user.dto.response.UserInternalResponse;
 import com.ldt.user.exception.AppException;
 import com.ldt.user.exception.ErrorCode;
-import com.ldt.user.i18n.Messages;
+import com.ldt.user.config.i18n.Messages;
 import com.ldt.user.model.User;
 import com.ldt.user.model.UserRole;
 import com.ldt.user.repository.UserRepository;

@@ -4,7 +4,7 @@ import com.ldt.transaction.dto.response.StatsOverviewResponse;
 import com.ldt.transaction.dto.response.TimeSeriesPoint;
 import com.ldt.transaction.exception.AppException;
 import com.ldt.transaction.exception.ErrorCode;
-import com.ldt.transaction.i18n.Messages;
+import com.ldt.transaction.config.i18n.Messages;
 import com.ldt.transaction.model.TransactionStatus;
 import com.ldt.transaction.model.TransactionType;
 import com.ldt.transaction.repository.TransactionRepository;

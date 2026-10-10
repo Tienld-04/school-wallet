@@ -1,6 +1,6 @@
 package com.ldt.wallet.exception;
 
-import com.ldt.wallet.i18n.Messages;
+import com.ldt.wallet.config.i18n.Messages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package com.ldt.user.exception;
 
 
-import com.ldt.user.i18n.Messages;
+import com.ldt.user.config.i18n.Messages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

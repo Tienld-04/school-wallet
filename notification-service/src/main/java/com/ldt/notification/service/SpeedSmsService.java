@@ -2,7 +2,7 @@ package com.ldt.notification.service;
 
 import com.ldt.notification.exception.AppException;
 import com.ldt.notification.exception.ErrorCode;
-import com.ldt.notification.i18n.Messages;
+import com.ldt.notification.config.i18n.Messages;
 import com.ldt.notification.model.NotificationChannel;
 import com.ldt.notification.model.NotificationStatus;
 import lombok.RequiredArgsConstructor;

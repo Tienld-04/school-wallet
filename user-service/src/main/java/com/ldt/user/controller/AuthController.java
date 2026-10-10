@@ -2,7 +2,7 @@ package com.ldt.user.controller;
 
 import com.ldt.user.dto.auth.*;
 import com.ldt.user.dto.request.UserCreateRequest;
-import com.ldt.user.i18n.Messages;
+import com.ldt.user.config.i18n.Messages;
 import com.ldt.user.service.AuthService;
 import com.ldt.user.service.UserService;
 import jakarta.validation.Valid;
