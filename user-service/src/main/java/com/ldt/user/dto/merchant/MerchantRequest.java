@@ -9,14 +9,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MerchantRequest {
-    @NotBlank(message = "Tên merchant không được trống")
-    @Size(max = 100, message = "Tên merchant tối đa 100 ký tự")
+    @NotBlank(message = "{validation.merchant_name.required}")
+    @Size(max = 100, message = "{validation.merchant_name.max_length}")
     private String name;
 
-    @NotBlank(message = "Loại merchant không được trống")
+    @NotBlank(message = "{validation.merchant_type.required}")
     private String type;
 
-    @NotBlank(message = "Số điện thoại không được trống")
-    @Pattern(regexp = "^\\d{10}$", message = "Số điện thoại phải có đúng 10 chữ số")
+    @NotBlank(message = "{validation.merchant_phone.required}")
+    @Pattern(regexp = "^\\d{10}$", message = "{validation.merchant_phone.pattern}")
     private String userPhone;
 }

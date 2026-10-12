@@ -9,16 +9,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ChangePinRequest {
-    @NotBlank(message = "Mã OTP hiện tại không được để trống")
-    @Size(min = 6, max = 6, message = "Mã OTP phải đúng 6 số")
-    @Pattern(regexp = "\\d{6}", message = "Mã OTP chỉ chứa chữ số")
+    @NotBlank(message = "{validation.current_otp.required}")
+    @Size(min = 6, max = 6, message = "{validation.otp.length}")
+    @Pattern(regexp = "\\d{6}", message = "{validation.otp.digits}")
     private String currentPin;
 
-    @NotBlank(message = "Mã OTP mới không được để trống")
-    @Size(min = 6, max = 6, message = "Mã OTP phải đúng 6 số")
-    @Pattern(regexp = "\\d{6}", message = "Mã OTP chỉ chứa chữ số")
+    @NotBlank(message = "{validation.new_otp.required}")
+    @Size(min = 6, max = 6, message = "{validation.otp.length}")
+    @Pattern(regexp = "\\d{6}", message = "{validation.otp.digits}")
     private String newPin;
 
-    @NotBlank(message = "Xác nhận mã OTP không được để trống")
+    @NotBlank(message = "{validation.confirm_otp.required}")
     private String confirmPin;
 }

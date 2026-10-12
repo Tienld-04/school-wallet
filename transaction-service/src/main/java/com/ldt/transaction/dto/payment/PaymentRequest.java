@@ -10,24 +10,24 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PaymentRequest {
-    @NotBlank(message = "Request ID không được để trống")
+    @NotBlank(message = "{validation.request_id.required}")
     private String requestId;
 
-    @NotNull(message = "Merchant ID không được để trống")
+    @NotNull(message = "{validation.merchant_id.required}")
     private UUID merchantId;
 
-    @NotBlank(message = "Tên merchant không được để trống")
+    @NotBlank(message = "{validation.merchant_name.required}")
     private String merchantName;
 
-    @NotBlank(message = "Số điện thoại merchant không được để trống")
+    @NotBlank(message = "{validation.merchant_phone.required}")
     private String merchantPhone;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "1000", message = "Số tiền tối thiểu là 1,000đ")
+    @NotNull(message = "{validation.amount.required}")
+    @DecimalMin(value = "1000", message = "{validation.amount.min}")
     private BigDecimal amount;
 
     private String description;
 
-    @NotBlank(message = "Mã PIN không được để trống")
+    @NotBlank(message = "{validation.pin.required}")
     private String pin;
 }

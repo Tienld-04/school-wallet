@@ -6,11 +6,11 @@ import lombok.Data;
 
 @Data
 public class OtpVerifyRequest {
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Size(min = 10, max = 10, message = "Số điện thoại phải 10 số")
+    @NotBlank(message = "{validation.phone.required}")
+    @Size(min = 10, max = 10, message = "{validation.phone.length}")
     private String phone;
 
-    @NotBlank(message = "Mã OTP không được để trống")
-    @Size(min = 6, max = 6, message = "Mã OTP phải 6 số")
+    @NotBlank(message = "{validation.otp.required}")
+    @Size(min = 6, max = 6, message = "{validation.otp.length}")
     private String otp;
 }

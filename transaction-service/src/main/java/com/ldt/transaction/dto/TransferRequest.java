@@ -9,20 +9,20 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class TransferRequest {
-    @NotBlank(message = "Request ID không được để trống")
+    @NotBlank(message = "{validation.request_id.required}")
     private String requestId;
 
-    @NotBlank(message = "Số điện thoại người nhận không được để trống")
+    @NotBlank(message = "{validation.to_phone.required}")
     private String toPhoneNumber;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "1000", message = "Số tiền tối thiểu là 1,000đ")
+    @NotNull(message = "{validation.amount.required}")
+    @DecimalMin(value = "1000", message = "{validation.amount.min}")
     private BigDecimal amount;
     
-    @Size(max = 255, message = "Ghi chú tối đa 255 ký tự")
+    @Size(max = 255, message = "{validation.description.max_length}")
     private String description;
 
-    @NotBlank(message = "Mã PIN không được để trống")
+    @NotBlank(message = "{validation.pin.required}")
     private String pin;
 }
 

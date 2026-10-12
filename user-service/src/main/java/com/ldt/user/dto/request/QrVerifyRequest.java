@@ -7,6 +7,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class QrVerifyRequest {
-    @NotBlank(message = "Nội dung QR không được để trống")
+    @NotBlank(message = "{validation.qr_content.required}")
     private String qrContent;
 }

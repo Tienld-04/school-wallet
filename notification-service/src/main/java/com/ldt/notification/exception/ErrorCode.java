@@ -6,23 +6,23 @@ import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum ErrorCode {
-    UNCATEGORIZED_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_REQUEST(2000, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
-    OTP_EXPIRED(2001, "Mã OTP đã hết hạn", HttpStatus.BAD_REQUEST),
-    OTP_INVALID(2002, "Mã OTP không đúng", HttpStatus.BAD_REQUEST),
-    OTP_MAX_ATTEMPTS(2003, "Nhập sai OTP quá nhiều lần. Vui lòng yêu cầu mã mới", HttpStatus.BAD_REQUEST),
-    OTP_RESEND_TOO_SOON(2004, "Vui lòng chờ trước khi yêu cầu mã mới", HttpStatus.TOO_MANY_REQUESTS),
-    OTP_SEND_FAILED(2005, "Gửi mã OTP thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
-    NOTIFICATION_NOT_FOUND(3001, "Không tìm thấy thông báo", HttpStatus.NOT_FOUND),
-    FORBIDDEN(3002, "Bạn không có quyền thực hiện hành động này", HttpStatus.FORBIDDEN);
+    UNCATEGORIZED_EXCEPTION(9999, "error.UNCATEGORIZED_EXCEPTION", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_REQUEST(2000, "error.INVALID_REQUEST", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(2001, "error.OTP_EXPIRED", HttpStatus.BAD_REQUEST),
+    OTP_INVALID(2002, "error.OTP_INVALID", HttpStatus.BAD_REQUEST),
+    OTP_MAX_ATTEMPTS(2003, "error.OTP_MAX_ATTEMPTS", HttpStatus.BAD_REQUEST),
+    OTP_RESEND_TOO_SOON(2004, "error.OTP_RESEND_TOO_SOON", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_SEND_FAILED(2005, "error.OTP_SEND_FAILED", HttpStatus.INTERNAL_SERVER_ERROR),
+    NOTIFICATION_NOT_FOUND(3001, "error.NOTIFICATION_NOT_FOUND", HttpStatus.NOT_FOUND),
+    FORBIDDEN(3002, "error.FORBIDDEN", HttpStatus.FORBIDDEN);
 
-    ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
+    ErrorCode(int code, String messageKey, HttpStatusCode httpStatusCode) {
         this.code = code;
-        this.message = message;
+        this.messageKey = messageKey;
         this.httpStatusCode = httpStatusCode;
     }
 
     private final int code;
-    private final String message;
+    private final String messageKey;
     private final HttpStatusCode httpStatusCode;
 }

@@ -13,20 +13,20 @@ import java.util.UUID;
 @Getter
 @Setter
 public class WalletTransferRequest {
-    @NotNull(message = "fromUserId không được để trống")
+    @NotNull(message = "{validation.from_user_id.required}")
     private UUID fromUserId;
 
-    @NotNull(message = "toUserId không được để trống")
+    @NotNull(message = "{validation.to_user_id.required}")
     private UUID toUserId;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "0", inclusive = false, message = "Số tiền phải lớn hơn 0")
+    @NotNull(message = "{validation.amount.required}")
+    @DecimalMin(value = "0", inclusive = false, message = "{validation.amount.positive}")
     private BigDecimal amount;
 
     /**
      * ID của transaction bên transaction-service — để gắn vào ledger làm audit trail.
      */
-    @NotNull(message = "transactionId không được để trống")
+    @NotNull(message = "{validation.transaction_id.required}")
     private UUID transactionId;
 
     /**
@@ -36,6 +36,6 @@ public class WalletTransferRequest {
      */
     private LedgerReason reason;
 
-    @Size(max = 255, message = "Ghi chú tối đa 255 ký tự")
+    @Size(max = 255, message = "{validation.note.max_length}")
     private String note;
 }

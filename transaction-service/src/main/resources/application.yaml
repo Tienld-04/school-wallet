@@ -30,6 +30,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  web:
+    locale: vi
 
   activemq:
     broker-url: "${ACTIVEMQ_BROKER_URL:tcp://localhost:61616}"
@@ -38,14 +44,20 @@ spring:
     in-memory: false
   jms:
     pub-sub-domain: true
-
 service:
   wallet-service:
-    url: "${WALLET_SERVICE_URL:http://localhost:8082}"
-user-service:
-  url: "${USER_SERVICE_URL:http://localhost:8081}"
+    url: "http://wallet-service"
+  user-service:
+    url: "http://user-service"
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
+
+# gRPC client → wallet-service
+grpc:
+  client:
+    wallet:
+      address: "discovery:///wallet-service"
+      negotiation-type: plaintext
 
 platform:
   fee-rate: "${PLATFORM_FEE_RATE:0.10}"
@@ -56,3 +68,10 @@ vnpay:
   pay-url: "${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
   return-url: "${VNPAY_RETURN_URL:http://localhost:3000/top-up/result}"
   version: "${VNPAY_VERSION:2.1.0}"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "${EUREKA_SERVER_URL:http://${EUREKA_USER}:${EUREKA_PASSWORD}@localhost:8761/eureka/}"
+  instance:
+    prefer-ip-address: true

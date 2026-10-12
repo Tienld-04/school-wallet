@@ -6,49 +6,49 @@ import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum ErrorCode {
-    UNCATEGORIZEO_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
-    UNAUTHENTICATED(1001, "Người dùng chưa được xác thực.", HttpStatus.UNAUTHORIZED),
-    INVALID_REQUEST(1002, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
-    PHONE_ALREADY_EXISTS(1003, "Số điện thoại đã được đăng ký", HttpStatus.BAD_REQUEST),
-    EMAIL_ALREADY_EXISTS(1004, "Email đã được đăng ký", HttpStatus.BAD_REQUEST),
-    REGISTRATION_FAILED(1005, "Đăng ký thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
-    USER_NOT_FOUND(1006, "Người dùng không tồn tại", HttpStatus.NOT_FOUND),
-    ACCOUNT_LOCKED(1007, "Tài khoản bị khóa", HttpStatus.FORBIDDEN),
-    INVALID_CREDENTIALS(1008, "SĐT hoặc mật khẩu không đúng", HttpStatus.BAD_REQUEST),
-    INVALID_PIN(1009, "Mã PIN không đúng", HttpStatus.BAD_REQUEST),
-    PIN_LOCKED(1010, "Chức năng chuyển tiền tạm khóa", HttpStatus.FORBIDDEN),
-    RECIPIENT_LOCKED(1011, "Tài khoản người nhận đã bị khóa", HttpStatus.BAD_REQUEST),
-    QR_INVALID(1012, "Mã QR không hợp lệ", HttpStatus.BAD_REQUEST),
-    QR_EXPIRED(1013, "Mã QR đã hết hạn", HttpStatus.BAD_REQUEST),
-    QR_INVALID_SYSTEM(1014, "Mã QR không thuộc hệ thống School Wallet", HttpStatus.BAD_REQUEST),
-    QR_FORMAT_ERROR(1015, "Định dạng QR không đúng", HttpStatus.BAD_REQUEST),
-    QR_SIGN_ERROR(1016, "Lỗi tạo chữ ký QR", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_VERIFICATION_TOKEN(1017, "Token xác thực không hợp lệ", HttpStatus.BAD_REQUEST),
-    PHONE_MISMATCH(1018, "Số điện thoại không khớp với token xác thực", HttpStatus.BAD_REQUEST),
-    VERIFICATION_EXPIRED(1019, "Phiên xác thực đã hết hạn, vui lòng xác thực lại", HttpStatus.BAD_REQUEST),
-    EMAIL_NOT_FOUND(1020, "Email không tồn tại trong hệ thống", HttpStatus.NOT_FOUND),
-    SEND_EMAIL_FAILED(1021, "Gửi email thất bại, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR),
-    INCORRECT_PASSWORD(1022, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
-    PASSWORD_MISMATCH(1023, "Xác nhận mật khẩu không khớp", HttpStatus.BAD_REQUEST),
-    ACCESS_DENIED(1024, "Bạn không có quyền thực hiện chức năng này", HttpStatus.FORBIDDEN),
-    MERCHANT_NOT_FOUND(1025, "Merchant không tồn tại", HttpStatus.NOT_FOUND),
-    MERCHANT_NAME_ALREADY_EXISTS(1026, "Tên merchant đã tồn tại", HttpStatus.BAD_REQUEST),
-    INVALID_MERCHANT_TYPE(1027, "Loại merchant không hợp lệ", HttpStatus.BAD_REQUEST),
-    KYC_ALREADY_VERIFIED(1028, "Tài khoản đã được xác minh KYC", HttpStatus.BAD_REQUEST),
-    KYC_PENDING(1029, "Hồ sơ KYC đang chờ duyệt", HttpStatus.BAD_REQUEST),
-    KYC_NOT_FOUND(1030, "Không tìm thấy hồ sơ KYC", HttpStatus.NOT_FOUND),
-    KYC_ID_NUMBER_EXISTS(1032, "Số CCCD đã được sử dụng bởi tài khoản khác", HttpStatus.BAD_REQUEST),
-    ADMIN_NOT_CONFIGURED(1033, "Hệ thống chưa cấu hình tài khoản admin", HttpStatus.INTERNAL_SERVER_ERROR),
-    PIN_MISMATCH(1034, "Xác nhận mã OTP không khớp", HttpStatus.BAD_REQUEST),
-    ADMIN_ACCESS_DENIED(1035, "Admin không được phép cung cấp dịch vụ, hãy thêm dịch vụ cho tài khoản người dùng", HttpStatus.FORBIDDEN);
-    ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
-        this.message = message;
+    UNCATEGORIZEO_EXCEPTION(9999, "error.UNCATEGORIZEO_EXCEPTION", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNAUTHENTICATED(1001, "error.UNAUTHENTICATED", HttpStatus.UNAUTHORIZED),
+    INVALID_REQUEST(1002, "error.INVALID_REQUEST", HttpStatus.BAD_REQUEST),
+    PHONE_ALREADY_EXISTS(1003, "error.PHONE_ALREADY_EXISTS", HttpStatus.BAD_REQUEST),
+    EMAIL_ALREADY_EXISTS(1004, "error.EMAIL_ALREADY_EXISTS", HttpStatus.BAD_REQUEST),
+    REGISTRATION_FAILED(1005, "error.REGISTRATION_FAILED", HttpStatus.INTERNAL_SERVER_ERROR),
+    USER_NOT_FOUND(1006, "error.USER_NOT_FOUND", HttpStatus.NOT_FOUND),
+    ACCOUNT_LOCKED(1007, "error.ACCOUNT_LOCKED", HttpStatus.FORBIDDEN),
+    INVALID_CREDENTIALS(1008, "error.INVALID_CREDENTIALS", HttpStatus.BAD_REQUEST),
+    INVALID_PIN(1009, "error.INVALID_PIN", HttpStatus.BAD_REQUEST),
+    PIN_LOCKED(1010, "error.PIN_LOCKED", HttpStatus.FORBIDDEN),
+    RECIPIENT_LOCKED(1011, "error.RECIPIENT_LOCKED", HttpStatus.BAD_REQUEST),
+    QR_INVALID(1012, "error.QR_INVALID", HttpStatus.BAD_REQUEST),
+    QR_EXPIRED(1013, "error.QR_EXPIRED", HttpStatus.BAD_REQUEST),
+    QR_INVALID_SYSTEM(1014, "error.QR_INVALID_SYSTEM", HttpStatus.BAD_REQUEST),
+    QR_FORMAT_ERROR(1015, "error.QR_FORMAT_ERROR", HttpStatus.BAD_REQUEST),
+    QR_SIGN_ERROR(1016, "error.QR_SIGN_ERROR", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_VERIFICATION_TOKEN(1017, "error.INVALID_VERIFICATION_TOKEN", HttpStatus.BAD_REQUEST),
+    PHONE_MISMATCH(1018, "error.PHONE_MISMATCH", HttpStatus.BAD_REQUEST),
+    VERIFICATION_EXPIRED(1019, "error.VERIFICATION_EXPIRED", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_FOUND(1020, "error.EMAIL_NOT_FOUND", HttpStatus.NOT_FOUND),
+    SEND_EMAIL_FAILED(1021, "error.SEND_EMAIL_FAILED", HttpStatus.INTERNAL_SERVER_ERROR),
+    INCORRECT_PASSWORD(1022, "error.INCORRECT_PASSWORD", HttpStatus.BAD_REQUEST),
+    PASSWORD_MISMATCH(1023, "error.PASSWORD_MISMATCH", HttpStatus.BAD_REQUEST),
+    ACCESS_DENIED(1024, "error.ACCESS_DENIED", HttpStatus.FORBIDDEN),
+    MERCHANT_NOT_FOUND(1025, "error.MERCHANT_NOT_FOUND", HttpStatus.NOT_FOUND),
+    MERCHANT_NAME_ALREADY_EXISTS(1026, "error.MERCHANT_NAME_ALREADY_EXISTS", HttpStatus.BAD_REQUEST),
+    INVALID_MERCHANT_TYPE(1027, "error.INVALID_MERCHANT_TYPE", HttpStatus.BAD_REQUEST),
+    KYC_ALREADY_VERIFIED(1028, "error.KYC_ALREADY_VERIFIED", HttpStatus.BAD_REQUEST),
+    KYC_PENDING(1029, "error.KYC_PENDING", HttpStatus.BAD_REQUEST),
+    KYC_NOT_FOUND(1030, "error.KYC_NOT_FOUND", HttpStatus.NOT_FOUND),
+    KYC_ID_NUMBER_EXISTS(1032, "error.KYC_ID_NUMBER_EXISTS", HttpStatus.BAD_REQUEST),
+    ADMIN_NOT_CONFIGURED(1033, "error.ADMIN_NOT_CONFIGURED", HttpStatus.INTERNAL_SERVER_ERROR),
+    PIN_MISMATCH(1034, "error.PIN_MISMATCH", HttpStatus.BAD_REQUEST),
+    ADMIN_ACCESS_DENIED(1035, "error.ADMIN_ACCESS_DENIED", HttpStatus.FORBIDDEN);
+    ErrorCode(int code, String messageKey, HttpStatusCode httpStatusCode) {
+        this.messageKey = messageKey;
         this.code = code;
         this.httpStatusCode = httpStatusCode;
     }
 
     private int code;
-    private String message;
+    private String messageKey;
     private HttpStatusCode httpStatusCode;
 
 }

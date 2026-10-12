@@ -8,16 +8,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SendEmailRequest {
-    @NotBlank(message = "Email người nhận không được để trống")
-    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "{validation.to_email.required}")
+    @Email(message = "{validation.email.invalid}")
     private String toEmail;
 
-    @NotBlank(message = "Tên người nhận không được để trống")
+    @NotBlank(message = "{validation.to_name.required}")
     private String toName;
 
-    @NotBlank(message = "Tiêu đề không được để trống")
+    @NotBlank(message = "{validation.subject.required}")
     private String subject;
 
-    @NotBlank(message = "Nội dung email không được để trống")
+    @NotBlank(message = "{validation.html_content.required}")
     private String htmlContent;
 }

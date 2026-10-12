@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 public class LoginRequest {
     @NotBlank
-    @Size(min = 10, max = 10, message = "SĐT phải đúng 10 số")
+    @Size(min = 10, max = 10, message = "{validation.phone.length}")
     private String phone;
-    @NotBlank @Size(min = 6, message = "Mật khẩu tối thiểu 6 ký tự")
+    @NotBlank @Size(min = 6, message = "{validation.password.min_length}")
     private String password;
 }

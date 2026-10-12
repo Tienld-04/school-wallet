@@ -11,9 +11,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class InternalVerifyPinRequest {
-    @NotBlank(message = "Số điện thoại không được để trống")
+    @NotBlank(message = "{validation.phone.required}")
     private String phone;
 
-    @NotBlank(message = "Mã PIN không được để trống")
+    @NotBlank(message = "{validation.pin.required}")
     private String pin;
 }

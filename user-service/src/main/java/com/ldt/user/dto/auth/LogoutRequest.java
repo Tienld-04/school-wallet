@@ -7,6 +7,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LogoutRequest {
-    @NotBlank(message = "Token không được để trống")
+    @NotBlank(message = "{validation.token.required}")
     private String token;
 }

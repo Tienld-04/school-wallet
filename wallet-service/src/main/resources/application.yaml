@@ -29,5 +29,23 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  web:
+    locale: vi
 internal:
   secret: "${INTERNAL_SECRET:internal-secret}"
+
+# gRPC server
+grpc:
+  server:
+    port: "${WALLET_GRPC_PORT:9090}"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "${EUREKA_SERVER_URL:http://${EUREKA_USER}:${EUREKA_PASSWORD}@localhost:8761/eureka/}"
+  instance:
+    prefer-ip-address: true

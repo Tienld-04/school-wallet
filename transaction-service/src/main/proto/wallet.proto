@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+// gRPC Internal transaction-service (client) and wallet-service (server)
+package wallet;
+
+option java_multiple_files = true;
+option java_package = "com.ldt.wallet.grpc";
+option java_outer_classname = "WalletProto";
+
+service WalletInternalService {
+  //
+  rpc Transfer (TransferRequest) returns (WalletOpReply);
+  //
+  rpc TransferWithFee (TransferWithFeeRequest) returns (WalletOpReply);
+  //
+  rpc Topup (TopupRequest) returns (WalletOpReply);
+}
+
+message TransferRequest {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string amount = 3;
+  string transaction_id = 4;
+  string reason = 5;
+  string note = 6;
+}
+
+message TransferWithFeeRequest {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string platform_user_id = 3;
+  string amount = 4;
+  string fee = 5;
+  string transaction_id = 6;
+  string note = 7;
+}
+
+message TopupRequest {
+  string to_user_id = 1;
+  string amount = 2;
+  string transaction_id = 3;
+  string note = 4;
+}
+
+message WalletOpReply {
+  string status = 1;
+}
