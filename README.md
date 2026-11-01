@@ -47,7 +47,7 @@ school-wallet/
 ├── .github/workflows/       # CI/CD (ci.yml, cd.yml)
 ├── docker-compose.yml       # Toàn bộ hệ thống
 ├── schema.sql               # DDL tổng hợp
-├── docs/                    # Tài liệu thiết kế (ERD, use-case, sơ đồ tuần tự)
+├── docs/                    # Tài liệu thiết kế
 ```
 
 Giao diện web: http://localhost:3000 · Gateway: http://localhost:8080 · Eureka: http://localhost:8761
