@@ -3,7 +3,7 @@
 Hệ thống ví điện tử nội bộ cho trường học: nạp tiền, chuyển tiền giữa người dùng, thanh toán cho
 merchant (căng tin, nhà sách…), tra cứu lịch sử giao dịch và thống kê doanh thu.
 
-Kiến trúc **Microservices + Service Registry + API Gateway + React SPA**.
+Kiến trúc **Microservices + Service Registry + API Gateway**, với hai client: **Web (React SPA)** và **Mobile (Expo)**.
 
 ## Công nghệ
 
@@ -14,11 +14,13 @@ Kiến trúc **Microservices + Service Registry + API Gateway + React SPA**.
 | Giao tiếp      | REST, gRPC (transaction → wallet), ActiveMQ (pub/sub), STOMP                                        |
 | Hạ tầng        | Eureka (service discovery), Docker Compose                                                          |
 | Tích hợp ngoài | VNPay (nạp tiền), SendGrid (email), SpeedSMS (OTP)                                                  |
-| Frontend       | React 19, TypeScript, Vite 6, Tailwind CSS 3, React Router 7                                        |
+| Web app        | React 19, TypeScript, Vite 6, Tailwind CSS 3, React Router 7                                        |
+| Mobile app     | Expo SDK 58, React Native 0.88, TypeScript, Expo Router                                             |
+| CI/CD          | GitHub Actions, GitHub Container Registry (GHCR)                                                    |
 
-## Các service
+## Các thành phần
 
-| Service                | Port               | Vai trò                                                |
+| Thành phần             | Port               | Vai trò                                                |
 | ---------------------- | ------------------ | ------------------------------------------------------ |
 | `eureka-server`        | 8761               | Service registry — các service tự đăng ký và tìm nhau  |
 | `api-gateway`          | 8080               | Cửa ngõ duy nhất: xác thực JWT, định tuyến, CORS       |
@@ -26,7 +28,8 @@ Kiến trúc **Microservices + Service Registry + API Gateway + React SPA**.
 | `wallet-service`       | 8082 (+ gRPC 9090) | Số dư, hạn mức, sổ cái ghi kép (double-entry)          |
 | `transaction-service`  | 8084               | Điều phối giao dịch, lịch sử, thống kê, tích hợp VNPay |
 | `notification-service` | 8085               | OTP, email, SMS, hộp thư, thông báo thời gian thực     |
-| `font-end`             | 3000               | Giao diện người dùng và quản trị                       |
+| `web-app`              | 3000               | Giao diện web cho người dùng và quản trị               |
+| `mobile-app`           | 8090 (Metro, dev)  | Ứng dụng di động cho người dùng                        |
 
 ## Cấu trúc thư mục
 
@@ -38,27 +41,13 @@ school-wallet/
 ├── wallet-service/          # Ví & sổ cái (com.ldt.wallet)
 ├── transaction-service/     # Giao dịch & thống kê (com.ldt.transaction)
 ├── notification-service/    # Thông báo (com.ldt.notification)
-├── font-end/                # React SPA
+├── web-app/                 # React SPA
+├── mobile-app/              # Ứng dụng di động (Expo)
 │
+├── .github/workflows/       # CI/CD (ci.yml, cd.yml)
 ├── docker-compose.yml       # Toàn bộ hệ thống
-├── docker/init-db/          # Script tạo database
 ├── schema.sql               # DDL tổng hợp
 ├── docs/                    # Tài liệu thiết kế (ERD, use-case, sơ đồ tuần tự)
-
 ```
 
-Mỗi service backend theo cùng một bố cục:
-
-```
-<service>/src/main/java/com/ldt/<service>/
-├── config/          # Cấu hình, bộ lọc bảo mật, i18n
-├── context/         # Thông tin người dùng theo request
-├── controller/      # REST endpoint
-├── dto/             # Đối tượng request / response
-├── exception/       # Mã lỗi và xử lý lỗi tập trung
-├── model/           # Entity và enum
-├── repository/      # Tầng truy cập dữ liệu
-└── service/         # Nghiệp vụ
-```
-
-Giao diện: http://localhost:3000 · Gateway: http://localhost:8080 · Eureka: http://localhost:8761
+Giao diện web: http://localhost:3000 · Gateway: http://localhost:8080 · Eureka: http://localhost:8761
