@@ -110,13 +110,13 @@ jobs:
           path: ${{ matrix.service }}/target/surefire-reports
           if-no-files-found: ignore
 
-  frontend:
-    name: frontend
+  webapp:
+    name: webapp
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: font-end
+        working-directory: web-app
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -126,7 +126,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: font-end/package-lock.json
+          cache-dependency-path: web-app/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -135,3 +135,32 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: http://localhost:8080/api/v1
+
+  mobileapp:
+    name: mobileapp
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Bundle
+        run: npx expo export --platform android --output-dir dist
+        env:
+          EXPO_PUBLIC_API_URL: https://example.com/api/v1
