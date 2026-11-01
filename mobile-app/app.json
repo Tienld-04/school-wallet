@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "School Wallet",
+    "slug": "school-wallet",
+    "scheme": "schoolwallet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-font",
+      "@react-native-vector-icons/ionicons",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép School Wallet truy cập thư viện ảnh để tải ảnh CCCD và ảnh mã QR.",
+          "cameraPermission": "Cho phép School Wallet dùng camera để quét mã QR và chụp ảnh CCCD.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép School Wallet dùng camera để quét mã QR và chụp ảnh CCCD.",
+          "recordAudioAndroid": false
+        }
+      ]
+    ]
+  }
+}
